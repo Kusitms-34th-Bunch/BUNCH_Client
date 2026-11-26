@@ -160,10 +160,12 @@ export function DraftPhotos({
           className="min-w-0 flex-1"
         />
         {onOpenPick ? (
+          // 글자와 화살표를 한 덩어리로 누르는 텍스트 링크(Figma 8332:57930 5번): 누르면 배경 overlay-hover·모서리 6, scale 없음
+          // 오른쪽 padding 0(화살표 안 여백), 터치 영역은 after로 위아래 10씩 넓혀 44px
           <button
             type="button"
             onClick={onOpenPick}
-            className="typography-body-4-regular text-text-tertiary gap-s1 focus-visible:outline-border-brand -mr-s2 rounded-r4 flex shrink-0 cursor-pointer touch-manipulation items-center focus-visible:outline-2"
+            className="typography-body-4-regular text-text-quaternary gap-s1 focus-visible:outline-border-brand rounded-r3 press-overlay before:bg-overlay-hover before:rounded-r3 py-s1 pl-s3 relative isolate flex shrink-0 cursor-pointer touch-manipulation items-center pr-0 before:-z-10 after:absolute after:inset-x-0 after:-inset-y-2.5 after:content-[''] focus-visible:outline-2 active:before:opacity-100"
           >
             {BUNDLE_MESSAGES.pickLink}
             <LineChevronRightMediumIcon aria-hidden="true" />

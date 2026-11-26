@@ -55,11 +55,13 @@ export function FeedHeader({
       }
       trailing={
         viewer === null ? null : (
-          <span className="gap-s8 flex items-center">
+          // 알림과 번치 이미지 사이 12px(Figma 135:309 LogoHeader, 2026-11-27 수정). 누르는 영역은 마주 보는 쪽만 6px씩 넓혀 겹치지 않음
+          <span className="gap-s6 flex items-center">
             <Link
               href={notificationsHref}
               aria-label={hasUnreadNotifications ? text.notificationsUnread : text.notifications}
-              className={iconLinkClass}
+              // 누르는 동안 아이콘 0.917과 뒤 배경(Figma 8332:57930 B). 옆 번치 이미지 링크는 아이콘이 아니라 뺌
+              className={`press-icon-overlay ${iconLinkClass} before:-right-1.5`}
             >
               {hasUnreadNotifications ? <LineBellDotLargeIcon /> : <LineBellLargeIcon />}
             </Link>
@@ -68,7 +70,7 @@ export function FeedHeader({
               <Link
                 href={bunchHomeHref}
                 aria-label={text.currentBunch(viewer.name)}
-                className={iconLinkClass}
+                className={`${iconLinkClass} before:-left-1.5`}
                 {...(onBunchHomeClick && { onClick: onBunchHomeClick })}
               >
                 <ProfileImage

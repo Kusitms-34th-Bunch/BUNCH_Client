@@ -1,13 +1,12 @@
 'use client';
 
-import { LineDotsLargeIcon, toast } from '@app/design-system';
+import { IconButton, LineDotsLargeIcon, toast } from '@app/design-system';
 import { ConfirmSheet, MoreMenuSheet, ReportSheet } from '@app/design-system/web';
 import Image, { type StaticImageData } from 'next/image';
 import blockedBunch from '@/shared/assets/images/empty/blocked-bunch.svg';
 import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import { REPORT_OTHER, REPORT_REASONS } from '@/shared/lib/reportReasons';
 import { BUNCH_HOME_MESSAGES } from '../../constants/messages';
-import { headerIconLinkClass } from '../BunchHomeHeader';
 
 type OtherBunchMoreMenuProps = {
   bunchName: string;
@@ -120,14 +119,15 @@ export function OtherBunchMoreMenu({
   };
 
   return (
-    <button
-      type="button"
+    <IconButton
+      variant="plain"
       aria-label="더보기"
       aria-haspopup="dialog"
-      className={headerIconLinkClass}
+      // 번치 홈 헤더의 아이콘 링크와 같은 24px 아이콘·40px 누르는 범위
+      className="text-icon-primary size-6 before:-inset-2 focus-visible:outline-offset-2"
       onClick={openMenu}
     >
       <LineDotsLargeIcon />
-    </button>
+    </IconButton>
   );
 }
