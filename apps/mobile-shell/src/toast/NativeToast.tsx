@@ -11,6 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { isReducedMotion } from '../reduced-motion';
 import type { TabId } from '../tabs/tabs';
 import { type NativeToast as Toast, toastStore } from './toast-store';
 
@@ -32,15 +33,6 @@ const EASING = Easing.bezier(0, 0, 0.35, 1);
 
 const SUCCESS_ICON = require('../../assets/toast-icons/fill-circle-check.png');
 
-// 동작 줄이기 설정을 미리 읽어 둠(토스트마다 새로 읽으면 첫 프레임에 이동이 잠깐 보임)
-let reducedMotion = false;
-void AccessibilityInfo.isReduceMotionEnabled().then((value) => {
-  reducedMotion = value;
-});
-AccessibilityInfo.addEventListener('reduceMotionChanged', (value) => {
-  reducedMotion = value;
-});
-
 function ToastView({
   toast,
   onAction,
@@ -51,7 +43,7 @@ function ToastView({
   onDone: () => void;
 }) {
   const insets = useSafeAreaInsets();
-  const [reduced] = useState(() => reducedMotion);
+  const [reduced] = useState(isReducedMotion);
   // 탭 레이아웃이 미리 불러 둠(TOAST_FONTS). 아직이면 시스템 글꼴
   const [fontsLoaded] = useState(
     () => isLoaded('Pretendard-Regular') && isLoaded('Pretendard-SemiBold'),

@@ -66,6 +66,8 @@ export default function TabsLayout() {
 
   return (
     <NativeTabs
+      // 숨길 때는 iOS 기본 애니메이션, 나타날 때는 modules/tab-crossfade가 iOS 애니메이션을 끄고 바로 보임
+      // (iOS 26의 나타나는 애니메이션은 아이콘 없는 유리 막대가 먼저 보여 어색함, #583 녹화)
       hidden={tabs.barHidden ?? false}
       screenListeners={screenListeners}
       tintColor={TEXT_PRIMARY}
