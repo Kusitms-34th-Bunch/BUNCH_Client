@@ -7,6 +7,7 @@ import {
   LinePhotoSmallIcon,
 } from '../../../icons';
 import { cn } from '../../../utils';
+import { IconButton } from '../../core/iconButton';
 import { ColorBadge } from '../colorBadge';
 import { fitChipCount } from './fitMemberChips.internal';
 
@@ -128,11 +129,13 @@ export const SuggestedBundleCard = ({
     <div
       className={cn(
         'bg-surface-primary rounded-r8 p-s8 gap-s4 relative isolate flex w-full flex-col overflow-clip',
-        // 눌림 축소(0.98)도 덮개와 같은 조건: 카드 버튼을 누를 때만(위에 겹친 「상세 보기」를 누를 때는 그대로)
-        'transition-[scale] duration-180 ease-[cubic-bezier(0.2,0,0,1)] has-[[data-card-button]:active]:scale-98 has-[[data-card-button]:active]:duration-100 motion-reduce:has-[[data-card-button]:active]:scale-none',
+        // 눌림 축소(0.994, Figma 7982:51780 348×308 기준)도 덮개와 같은 조건: 카드 버튼을 누를 때만(위에 겹친 「상세 보기」를 누를 때는 그대로)
+        'transition-[scale] duration-150 ease-[cubic-bezier(0,0,0.15,1)] has-[[data-card-button]:active:not(:root[data-touch-scrolling]_*)]:scale-[0.994] motion-reduce:has-[[data-card-button]:active:not(:root[data-touch-scrolling]_*)]:scale-none',
+        // 누른 채 스크롤하면 줄어듦도 풂(press-scale과 같은 data-touch-scrolling 기준, #583)
+        '[:root[data-touch-scrolling]_&]:scale-none!',
         // 눌림은 카드 위에 겹쳐 사진·칩·화살표까지 함께 어두워지게 처리
-        'before:rounded-r8 before:bg-overlay-hover before:pointer-events-none before:absolute before:inset-0 before:z-20 before:opacity-0',
-        'has-[[data-card-button]:active]:before:opacity-100',
+        'press-overlay before:rounded-r8 before:bg-overlay-hover before:z-20',
+        'has-[[data-card-button]:active:not(:root[data-touch-scrolling]_*)]:before:opacity-100',
         'has-[[data-card-button]:focus-visible]:outline-border-brand has-[[data-card-button]:focus-visible]:outline-2 has-[[data-card-button]:focus-visible]:outline-offset-2',
         selected && 'ring-border-strong-lighter ring-1 ring-inset',
         className,
@@ -162,18 +165,15 @@ export const SuggestedBundleCard = ({
           >
             <span className="block truncate">{title}</span>
           </button>
-          <button
-            type="button"
+          <IconButton
+            variant="plain"
             aria-label={`${title} 상세 보기`}
             onClick={onDetailClick}
-            className={cn(
-              'focus-visible:outline-border-brand text-text-tertiary relative z-10 flex size-5 shrink-0 cursor-pointer touch-manipulation items-center justify-center focus-visible:outline-2 focus-visible:outline-offset-2',
-              // 보이는 크기는 20px로 두고 터치 영역만 40px로 넓힘(Medium 아이콘 기준)
-              "before:absolute before:-inset-2.5 before:content-['']",
-            )}
+            // 보이는 크기는 20px로 두고 누르는 범위만 40px로 넓힘(Medium 아이콘 기준)
+            className="text-text-tertiary z-10 size-5 before:-inset-2.5 focus-visible:outline-offset-2"
           >
             <LineChevronRightMediumIcon aria-hidden="true" />
-          </button>
+          </IconButton>
         </div>
         {chips.length > 0 && (
           <div className="relative w-full">

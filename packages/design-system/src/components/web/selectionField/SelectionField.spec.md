@@ -18,7 +18,7 @@
 
 - 값을 고르는 화면(바텀시트·검색 등), 선택 값의 보관은 만들지 않았다. 호출하는 쪽이 `onFieldClick`·`onSuggestionClick`·`onClear`로 처리한다.
 - 선택된 상태의 추천 값은 Figma에 없다(`Selected`는 `Suggestion=False`만 있다).
-- 눌림·호버·비활성·오류 모양은 Figma에 없어서 만들지 않았다.
+- 호버·비활성·오류 모양은 Figma에 없어서 만들지 않았다. 눌림은 지우기 버튼만 아이콘이 0.917로 줄고 뒤에 overlay-hover 배경(36×36·모서리 8)이 깔린다(Figma `8311:57033` 아이콘 버튼 눌림, `press-icon-overlay`).
 - 추천 칩은 `ChipButton`의 `size="M"`(Solid·Default, 아이콘 없음)을 쓴다. 선택 필드의 칩에는 Figma 호버 모양이 따로 없지만 `ChipButton`의 호버(검정 10% 오버레이)가 그대로 적용된다.
 
 ## Public API

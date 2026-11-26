@@ -51,7 +51,7 @@
 ## Styling과 의존성
 
 - Token: `bg-surface-primary`, `rounded-r8`·`rounded-r4`, `p-s8`, `gap-s4`·`gap-s3`·`gap-s6`, `text-text-tertiary`, `bg-overlay-hover`, `ring-border-strong-lighter`, `typography-body-1-semi-bold`·`typography-body-3-regular`.
-- 사진 높이 178px는 `h-44.5`, 화살표 20px는 `size-5`다. 눌림 `has-[[data-card-button]:active]`로 카드 버튼의 눌림을 카드에 전달한다.
+- 사진 높이 178px는 `h-44.5`, 화살표 20px는 `size-5`다. 눌림은 `has-[[data-card-button]:active…]`로 카드 버튼의 눌림을 카드에 전달하고, 누른 채 움직이면(`data-touch-scrolling`) 풀린다(`docs/architecture/motion.md`).
 - 허용되는 dependency 추가 없음.
 - Figma 이름 대응: `State`→`selected`(+ 눌림은 `:active`), `title`→`title`, `memberChip1~5`·`moreMembersChip`→`members`, `month`·`day`→`month`·`day`.
 - Storybook state matrix: `Default`, `Selected`, `ManyMembers`, `LongTitle`, `States`.

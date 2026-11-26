@@ -5,6 +5,7 @@ import {
   LineMessageCircleSmallIcon,
 } from '../../../icons';
 import { cn } from '../../../utils';
+import { IconButton } from '../../core/iconButton';
 import { ColorBadge, type ColorBadgeColor } from '../colorBadge';
 import { ProfileImage } from '../profileImage';
 
@@ -139,14 +140,14 @@ export const CommentItem = ({
             </div>
             {onMore ? (
               // 아이콘 16px·누르는 영역 40px, 음수 margin으로 Figma 배치 유지
-              <button
-                type="button"
+              <IconButton
+                variant="plain"
                 aria-label={moreLabel ?? `${name} 댓글 더보기`}
                 onClick={onMore}
-                className="text-icon-quaternary -m-s6 p-s6 focus-visible:outline-border-brand relative inline-flex shrink-0 cursor-pointer touch-manipulation rounded-full focus-visible:outline-2"
+                className="text-icon-quaternary -m-s6 p-s6 before:inset-0"
               >
                 <LineDotsSmallIcon aria-hidden />
-              </button>
+              </IconButton>
             ) : null}
           </div>
           {deleted ? (
