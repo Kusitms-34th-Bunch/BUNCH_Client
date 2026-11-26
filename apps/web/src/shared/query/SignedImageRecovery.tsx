@@ -24,22 +24,33 @@ export function SignedImageRecovery() {
   useEffect(() => {
     const retriedAt = new Map<string, number>();
     const failed = new Set<string>();
+    // 이번 묶음에 들어간 파일(같은 파일의 다른 주소를 다른 query가 가질 수 있어 함께 담음)
+    const batchFiles = new Set<string>();
     let timer: ReturnType<typeof setTimeout> | undefined;
     // 만료된 칸들이 한꺼번에 실패해도 캐시는 한 번만 훑음
     const flush = () => {
       timer = undefined;
       const sources = [...failed];
       failed.clear();
+      batchFiles.clear();
+      const hasFailedSrc = (query: Query) => {
+        // 다시 받다 실패한 query도 이전 data(만료 주소)를 그대로 보이므로 data가 있으면 대상
+        if (query.state.data === undefined || isFrozen(query)) return false;
+        const text = JSON.stringify(query.state.data);
+        return sources.some((src) => text.includes(src));
+      };
+      const isFetchingMore = (query: Query) => query.state.fetchMeta?.fetchMore !== undefined;
+      // 다음 쪽 받기는 이전 쪽 주소를 바꾸지 않아 끊고 처음 쪽부터 다시 받음
+      void queryClient.invalidateQueries({
+        predicate: (query) => isFetchingMore(query) && hasFailedSrc(query),
+        refetchType: 'active',
+      });
+      // 그 밖의 진행 중 요청은 이미 새 주소를 받아 오는 중이라 끊지 않음
       void queryClient.invalidateQueries(
         {
-          predicate: (query) => {
-            if (query.state.status !== 'success' || isFrozen(query)) return false;
-            const text = JSON.stringify(query.state.data);
-            return sources.some((src) => text.includes(src));
-          },
+          predicate: (query) => !isFetchingMore(query) && hasFailedSrc(query),
           refetchType: 'active',
         },
-        // 받는 중인 요청을 끊고 다시 보내지 않음
         { cancelRefetch: false },
       );
     };
@@ -49,9 +60,12 @@ export function SignedImageRecovery() {
       const src = image.currentSrc || image.src;
       const file = forgetSignedUrl(src);
       if (!file) return;
-      const now = Date.now();
-      if (now - (retriedAt.get(file) ?? -Infinity) < RETRY_GAP_MS) return;
-      retriedAt.set(file, now);
+      if (!batchFiles.has(file)) {
+        const now = Date.now();
+        if (now - (retriedAt.get(file) ?? -Infinity) < RETRY_GAP_MS) return;
+        retriedAt.set(file, now);
+        batchFiles.add(file);
+      }
       timer ??= setTimeout(flush, BATCH_MS);
       failed.add(src);
     };

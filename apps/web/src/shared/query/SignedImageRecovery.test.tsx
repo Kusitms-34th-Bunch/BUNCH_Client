@@ -62,3 +62,26 @@ it('편집 중 고정한 query(staleTime 무한)는 다시 받지 않는다', as
   await settle();
   expect(queryClient.getQueryState(['edit'])?.isInvalidated).toBe(false);
 });
+
+it('다시 받다 실패해 이전 data만 남은 query도 다시 받게 한다', async () => {
+  const { queryClient, failImage, settle, invalidated } = setup();
+  queryClient
+    .getQueryCache()
+    .find({ queryKey: ['photos'] })
+    ?.setState({ status: 'error', error: new Error('재조회 실패') });
+
+  failImage(signed('a.jpg', 'aaa'));
+  await settle();
+  expect(invalidated('photos')).toBe(true);
+});
+
+it('같은 묶음 안에서 같은 파일의 다른 주소가 실패하면 둘 다 다시 받는다', async () => {
+  const { queryClient, failImage, settle, invalidated } = setup();
+  queryClient.setQueryData(['old'], { items: [{ src: signed('a.jpg', 'old') }] });
+
+  failImage(signed('a.jpg', 'aaa'));
+  failImage(signed('a.jpg', 'old'));
+  await settle();
+  expect(invalidated('photos')).toBe(true);
+  expect(invalidated('old')).toBe(true);
+});

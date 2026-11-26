@@ -10,7 +10,8 @@ export const photoDetailQueryOptions = (bunchId: string | undefined, photoId: st
   queryOptions({
     queryKey: photoBoxKeys.photoDetail(bunchId, photoId),
     queryFn: bunchId ? ({ signal }) => getPhotoDetail(bunchId, photoId, signal) : skipToken,
-    // 원본 주소는 서명 주소라 30분 뒤 만료(받은 주소는 15분 넘게 남음, stableSignedUrls). 그 전에 다시 받음(#587)
+    // 원본 주소는 서명 주소라 30분 뒤 만료(받은 주소는 15분 넘게 남음, stableSignedUrls). 10분 지나면 들어올 때·앱 복귀 때 다시 받음(#587)
+    // 상세를 30분 넘게 켜 둬 만료되면 이미지 오류로 SignedImageRecovery가 다시 받음
     staleTime: ORIGINAL_STALE_MS,
   });
 
