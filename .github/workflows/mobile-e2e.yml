@@ -50,27 +50,22 @@ jobs:
       # 빌드할 SDK와 같은 iOS 런타임의 iPhone 17 Pro(로컬 확인 기기)를 먼저, 없으면 같은 런타임의 다른 iPhone
       # 첫 부팅은 데이터 이전으로 2분 넘게 걸려(2026-11-22 실패) 빌드(약 20분)와 겹치게 맨 앞에서 부팅만 시작
       - name: 시뮬레이터 부팅 시작
-        # flow를 두 대에 나눠 돌림(flow마다 앱을 새로 켜는 시간이 길어 한 대로는 flow 합이 약 16분, 2026-11-26 실행)
-        # 두 번째는 첫 기기와 같은 기종으로 만들어 화면 크기를 맞추고, 빌드와 자원을 나누지 않게 빌드 뒤에 부팅
         run: |
           sdk=$(xcrun --sdk iphonesimulator --show-sdk-version)
-          picked=$(xcrun simctl list devices available -j | SDK="$sdk" node -e '
+          udid=$(xcrun simctl list devices available -j | SDK="$sdk" node -e '
             const { devices } = JSON.parse(require("fs").readFileSync(0, "utf8"));
             const runtime = `iOS-${process.env.SDK.replaceAll(".", "-")}`;
-            const [runtimeId, list = []] = Object.entries(devices).find(([key]) => key.endsWith(runtime)) ?? [];
+            const list = Object.entries(devices).find(([key]) => key.endsWith(runtime))?.[1] ?? [];
             const phones = list.filter((device) => device.name.startsWith("iPhone"));
             const phone = phones.find((device) => device.name === "iPhone 17 Pro") ?? phones[0];
             if (!phone) {
               console.error(`${runtime} 런타임의 iPhone 시뮬레이터가 없어요`);
               process.exit(1);
             }
-            console.log([phone.udid, phone.deviceTypeIdentifier, runtimeId].join(" "));
+            console.log(phone.udid);
           ')
-          read -r udid device_type runtime_id <<< "$picked"
-          second=$(xcrun simctl create "E2E shard 2" "$device_type" "$runtime_id")
           xcrun simctl boot "$udid"
           echo "SIMULATOR_UDID=$udid" >> "$GITHUB_ENV"
-          echo "SECOND_SIMULATOR_UDID=$second" >> "$GITHUB_ENV"
 
       - run: corepack enable
 
@@ -160,11 +155,8 @@ jobs:
       # 앞에서 시작한 부팅이 끝났는지 확인(보통 빌드 동안 끝나 바로 지나감)
       - name: 시뮬레이터 준비·앱 설치
         run: |
-          xcrun simctl boot "$SECOND_SIMULATOR_UDID"
-          for udid in "$SIMULATOR_UDID" "$SECOND_SIMULATOR_UDID"; do
-            xcrun simctl bootstatus "$udid" -b
-            xcrun simctl install "$udid" apps/mobile-shell/build/e2e/Build/Products/Release-iphonesimulator/Bunch.app
-          done
+          xcrun simctl bootstatus "$SIMULATOR_UDID" -b
+          xcrun simctl install "$SIMULATOR_UDID" apps/mobile-shell/build/e2e/Build/Products/Release-iphonesimulator/Bunch.app
 
       # Maestro CLI가 쓰는 Java(러너 기본값에 기대지 않음)
       - uses: actions/setup-java@v5
@@ -186,7 +178,7 @@ jobs:
         run: |
           # 빌드 동안 웹이 죽었으면 flow 실패 대신 원인을 바로 보이게
           curl -sf "$WEB_URL" > /dev/null || { echo "웹이 응답하지 않아요" && cat "$RUNNER_TEMP/web.log" && exit 1; }
-          maestro --device "$SIMULATOR_UDID,$SECOND_SIMULATOR_UDID" test --shard-split 2 --format junit --output "$RUNNER_TEMP/maestro-report.xml" --test-output-dir "$RUNNER_TEMP/maestro-output" maestro
+          maestro --device "$SIMULATOR_UDID" test --format junit --output "$RUNNER_TEMP/maestro-report.xml" --test-output-dir "$RUNNER_TEMP/maestro-output" maestro
 
       - name: 결과 올리기
         if: failure()
