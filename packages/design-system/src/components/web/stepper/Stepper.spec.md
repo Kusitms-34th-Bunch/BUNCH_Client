@@ -10,7 +10,7 @@
 
 ### 제공하는 동작
 
-- 단계 수만큼 같은 폭의 높이 4px 막대를 가로로 보여 주고, 현재 단계의 막대 하나만 진한 회색으로 채운다(2단계라면 비활성·선택·비활성 순, 이전 단계 막대는 채우지 않는다).
+- 단계 수만큼 같은 폭의 높이 4px 막대를 가로로 보여 주고, 현재 단계까지의 막대를 진한 회색으로 채운다(2단계라면 선택·선택·비활성 순, 지난 단계 막대는 채운 채로 유지한다. 2026-11-26 디자이너 확인, 그 전에는 현재 막대만).
 - 진행 상황을 `role="progressbar"`와 `aria-valuenow`·`aria-valuemax`·`aria-valuetext`로 전달한다.
 
 ### 제공하지 않는 동작
@@ -26,8 +26,8 @@
 
 ## 상태와 동작
 
-- 전환(Figma `1998:35008` Header Animation): 막대 안쪽 채움이 왼쪽에서 오른쪽으로 600ms 동안 늘어난다(Smart animation, Slow). Slow 스프링(80·20·1)을 길이에 맞춘 근사 곡선 `cubic-bezier(0.24, 0.3, 0.14, 1)`을 쓴다(`docs/architecture/motion.md`의 번들 사진 삭제와 같은 근사). 처음 그려질 때도 `@starting-style`로 0에서 채운다. 새 단계의 막대가 늘어나고 이전 단계의 막대는 같은 방식으로 줄어든다(이전 막대가 사라지는 방식은 Figma에 없어 같은 곡선으로 처리, 확인할 항목). `prefers-reduced-motion: reduce`이면 즉시 바뀐다. 화면이 바뀌며 컴포넌트가 새로 만들어지면 단계 사이 전환 대신 첫 표시 채움만 보이므로, 단계 화면들이 공통 layout에 이 컴포넌트를 두어 계속 남게 하는 것은 호출하는 쪽 몫이다.
-- 채움 규칙: `current`번째 막대만 `surface-inversed`(Selected, Figma 2026-11-24 색상 변경으로 `surface-brand`에서 변경), 나머지는 `surface-disabled`(Default). 각 막대의 채움 여부는 `data-filled`로도 남긴다.
+- 전환(Figma `1998:35008` Header Animation): 막대 안쪽 채움이 왼쪽에서 오른쪽으로 600ms 동안 늘어난다(Smart animation, Slow). Slow 스프링(80·20·1)을 길이에 맞춘 근사 곡선 `cubic-bezier(0.24, 0.3, 0.14, 1)`을 쓴다(`docs/architecture/motion.md`의 번들 사진 삭제와 같은 근사). 처음 그려질 때는 현재 단계의 막대만 `@starting-style`로 0에서 채우고 지난 막대는 채운 채로 보인다. 다음 단계로 가면 새 막대만 늘어나고, 이전 단계로 돌아가면 그 뒤 막대가 같은 방식으로 줄어든다(줄어드는 방식은 Figma에 없어 같은 곡선으로 처리, 확인할 항목). `prefers-reduced-motion: reduce`이면 즉시 바뀐다. 화면이 바뀌며 컴포넌트가 새로 만들어지면 단계 사이 전환 대신 첫 표시 채움만 보이므로, 단계 화면들이 공통 layout에 이 컴포넌트를 두어 계속 남게 하는 것은 호출하는 쪽 몫이다.
+- 채움 규칙: 1번째부터 `current`번째 막대까지 `surface-inversed`(Selected, Figma 2026-11-24 색상 변경으로 `surface-brand`에서 변경), 나머지는 `surface-disabled`(Default). 각 막대의 채움 여부는 `data-filled`로도 남긴다.
 - 막대 간격 2px, 반경 `full`. 폭은 컨테이너를 채우고 막대가 균등 분할한다.
 - 로딩·에러·disabled 상태는 없다.
 
