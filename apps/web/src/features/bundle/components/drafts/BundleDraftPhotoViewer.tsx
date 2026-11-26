@@ -43,7 +43,11 @@ export function BundleDraftPhotoViewer({ photoId }: BundleDraftPhotoViewerProps)
         ? new Map(
             photoBoxData.photos.map((photo) => [
               photo.id,
-              { takenAt: photo.takenAt, uploaderIds: photo.uploaderIds },
+              {
+                takenAt: photo.takenAt,
+                uploaderIds: photo.uploaderIds,
+                aspectRatio: photo.aspectRatio,
+              },
             ]),
           )
         : undefined,

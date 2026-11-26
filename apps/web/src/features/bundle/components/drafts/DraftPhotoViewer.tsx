@@ -43,14 +43,17 @@ const toViewerPhoto = (photo: DraftPhoto, source: PhotoSource | undefined): Phot
     takenAt,
     uploadedAt: takenAt ?? '',
     uploaderIds: source ? source.uploaderIds : [photo.uploaderId],
+    // 사진함 원본 크기로 받기 전부터 최종 크기로 그림(#583, 사진함 데이터를 받기 전이면 받은 이미지 비율)
+    aspectRatio: source?.aspectRatio,
     // 번들 크게 보기에는 삭제가 없어 쓰이지 않는 값
     usedInDraftBundle: false,
     status: 'ready',
   };
 };
 
-/** 번들 사진의 사진함 원본에서 가져온 촬영 날짜와 올린 멤버 */
-export type PhotoSource = Pick<PhotoBoxPhoto, 'takenAt' | 'uploaderIds'>;
+/** 번들 사진의 사진함 원본에서 가져온 촬영 날짜·올린 멤버·원본 비율 */
+export type PhotoSource = Pick<PhotoBoxPhoto, 'takenAt' | 'uploaderIds'> &
+  Partial<Pick<PhotoBoxPhoto, 'aspectRatio'>>;
 
 const UNKNOWN_SOURCE: PhotoSource = { takenAt: null, uploaderIds: [] };
 
@@ -62,7 +65,7 @@ type DraftPhotoViewerProps = {
   actions: Pick<DraftActions, 'removePhoto' | 'presence'>;
   /** 처음 보여 줄 사진 id */
   initialPhotoId: string;
-  /** 사진함 원본 사진 id별 촬영 날짜·올린 멤버. 없으면 번들에 담은 사람과 날짜 없음으로 보임 */
+  /** 사진함 원본 사진 id별 촬영 날짜·올린 멤버·원본 비율. 없으면 번들에 담은 사람과 날짜 없음으로 보임 */
   sources?: ReadonlyMap<string, PhotoSource> | undefined;
   /** 사진함 데이터를 받는 중이면 배지와 헤더 날짜를 비워 둠(사진 보기와 삭제는 막지 않음) */
   sourcesPending?: boolean | undefined;

@@ -19,7 +19,11 @@ export function BundleEditPhotoViewerRoute({ photoId }: BundleEditPhotoViewerRou
         ? new Map(
             data.photos.map((photo) => [
               photo.id,
-              { takenAt: photo.takenAt, uploaderIds: photo.uploaderIds },
+              {
+                takenAt: photo.takenAt,
+                uploaderIds: photo.uploaderIds,
+                aspectRatio: photo.aspectRatio,
+              },
             ]),
           )
         : undefined,

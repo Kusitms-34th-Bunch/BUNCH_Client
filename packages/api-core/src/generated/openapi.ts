@@ -884,22 +884,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/auth/dev/token': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    post: operations['devToken'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/api/v1/auth/apple/login': {
     parameters: {
       query?: never;
@@ -2376,19 +2360,6 @@ export interface components {
     GoogleLoginRequest: {
       idToken: string;
     };
-    DevTokenRequest: {
-      nickname: string;
-    };
-    ApiResponseDevTokenResponse: {
-      success: boolean;
-      data?: components['schemas']['DevTokenResponse'];
-      error?: components['schemas']['ApiError'];
-    };
-    DevTokenResponse: {
-      /** Format: int64 */
-      memberId: number;
-      accessToken: string;
-    };
     PushPreferencePatchRequest: {
       enabled?: boolean;
       categories?: {
@@ -2982,6 +2953,10 @@ export interface components {
       capturedTime?: components['schemas']['LocalTime'];
       uploaderIds: number[];
       usedInDraftBundle: boolean;
+      /** Format: int32 */
+      width?: number;
+      /** Format: int32 */
+      height?: number;
     };
     PhotoListResponse: {
       /** Format: int64 */
@@ -3002,6 +2977,10 @@ export interface components {
       capturedDate?: string;
       uploaders: components['schemas']['PhotoDetailUploader'][];
       usedInDraftBundle: boolean;
+      /** Format: int32 */
+      width?: number;
+      /** Format: int32 */
+      height?: number;
     };
     PhotoDetailUploader: {
       /** Format: int64 */
@@ -3020,6 +2999,10 @@ export interface components {
       thumbnailUrl: string;
       uploaderIds: number[];
       usedInDraftBundle: boolean;
+      /** Format: int32 */
+      width?: number;
+      /** Format: int32 */
+      height?: number;
     };
     PhotoUndatedResponse: {
       /** Format: int64 */
@@ -4932,30 +4915,6 @@ export interface operations {
         };
         content: {
           '*/*': components['schemas']['ApiResponseTokenResponse'];
-        };
-      };
-    };
-  };
-  devToken: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['DevTokenRequest'];
-      };
-    };
-    responses: {
-      /** @description OK */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          '*/*': components['schemas']['ApiResponseDevTokenResponse'];
         };
       };
     };
