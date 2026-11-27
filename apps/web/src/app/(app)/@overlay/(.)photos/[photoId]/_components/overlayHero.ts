@@ -20,11 +20,14 @@ const onScreen = ({ left, top, width, height }: Box) =>
   top < window.innerHeight &&
   left < window.innerWidth;
 
-/** 상세의 지금 사진과 그 사진의 사진함 칸(둘 다 보일 때만) */
+/**
+ * 상세의 지금 사진과 그 사진의 사진함 칸(둘 다 보이고 상세 사진을 다 받았을 때만)
+ * 받기 전 사진은 캔버스에 그려지지 않아 빈 복사본이 날아가므로 hero 없이 페이드만 함
+ */
 export const findHeroPair = (overlay: ParentNode, under: ParentNode) => {
   const target = overlay.querySelector<HTMLImageElement>('img[data-hero-exit-key]');
   const key = target?.dataset.heroExitKey;
-  if (!target || !key) return null;
+  if (!target || !key || !target.complete || target.naturalWidth === 0) return null;
   const source = under.querySelector<HTMLElement>(`[data-hero-enter-key="${CSS.escape(key)}"]`);
   if (!source || !onScreen(boxOf(source)) || !onScreen(boxOf(target))) return null;
   return { source, target };

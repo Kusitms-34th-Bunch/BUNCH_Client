@@ -23,22 +23,26 @@ const canAnimate = () => typeof Element.prototype.animate === 'function';
 
 const underlay = () => document.querySelector<HTMLElement>('[data-overlay-under]');
 
-// 상세의 지금 사진이 받아져 그릴 수 있을 때까지(최대 READY_LIMIT_MS)
-const targetReady = (overlay: HTMLElement) =>
-  new Promise<void>((resolve) => {
-    const startedAt = performance.now();
+// 상세의 지금 사진이 받아져 그릴 수 있을 때까지(디코딩 포함 최대 READY_LIMIT_MS, 넘으면 hero 없이 엶)
+const targetReady = (overlay: HTMLElement) => {
+  let stopped = false;
+  const ready = new Promise<void>((resolve) => {
     const check = () => {
+      if (stopped) return;
       const image = overlay.querySelector<HTMLImageElement>('img[data-hero-exit-key]');
-      const late = performance.now() - startedAt > READY_LIMIT_MS;
       if (image?.complete && image.naturalWidth > 0) {
         void image.decode().then(resolve, resolve);
         return;
       }
-      if (late) resolve();
-      else requestAnimationFrame(check);
+      requestAnimationFrame(check);
     };
     check();
   });
+  const deadline = new Promise<void>((resolve) => setTimeout(resolve, READY_LIMIT_MS));
+  return Promise.race([ready, deadline]).then(() => {
+    stopped = true;
+  });
+};
 
 /**
  * 닫히는 상세를 복제해 흐리게 사라지게 하고 지금 사진은 칸으로 날림(복제본은 누름·초점·보조기술에서 제외)
@@ -54,7 +58,8 @@ const prepareClose = (overlay: HTMLElement) => {
   ghost.setAttribute('aria-hidden', 'true');
   for (const element of ghost.querySelectorAll<HTMLElement>('[data-hero-exit-key]')) {
     element.removeAttribute('data-hero-exit-key');
-    element.style.visibility = 'hidden';
+    // 사진이 칸으로 날아갈 때만 복제본의 사진을 숨김(짝이 없으면 사진까지 함께 흐려짐)
+    if (pair) element.style.visibility = 'hidden';
   }
   // 칸은 숨기지 않음(복사본이 그 위에 내려앉아 구멍이 보이지 않음)
   const startFly = pair ? prepareHero(pair, 'close') : undefined;
