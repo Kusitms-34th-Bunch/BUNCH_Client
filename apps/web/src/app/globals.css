@@ -5,6 +5,8 @@
 @source '../../../../packages/design-system/src';
 /* Storybook 예시에만 쓰인 class는 앱 CSS에 넣지 않음(#534) */
 @source not '../../../../packages/design-system/src/**/*.stories.tsx';
+/* admin 구역은 apps/admin 전용이라 스캔하지 않음 */
+@source not '../../../../packages/design-system/src/components/admin';
 
 :root {
   --app-max-width: 430px;

@@ -6,6 +6,7 @@ export * from './button';
 export * from './calendar';
 export * from './calendarItem';
 export * from './checkbox';
+export * from './colorBadge';
 export * from './dialog';
 export * from './header';
 export * from './iconButton';

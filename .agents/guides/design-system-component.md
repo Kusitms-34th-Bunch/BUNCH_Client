@@ -1,6 +1,6 @@
 # 디자인 시스템 컴포넌트 가이드
 
-`packages/design-system`에 둘지와 구역(`core`·`web`)은 `docs/architecture/design-system-components.md`의 "배치 기준"을 따른다. 구현은 `create-ds-component`, 앱 내부 재사용 조립은 `create-app-component`를 사용한다.
+`packages/design-system`에 둘지와 구역(`core`·`web`·`admin`)은 `docs/architecture/design-system-components.md`의 "배치 기준"을 따른다. 구현은 `create-ds-component`, 앱 내부 재사용 조립은 `create-app-component`를 사용한다.
 
 ## 도입 판단
 

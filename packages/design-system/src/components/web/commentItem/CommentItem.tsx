@@ -5,8 +5,8 @@ import {
   LineMessageCircleSmallIcon,
 } from '../../../icons';
 import { cn } from '../../../utils';
+import { ColorBadge, type ColorBadgeColor } from '../../core/colorBadge';
 import { IconButton } from '../../core/iconButton';
-import { ColorBadge, type ColorBadgeColor } from '../colorBadge';
 import { ProfileImage } from '../profileImage';
 
 export type CommentItemProps = Omit<ComponentProps<'div'>, 'children'> & {
