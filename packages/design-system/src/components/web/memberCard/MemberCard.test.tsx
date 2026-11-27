@@ -3,7 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { MemberCard, type MemberCardProps } from './MemberCard';
 
 const renderCard = (props?: Partial<MemberCardProps>) =>
-  render(<MemberCard name="지예" src="avatar.png" {...props} />);
+  render(<MemberCard name="지예" imageSrc="avatar.png" {...props} />);
 
 describe('MemberCard', () => {
   it('이름과 프로필 사진을 보여 준다', () => {
@@ -17,7 +17,7 @@ describe('MemberCard', () => {
     const { container, rerender } = renderCard();
     expect(container.querySelector('.bg-primitive-green-400')).toBeNull();
 
-    rerender(<MemberCard name="지예" src="avatar.png" editing />);
+    rerender(<MemberCard name="지예" imageSrc="avatar.png" editing />);
     const dot = container.querySelector('.bg-primitive-green-400') as HTMLElement;
     expect(dot.classList.contains('size-2.5')).toBe(true);
     expect(dot.classList.contains('bottom-0')).toBe(true);
@@ -33,7 +33,7 @@ describe('MemberCard', () => {
   });
 
   it('src가 없으면 사진 없이 배경 원만 그린다', () => {
-    const { container } = renderCard({ src: undefined });
+    const { container } = renderCard({ imageSrc: undefined });
 
     expect(container.querySelector('img')).toBeNull();
   });

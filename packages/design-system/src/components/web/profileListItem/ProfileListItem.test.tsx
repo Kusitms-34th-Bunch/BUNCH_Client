@@ -55,14 +55,8 @@ describe('ProfileListItem', () => {
     );
   });
 
-  it('action이 있으면 더보기 대신 action을 보여 준다', () => {
-    render(
-      <ProfileListItem
-        name="야간러너스"
-        onMore={() => {}}
-        action={<button type="button">차단해제</button>}
-      />,
-    );
+  it('action을 주면 더보기 대신 action을 보여 준다(둘은 함께 줄 수 없음)', () => {
+    render(<ProfileListItem name="야간러너스" action={<button type="button">차단해제</button>} />);
 
     expect(screen.getByRole('button', { name: '차단해제' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: '야간러너스 더보기' })).toBeNull();

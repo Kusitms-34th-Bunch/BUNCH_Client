@@ -39,13 +39,13 @@ export function ProfileFields({
   return (
     <div className="gap-s8 flex flex-col">
       <LabeledTextField
-        title="닉네임"
+        label="닉네임"
         option="required"
         placeholder="EX) 지원"
         value={values.nickname}
         maxLength={NICKNAME_MAX_LENGTH}
         autoComplete="off"
-        errorMessage={fields.nicknameError}
+        error={fields.nicknameError}
         helperMessage={
           fields.nicknameChecking
             ? NICKNAME_CHECKING_MESSAGE
@@ -77,13 +77,13 @@ export function ProfileFields({
           </span>
           <LabeledTextField
             id={birthYearId}
-            title="출생연도"
+            label="출생연도"
             placeholder="EX)1998"
             inputMode="numeric"
             autoComplete="off"
             aria-describedby={`${birthYearHintId} ${noteId}`}
             value={values.birthYear}
-            errorMessage={fields.birthYearError}
+            error={fields.birthYearError}
             onChange={(event) => fields.setBirthYear(event.target.value)}
             onFocus={() => fields.setBirthYearBlurred(false)}
             onBlur={() => fields.setBirthYearBlurred(true)}

@@ -223,7 +223,7 @@ export function ProfileForm({
           <div className="gap-s8 flex w-full flex-col">
             <LabeledTextField
               id={nameId}
-              title="번치 이름"
+              label="번치 이름"
               value={name}
               maxLength={BUNCH_NAME_MAX_LENGTH}
               autoComplete="off"

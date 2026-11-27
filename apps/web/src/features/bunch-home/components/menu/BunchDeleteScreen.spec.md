@@ -34,7 +34,7 @@
 ## UI와 접근성
 
 - Component mapping: `Header`(뒤로 가기), `PageHeader`, `LabeledTextField`(「확인 문구 입력」), `Button`(하단, `PageShell` bottom, 확인 화면은 form 제출 버튼).
-- 확인 문구 안내(「`*‘삭제하기’를 정확히 입력하면…`」)는 오류가 아니라 늘 보이는 안내라 `errorMessage`가 아니라 `aria-describedby`로 입력창에 연결한다(`aria-invalid` 없음). 앞의 「`*`」와 번치 정보의 「`:`」는 낭독에서 빼려고 장식(`aria-hidden`, CSS)으로 붙인다.
+- 확인 문구 안내(「`*‘삭제하기’를 정확히 입력하면…`」)는 오류가 아니라 늘 보이는 안내라 `error`가 아니라 `aria-describedby`로 입력창에 연결한다(`aria-invalid` 없음). 앞의 「`*`」와 번치 정보의 「`:`」는 낭독에서 빼려고 장식(`aria-hidden`, CSS)으로 붙인다.
 - 삭제할 번치 정보는 `dl`(번치명, 소속 멤버), 삭제되는 항목은 `ul`.
 - 간격: 안내(`2255:43337`) 제목 아래 20(Figma 21, 토큰 없음), 항목 상자 p16·r10, 상자 사이 12, 경고 상자 테두리 r8(Figma 7, 토큰 없음)·py10(Figma 11). 확인(`2255:43857`) 제목 영역 아래 32, 입력 묶음과 번치 정보 사이 36, 번치 정보 pt12·pb16·px16·r10.
 

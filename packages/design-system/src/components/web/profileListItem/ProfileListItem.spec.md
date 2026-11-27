@@ -24,7 +24,7 @@
 - `imageSrc?`: 프로필 이미지 주소(없으면 기본 배경색 원). 이미지는 장식이다.
 - `memberRole?`·`roleLabel?`: 역할 배지(`RoleBadge` sm). `roleLabel`은 스크린 리더가 읽는 역할 이름이다(예: `번치장`).
 - `onMore?`·`moreLabel?`: 더보기 버튼. `moreLabel` 기본값은 `` `${name} 더보기` ``다.
-- `action?`: 오른쪽 동작 노드. `onMore`와 함께 주면 `action`만 보인다.
+- `action?`: 오른쪽 동작 노드. `onMore`·`moreLabel`과 함께 줄 수 없다(타입으로 막음, #601. 전에는 함께 주면 `action`만 보이고 더보기는 조용히 무시됐다).
 - `disabled?`: 행을 흐리게(40%) 하고, 더보기 버튼을 비활성으로 하고, `action` 슬롯을 `inert`로 감싸 누르거나 초점을 받지 못하게 한다.
 - native `div` 속성과 `className`(행에 적용).
 

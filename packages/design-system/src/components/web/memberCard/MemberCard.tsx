@@ -7,8 +7,8 @@ import { RoleBadge, type RoleBadgeRole } from '../roleBadge';
 export type MemberCardProps = Omit<ComponentProps<'div'>, 'children' | 'title'> & {
   /** 멤버 이름 */
   name: string;
-  /** 프로필 이미지 주소(없으면 배경색 원만 표시) */
-  src?: string | undefined;
+  /** 프로필 이미지 주소(없으면 배경색 원만 표시). 다른 프로필 컴포넌트와 같은 이름 */
+  imageSrc?: string | undefined;
   /** 역할 배지(번치장·공동 번치장·초안 작성자), 없으면 배지를 그리지 않음 */
   memberRole?: RoleBadgeRole | undefined;
   /** 역할 이름(예: "번치장"), 주면 배지가 이미지로 읽히고 없으면 장식으로 숨김 */
@@ -29,7 +29,7 @@ export type MemberCardProps = Omit<ComponentProps<'div'>, 'children' | 'title'> 
  */
 export const MemberCard = ({
   name,
-  src,
+  imageSrc,
   memberRole,
   roleLabel,
   onDelete,
@@ -47,7 +47,7 @@ export const MemberCard = ({
     {...props}
   >
     <div className="relative flex items-start">
-      <ProfileImage src={src} size="S" className="border-border-tertiary border" />
+      <ProfileImage src={imageSrc} size="S" className="border-border-tertiary border" />
       {editing ? (
         // Figma 10px 원, 프로필 사진 오른쪽 아래 모서리에 붙음
         <span

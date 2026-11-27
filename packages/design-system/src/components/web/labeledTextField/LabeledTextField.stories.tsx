@@ -5,7 +5,7 @@ import { LabeledTextField, type LabeledTextFieldProps } from './LabeledTextField
 const meta = {
   title: 'Web/Input/LabeledTextField',
   component: LabeledTextField,
-  args: { title: '닉네임', option: 'required', maxLength: 12 },
+  args: { label: '닉네임', option: 'required', maxLength: 12 },
   decorators: [
     (Story) => (
       <div className="w-85.75">
@@ -67,7 +67,7 @@ export const ErrorState: Story = {
     <Controlled
       {...args}
       initial="으누누으누누"
-      errorMessage="특수문자를 제외한 영문, 한글만 사용할 수 있어요."
+      error="특수문자를 제외한 영문, 한글만 사용할 수 있어요."
     />
   ),
 };
@@ -76,28 +76,26 @@ export const ErrorState: Story = {
 export const Disabled: Story = { render: (args) => <Controlled {...args} disabled /> };
 
 export const DisabledWithError: Story = {
-  render: (args) => (
-    <Controlled {...args} disabled errorMessage="입력 가능한 글자수를 초과했어요" />
-  ),
+  render: (args) => <Controlled {...args} disabled error="입력 가능한 글자수를 초과했어요" />,
 };
 
 /** 글자 수 없이 입력만 제한(신고 상세 사유처럼 Figma에 글자 수가 없는 칸) */
 export const LimitWithoutCounter: Story = {
   render: (args) => (
-    <Controlled {...args} title="상세 사유" option="required" maxLength={200} showCounter={false} />
+    <Controlled {...args} label="상세 사유" option="required" maxLength={200} showCounter={false} />
   ),
 };
 
 export const OptionalWithoutCounter: Story = {
   render: (args) => (
-    <Controlled {...args} title="한 줄 소개" option="optional" maxLength={undefined} />
+    <Controlled {...args} label="한 줄 소개" option="optional" maxLength={undefined} />
   ),
 };
 
 /** 중복 확인처럼 진행 중인 검사의 안내 문구(오류가 없을 때) */
 export const Checking: Story = {
   args: {
-    title: '번치 이름',
+    label: '번치 이름',
     option: 'required',
     maxLength: 12,
     defaultValue: '퇴근런클럽',
