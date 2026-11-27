@@ -152,6 +152,18 @@ describe('BunchJoin', () => {
     expect((done() as HTMLButtonElement).disabled).toBe(true);
   });
 
+  it('키보드 완료 키는 「완료」와 같이 확인하고, 비어 있으면 키보드만 닫는다(#579)', async () => {
+    verifyWith('AVAILABLE');
+    renderJoin();
+    expect(input().getAttribute('enterkeyhint')).toBe('done');
+
+    await userEvent.type(input(), '{Enter}');
+    expect(push).not.toHaveBeenCalled();
+
+    await userEvent.type(input(), `${LINK}{Enter}`);
+    await waitFor(() => expect(push).toHaveBeenCalledWith(ONBOARDING_PATHS.joinBunchInvitation));
+  });
+
   it('보조 코드도 서버에 확인한다', async () => {
     let sent: unknown;
     verifyWith('AVAILABLE', (body) => (sent = body));

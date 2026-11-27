@@ -27,6 +27,38 @@ const guardPair = (
     delete outgoing.dataset.pageLeaving;
   };
 };
+type Playable = { play?: () => void; pause?: () => void; [stop: string]: unknown };
+const INTERRUPTS = ['stop', 'cancel', 'pause', 'reverse', 'complete'] as const;
+// 첫 재생을 시작 모습에서 멈춰 두고 도착 화면이 그려진 두 프레임 뒤에 이어 감(iOS는 돌아온 피드를 그리기 전에 재생해 첫 프레임이 하얗게 빔, #573)
+// 바로 재생 → 멈춤이라 시작 모습(zoom은 재생 때 적용)이 먼저 보임. 그 사이 다른 조작이 오면 이어 가지 않음
+export const playAfterPaint = (animation: Playable) => {
+  const { play, pause } = animation;
+  if (typeof play !== 'function' || typeof pause !== 'function') return;
+  let frame = 0;
+  const skip = () => {
+    cancelAnimationFrame(frame);
+    frame = 0;
+  };
+  animation.play = () => {
+    animation.play = play;
+    play.call(animation);
+    pause.call(animation);
+    frame = requestAnimationFrame(() => {
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        play.call(animation);
+      });
+    });
+  };
+  for (const name of INTERRUPTS) {
+    const original = animation[name];
+    if (typeof original !== 'function') continue;
+    animation[name] = (...args: unknown[]) => {
+      skip();
+      return (original as (..._args: unknown[]) => unknown).apply(animation, args);
+    };
+  }
+};
 export const guardOutgoing = (animation: MultiAnimation<'out' | 'in'>) => {
   const outgoing = animation.select('out').getMotionTracks()[0];
   guardPair(animation.select('in').getMotionTracks()[0]?.element, outgoing?.element, outgoing);
@@ -39,6 +71,7 @@ export const guardHero = ({
 }) => {
   const outgoing = animation.select('out').getMotionTracks()[0];
   guardPair(animation.select('in').getMotionTracks()[0]?.element, outgoing?.element, outgoing);
+  playAfterPaint(animation as unknown as Playable);
 };
 // zoom 프리셋의 나가는 화면은 경계 id로 찾아 다른 전환과 같은 표식
 type ZoomGroup = 'overlay' | 'content' | 'chrome' | 'background' | 'tile';
@@ -63,6 +96,12 @@ export const guardZoom =
     const front = last(frontId);
     if (opening) guardPair(front, behind, track);
     else guardPair(behind, front, track);
+    // 열리고 접히는 상세 화면이 상태 바 뒤까지 함께 커지고 줄어듦(인스타처럼 화면 전체가 카드로, #568)
+    // 반경 0인 zoom 전제: 띠 자르기(globals.css data-zoom-band)가 SSGOI 반경 자르기를 덮음
+    // 뒤 화면도 자기 색 띠로 상태 바를 덮어 둠(나가는 화면 표식으로 앱 틀 색이 먼저 흰색이 되는 것을 가림, 드릴과 같음)
+    if (front && track) attachPushBand(front, track, true);
+    if (behind && track) attachPushBand(behind, track);
+    playAfterPaint(animation as unknown as Playable);
   };
 // AppFrame 상태 바 색 전환(motion-safe duration-150)보다 조금 길게
 const SHEET_BAND_HOLD_MS = 200;
@@ -170,7 +209,7 @@ type BandBackground = Exclude<
 // 키를 PageShell 목록으로 묶어 배경 값이 늘면 typecheck에서 걸림
 const BAND_COLORS: Record<BandBackground, string> = {
   'brand-subtle-1': 'var(--color-surface-brand-subtle-1)',
-  brand: 'var(--color-surface-brand)',
+  brand: 'var(--color-primitive-gray-800)',
   secondary: 'var(--color-surface-secondary)',
   'orange-50': 'var(--color-primitive-orange-50)',
   'pink-50': 'var(--color-primitive-pink-50)',
@@ -196,22 +235,29 @@ export const guardPush = (animation: MultiAnimation<'out' | 'in'>) => {
     animation.select('in').getMotionTracks()[0],
     animation.select('out').getMotionTracks()[0],
   ]) {
-    if (!track) continue;
-    const page = track.element;
-    const color = bandColorOf(page);
-    if (!color) continue;
-    const owner = {};
-    pushBands.set(page, owner);
-    page.dataset.pushBand = '';
-    page.style.boxShadow = `0 calc(-1 * var(--safe-area-top, 0px)) 0 ${color}`;
-    const dispose = track.onDispose;
-    track.onDispose = (context) => {
-      dispose?.(context);
-      if (pushBands.get(page) !== owner) return;
-      pushBands.delete(page);
-      delete page.dataset.pushBand;
-      // sheet 띠가 같은 요소에 남아 있으면 그 띠는 sheet 정리에 맡김
-      if (page.dataset.sheetBand === undefined) page.style.removeProperty('box-shadow');
-    };
+    if (track) attachPushBand(track.element, track);
   }
+};
+/**
+ * 전환하는 화면 위에 상태 바 높이의 자기 색 띠를 붙이고 끝나면 치움(전환 영역은 data-push-band 동안 위로 넓힘)
+ * zoom은 화면 자신에 반경 자르기(clip-path)를 걸어 띠가 잘리므로 data-zoom-band로 위쪽만 넓힘(globals.css)
+ */
+const attachPushBand = (page: HTMLElement, track: WebAnimation, zoom = false) => {
+  const color = bandColorOf(page);
+  if (!color) return;
+  const owner = {};
+  pushBands.set(page, owner);
+  page.dataset.pushBand = '';
+  if (zoom) page.dataset.zoomBand = '';
+  page.style.boxShadow = `0 calc(-1 * var(--safe-area-top, 0px)) 0 ${color}`;
+  const dispose = track.onDispose;
+  track.onDispose = (context) => {
+    dispose?.(context);
+    if (pushBands.get(page) !== owner) return;
+    pushBands.delete(page);
+    delete page.dataset.pushBand;
+    delete page.dataset.zoomBand;
+    // sheet 띠가 같은 요소에 남아 있으면 그 띠는 sheet 정리에 맡김
+    if (page.dataset.sheetBand === undefined) page.style.removeProperty('box-shadow');
+  };
 };

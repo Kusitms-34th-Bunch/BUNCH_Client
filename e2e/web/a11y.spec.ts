@@ -7,7 +7,7 @@ const TAGS = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa', 'best-prac
 
 // 알려진 위반(#226·#560, 디자이너 확인 요청): Figma 글자색이 배경 위에서 대비 부족(글자색/배경색)
 // 보조 글자 #969AA0 2.82:1·#BCBEC2 1.86:1, 접근 불가 번치 #D5D7D9 1.44:1·칩 #BABDC0 1.82:1,
-// 약관 전체 동의 #D1D4D9 1.42:1, 알림 칩 #FF53C5 2.61:1, 오류 문구 #F04D29 3.62:1
+// 약관 전체 동의 #D3D4D7 1.43:1(2026-11-24 #570에서 바탕이 회색으로 바뀜), 알림 칩 #FF53C5 2.61:1, 오류 문구 #F04D29 3.62:1
 // 화면별로 요소 문구를 고정해 다른 요소가 같은 색을 쓰거나 색이 고쳐지면 실패
 type ContrastData = { fgColor?: string; bgColor?: string };
 const KNOWN_LOW_CONTRAST = new Set([
@@ -15,7 +15,7 @@ const KNOWN_LOW_CONTRAST = new Set([
   '#bcbec2/#ffffff',
   '#d5d7d9/#ffffff',
   '#babdc0/#fbfbfb',
-  '#d1d4d9/#f9faff',
+  '#d3d4d7/#fbfbfb',
   '#ff53c5/#fff0fa',
   '#f04d29/#ffffff',
 ]);

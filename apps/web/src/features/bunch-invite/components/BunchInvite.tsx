@@ -2,6 +2,7 @@
 
 import {
   Header,
+  IconButton,
   LineAlertSmallIcon,
   LineCloseLargeIcon,
   LineCopyLargeIcon,
@@ -110,15 +111,15 @@ export function BunchInvite({
           <label htmlFor={linkId} className="typography-body-3-semibold text-text-primary">
             {LINK_LABEL}
           </label>
-          <button
-            type="button"
+          <IconButton
+            variant="plain"
             aria-label="초대 링크 복사"
             disabled={!inviteLink}
             onClick={() => void copy()}
-            className="text-icon-quaternary focus-visible:outline-border-brand -my-s4 -mr-s4 size-s16 flex cursor-pointer items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:opacity-40"
+            className="text-icon-quaternary -my-s4 -mr-s4 size-s16 before:inset-0 focus-visible:outline-offset-2"
           >
             <LineCopyLargeIcon />
-          </button>
+          </IconButton>
         </div>
         {/* 상태 변화는 항상 마운트된 이 영역의 문구로 알림(새로 끼워 넣은 영역은 낭독되지 않을 수 있음) */}
         <p role="status" className="sr-only">

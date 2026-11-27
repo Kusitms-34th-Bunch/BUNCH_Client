@@ -97,7 +97,7 @@ export const CommentInput = ({
           'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
         )}
       >
-        {/* 회색 위에 브랜드색·누름 그래픽을 겹쳐 위 층만 투명도로 전환(중간에 원이 옅어지지 않게, 동작 줄이기면 바로) */}
+        {/* 회색 위에 진한 회색·누름 그래픽을 겹쳐 위 층만 투명도로 전환(중간에 원이 옅어지지 않게, 동작 줄이기면 바로) */}
         <GraphicCommentSendDisabledIcon className="col-start-1 row-start-1" />
         <GraphicCommentSendIcon className={cn(ICON_LAYER, !canSubmit && 'opacity-0')} />
         <GraphicCommentSendPressedIcon

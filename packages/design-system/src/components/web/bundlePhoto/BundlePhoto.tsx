@@ -109,7 +109,8 @@ export const BundlePhoto = ({
             <img
               src={photo.src}
               alt={photo.alt ?? ''}
-              decoding="async"
+              // hero로 이어지는 첫 사진은 decoding 없음(SSGOI 데모와 같게, async면 복사본·돌아온 카드가 decode 전까지 빔, #573)
+              decoding={heroKey && index === 0 ? undefined : 'async'}
               loading={index === 0 && priority !== false ? undefined : 'lazy'}
               fetchPriority={index === 0 && priority ? 'high' : undefined}
               className="absolute inset-0 size-full object-cover"

@@ -63,7 +63,7 @@ const DateChangeBody = ({
         <BottomSheet.Close className="col-start-1 row-span-1 justify-self-start" />
         {/* disabled 대신 aria-disabled: 초점 유지와 비활성 이유 안내 */}
         <TextButton
-          variant="primary"
+          variant="secondary"
           size="md"
           aria-disabled={!canSave}
           aria-describedby={canSave ? undefined : hintId}

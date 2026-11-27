@@ -26,28 +26,34 @@ web 페이지 전환은 `@ssgoi/react` 7.4.1을 사용한다. 컴포넌트와 ad
 - 한 단계 들어가는 이동(`drill`)과 단계·하위 화면으로 미는 이동(`slide`)은 모두 350ms, `cubic-bezier(0.4, 0, 0.2, 1)`(천천히 시작해 길게 감속)이다(#560, FE 판단). 값은 `AppTransitions.tsx`의 `PUSH_DURATION_MS`·`PUSH_EASING` 하나로 둔다.
 - 위 진입 기본(ease-out)과 다른 이유: 실기기는 새 화면을 처음 그리기까지 약 90ms가 걸려 그동안 이동이 지나간다. ease-out 250ms는 첫 보이는 프레임에 이미 약 48%였고(120fps 녹화, 브라우저는 6~11%), 같은 90ms 동안 ease-out 300ms는 45%, 200ms는 63%를 지난다(계산값). 새 곡선 350ms는 약 25%이고 마지막 25% 시간의 이동도 9%에서 4%로 줄어 끝이 부드럽다.
 - 이동하는 동안 두 화면은 각자 배경색의 상태 바 높이 띠를 달고 함께 밀린다(`_transitions/pageGuards.ts`의 `guardPush`). 상태 바 영역을 `AppFrame`이 따로 페이드하면 화면이 도착하기 전에 색이 먼저 바뀌었다.
-- 맨 위로(탭 다시 누르기·피드 로고)도 같은 시간·곡선으로 직접 스크롤한다(`shared/lib/navigation/scrollPageToTop.ts`). 브라우저 기본 smooth는 거리마다 속도가 달라 WebKit에서 시작·끝이 끊겨 보였다. 두 화면보다 멀면 한 화면 위치로 바로 옮긴 뒤 그만큼만 움직이고, 손가락·휠이 닿으면 멈춘다.
+- 맨 위로(탭 다시 누르기·피드 로고)는 직접 스크롤한다(`shared/lib/navigation/scrollPageToTop.ts`). 브라우저 기본 smooth는 거리마다 속도가 달라 WebKit에서 시작·끝이 끊겨 보였다. 순간 이동 없이 전체 거리를 감속 곡선 `cubic-bezier(0.2,0,0,1)`(빠르게 출발해 맨 위에서 천천히 멈춤)로 움직이고, 시간은 한 화면 이내 350ms에서 한 화면마다 50ms씩 늘려 650ms까지다. 손가락·휠이 닿으면 멈춘다. 예전에는 두 화면보다 멀면 한 화면 위치로 바로 옮겨 튀어 보였다(#583).
 - 실기기 확인은 전이다.
 
 ## 물리감
 
 - `scale(0)`에서 시작하지 않는다. `scale(0.9~0.97)` + `opacity: 0`에서 시작한다.
 - 팝오버·드롭다운은 트리거 쪽에서 자라나도록 `transform-origin`을 트리거 위치에 맞춘다. 모달은 예외로, 화면 중앙에 뜨므로 `transform-origin: center`를 유지한다.
-- 버튼 눌림 피드백은 디자이너 공통 지침 `Dissolve / Ease Out / 75ms`를 따른다(2026-10-22, 이전 100ms). 눌림 오버레이의 투명도는 75ms ease-out으로 바꾸고, 2026-11-25(#562)부터 크기도 함께 살짝 줄인다(아래 「눌림 효과」). 적용: `Button`, `TextButton`, `LoginButton`, `Label`, `TermsLabel`, `CameraButton`(디자인 시스템). 동작 줄이기에서는 전환을 끈다. 곡선은 `Button`·`TextButton`이 CSS Ease Out(`cubic-bezier(0,0,0.58,1)`), 나머지는 Tailwind `ease-out`(`cubic-bezier(0,0,0.2,1)`)이라 아직 다르다.
+- 버튼 눌림 피드백은 디자이너 공통 지침 `Dissolve / Ease Out / 75ms`를 따른다(2026-10-22, 이전 100ms). 눌림 오버레이의 투명도는 75ms ease-out으로 바꾸고(2026-11-27부터 아래 「시간·곡선」의 150ms, Figma `7982:51780`), 2026-11-25(#562)부터 크기도 함께 살짝 줄인다(아래 「눌림 효과」). 적용: `Button`, `TextButton`, `LoginButton`, `Label`, `TermsLabel`, `CameraButton`(디자인 시스템). 동작 줄이기에서는 전환을 끈다. 글자·배경색 전환 곡선은 `Button`·`TextButton`이 CSS Ease Out(`cubic-bezier(0,0,0.58,1)`), 나머지는 Tailwind `ease-out`(`cubic-bezier(0,0,0.2,1)`)이라 아직 다르다.
 
 ### 눌림 효과
 
 - 누르는 동안 살짝 줄었다가 떼면 돌아온다(Figma 「Press Interaction · 눌림 효과」 `7982:51780`, 2026-11-25 #562). 색은 각 컴포넌트의 Pressed 색을 그대로 쓰고, 크기는 `scale`로만 바꿔 레이아웃은 그대로다. 다만 누르는 동안 브라우저는 줄어든 박스로 터치 위치를 판정해, 가장자리를 누른 손가락이 박스 밖이 되면 눌림이 풀리고 `click`이 나지 않을 수 있다(한 변에 약 1~2.5%, 실기기 확인 전).
+- 줄어드는 정도(2026-11-27 Figma 수정): 단계 고정값 대신 크기로 계산해 어떤 크기든 약 2px만 줄인다. `scale = (기준 − 2) ÷ 기준`, `기준 = max(높이, 너비 ÷ 4, 24)`(예: 아이콘 24px 0.917, 아이콘 버튼 40px 0.950, 꽉 찬 CTA 342×48 0.977, 목록 줄 375×42 0.979, 큰 카드 348×308 0.994). CSS는 자기 크기로 나눌 수 없어 웹 `PressScrollGuard`가 누르는 순간(`pointerdown`) 줄어들 요소의 레이아웃 크기(`offsetWidth`·`offsetHeight`, 이미 줄어든 중에도 같음)로 `--press-scale`을 넣는다. 아래 단계값은 측정 전(Storybook, 키보드로 누름) 기본값이다.
 - 디자인 시스템 유틸리티(`packages/design-system/src/styles/utilities.css`)를 루트 요소에 쓴다.
-  - `press-scale-small`(0.95): 칩, 아이콘 버튼, 캘린더 날짜, 글자 버튼, 번치 이름 전환(`AccountSwitcher`)
-  - `press-scale-medium`(0.97): `Button`(SolidButton), 팔로우 버튼
-  - `press-scale-large`(0.98): 번치 분위기 카드(Card), 라디오 카드(`RadioCard`·`DescriptionRadioCard`), 업로드 선택 카드, 목록 줄(`MenuLabel`·`MenuItem`·`BunchListItem`·`BunchRadioItem`(Profile - Label)·`NotificationCard`(Alert_Label)·`NudgeBanner`·`Label`). 목록 줄은 회색 배경과 내용이 함께 줄어든다. 추천 번들 카드는 카드 버튼을 누를 때만 줄어든다(위에 겹친 「상세 보기」를 누를 때는 그대로). 그래서 유틸리티 대신 같은 값(0.98·100/180ms·곡선)을 직접 쓰므로 수치를 바꾸면 함께 바꾼다.
+  - `press-scale-small`(기본 0.95): 칩, 아이콘 버튼, 캘린더 날짜, 글자 버튼, 번치 이름 전환(`AccountSwitcher`)
+  - `press-scale-medium`(기본 0.97): `Button`(SolidButton), 팔로우 버튼
+  - `press-scale-large`(기본 0.98): 번치 분위기 카드(Card), 라디오 카드(`RadioCard`·`DescriptionRadioCard`), 업로드 선택 카드, 목록 줄(`MenuLabel`·`MenuItem`·`BunchListItem`·`BunchRadioItem`(Profile - Label)·`NotificationCard`(Alert_Label)·`NudgeBanner`·`Label`). 목록 줄은 회색 배경과 내용이 함께 줄어든다. 추천 번들 카드는 카드 버튼을 누를 때만 줄어든다(위에 겹친 「상세 보기」를 누를 때는 그대로). 그래서 유틸리티 대신 표의 값(0.994, 348×308 기준)과 같은 시간·곡선을 직접 쓰므로 수치를 바꾸면 함께 바꾼다.
   - 입력 필드는 쓰지 않는다(배경색만).
-  - 디자인 명세에 없어 적용하지 않은 눌림 요소: `ProfileRadioCard`, `TermsLabel`, `ProfileListItem`, `BundleCard`, `EntryCard`, `InviteMemberCard`, `LocationCard`, `LoginButton`, `FloatingButton`, `CameraButton`, `MenuTabs`, `TextButtonUnderline`, `BunchLabel`. 디자이너 확인 뒤 추가한다.
-- 시간·곡선: 누를 때 100ms, 뗄 때 180ms, `cubic-bezier(0.2, 0, 0, 1)`, 기준점 가운데, 튕김 없음. 헤더 안의 번치 이름 전환은 왼쪽 가운데 기준이라 제목이 옆으로 움직이지 않는다.
+  - 디자인 명세에 없어 적용하지 않은 눌림 요소: `ProfileRadioCard`, `TermsLabel`(행 전체 축소, 보기 화살표는 목록 줄 장식이라 아이콘 눌림도 없음), `ProfileListItem`, `BundleCard`, `EntryCard`, `InviteMemberCard`, `LocationCard`, `LoginButton`, `FloatingButton`, `CameraButton`, `MenuTabs`, `TextButtonUnderline`, `BunchLabel`. 디자이너 확인 뒤 추가한다.
+- 시간·곡선(2026-11-27 Figma 수정, 이전 누를 때 100ms·뗄 때 180ms `0.2, 0, 0, 1`): 누를 때·뗄 때 150ms, `cubic-bezier(0, 0, 0.15, 1)`, 기준점 가운데, 튕김 없음. 뗄 때는 지금 크기에서 바로 1.0으로 돌아온다. 헤더 안의 번치 이름 전환은 왼쪽 가운데 기준이라 제목이 옆으로 움직이지 않고, 웹은 `will-change: transform`을 준다(Figma 5번 헤더 규칙).
+- 아이콘만 있는 버튼(Figma `8311:57033` 「헤더 아이콘 눌림 효과」, `8332:57930` 「아이콘 버튼 눌림 효과 · 적용 범위」, 2026-11-27): 「아이콘 혼자서 하나의 동작을 하는가」로 정한다. 버튼 영역(24×24, 누르는 범위 포함)은 그대로 두고 안쪽 아이콘 그림만 가운데 기준 0.917(24px 기준 2px)로 줄이며, 시간·곡선·해제는 위와 같다(150ms). 단독 아이콘은 `IconButton`의 `plain` 변형으로 모았다(`IconButton.spec.md`). 동작 줄이기면 줄지 않고 흐려짐·배경만 바로 바뀐다.
+  - A·배경 없는 아이콘(`press="fade"`): 누르는 동안 아이콘 불투명도 60%. 헤더 뒤로 가기(`HeaderBackButton`), 사진 위 아이콘(광고 사진 카드 ⋯).
+  - B·기본 아이콘 버튼(`press="overlay"`, 기본값): 누르는 동안 아이콘 뒤에 `overlay-hover` 배경 36×36·모서리 8(`::after`, 레이아웃 영향 없음). 헤더 ⋯·알림·닫기(`HeaderIconButton`, 번치 홈·피드 헤더의 알림·더보기는 화면 이동 링크라 `press-icon-overlay` 클래스), 다른 번치 더보기, 댓글·멤버 줄(`ProfileListItem`)·콕 장소(`LocationCard`) 더보기, 번들 멤버 빼기, 선택 칸 지우기, 번들 카드 삭제(회색 원 배경 유지), 초대 링크 복사, 추천 번들 상세 화살표, 답글 취소.
+  - 적용하지 않음: 더 큰 눌림 영역 안의 장식 아이콘(버튼·칩·목록 줄·아코디언·약관 줄의 화살표 등)은 부모 눌림을 따르고, 표시용 아이콘(지도 핀·자물쇠·체크·역할 배지)과 좋아요·댓글 아이콘은 효과가 없다. 입력 필드(검색)는 배경만 바뀐다. 하단 탭·플로팅 버튼과 배경 있는 `IconButton`(subtle·outline·primary, Pressed variant 반영 예정)은 별도 규칙이다.
 - 유틸리티가 루트의 색 전환(`color`·`background-color`·`border-color`·`opacity`, 기본 75ms)도 함께 정해 `transition`이 서로 덮어쓰지 않는다. 색 전환 시간·곡선이 다르면 `--press-color-duration`·`--press-color-ease`로 바꾼다(칩 300ms, 버튼 CSS Ease Out). 루트에 `transition-colors`를 따로 두지 않고, 쓰는 쪽도 이 컴포넌트에 `className`으로 `transition-*`를 넘기지 않는다(뒤에 오는 클래스가 평상시 전환을 덮어 뗄 때 축소가 바로 튀어 돌아옴).
 - 비활성(`disabled`, `aria-disabled`, 안의 입력이 비활성)에서는 줄어들지 않는다. 마우스 호버 표시는 칩만 뺐다(디자인이 Hover를 Pressed로 바꿈). 라디오 카드의 선택 전 호버는 이전 시안 그대로 두었다. 동작 줄이기에서는 줄지 않고 색도 전환 없이 바로 바뀐다.
-- CSS `:active`로 처리해 스크롤이 시작되면 브라우저가 눌림을 풀고, 누른 채 영역 밖으로 나가 떼면 `click`이 나지 않는다. iOS·Android 실기기 느낌은 확인 전이다.
+- 스크롤과 해제(2026-11-26 #583): iOS WebView는 누른 채 스크롤해도 `:active`가 남아(실기기 녹화) Figma 규칙 「스크롤 제스처엔 효과 없음」을 어겼다. 웹 `PressScrollGuard`가 손가락이 8px 넘게 움직이거나 스크롤이 일어나면 문서에 `data-touch-scrolling`을 달고, `press-overlay`·`press-scale`은 손을 떼기 전에도 눌림(덮개·줄어듦·`active:` 배경 그라데이션)을 끈다. 눌림 덮개도 위 시간·곡선(150ms)을 따르게 바꿔 「바로 바뀌는 느낌」을 줄였고, 컴포넌트마다 따로 그리던 75ms 덮개(`Button`·`TextButton`·아코디언·카드·목록 줄 등)를 `press-overlay` 하나로 모았다. 위 버튼 공통 지침 75ms와 다르다. 컴포넌트 명세(`*.spec.md`)의 눌림 75ms·단계 scale 표기는 이 문서가 기준이다. 누를 때 늦게 켜는 지연(iOS 목록 방식)은 넣지 않는다. 빠른 탭(약 100ms)에서 눌림이 거의 보이지 않고, 스크롤 중 해제는 위 표시가 맡는다. 2026-11-27부터는 유틸리티 밖에서 직접 그린 눌림도 같은 표시로 푼다. `utilities.css`가 Tailwind `active` 변형을 `&:active:not(:where(:root[data-touch-scrolling] *))`(우선순위는 그대로)로 다시 정의해 `active:`·`group-active`·`peer-active`·`has-active`가 모두 따른다. 대괄호로 직접 쓴 `:active`(체크박스·라디오·라벨·카드의 `has-[…:active]` 등)에는 같은 `:not(:root[data-touch-scrolling] *)`를 붙인다. 새 눌림 스타일도 같은 방식으로 쓴다. 배경 그라데이션으로 겹치던 눌림(`NotificationCard`·`NudgeBanner`·`InviteMemberCard`·`ProfileRadioCard`·`Checkbox`)은 그라데이션이 전환되지 않아 툭 바뀌어 같은 날 `press-overlay`로 옮겼다(색은 그대로). `ChipButton`(300ms Dissolve)과 라디오(테두리·점 색)는 이 범위에서 뺐다.
+- 누른 채 영역 밖으로 나가 떼면 `click`이 나지 않는다. iOS·Android 실기기 느낌은 확인 전이다.
 
 ## 성능
 
@@ -140,5 +146,19 @@ web은 [SSGOI의 DOM 경계](https://ssgoi.dev/docs/how-it-works)를 사용한�
 
 - 설정: `apps/web/src/app/(app)/AppTransitions.tsx`의 경로 쌍과 화면 이동 공통 시간(`PUSH_DURATION_MS`·`PUSH_EASING`)을 수정한다. 전역 provider만 공유하며, 등록하지 않은 이동과 첫 진입에는 전환을 적용하지 않는다. 나가는 화면 표식·상태 바 처리는 같은 폴더의 `_transitions/pageGuards.ts`, 하단 탭 크로스페이드는 `_transitions/tabCrossfade.ts`에 둔다.
 - 접근성: `prefers-reduced-motion` 변경을 구독해 전환 규칙을 비운다. SSGOI가 함수형 규칙을 캐시하므로 함수 안에서 설정을 읽는 것으로 대체하지 않는다. 전환 중 이전 화면은 `inert`로 포커스·접근성 탐색에서 제외하고 종료 시 복원한다.
+- iOS 스와이프 뒤로 가기(2026-11-27 #587): 손가락을 따라 앞 화면이 밀리는 것은 WebView 기본 스와이프(앞 화면 스냅샷)가 맡고, 웹 전환은 건너뛴다. 전에는 웹이 스와이프인지 몰라 놓은 뒤 지난 화면을 다시 꺼내 한 번 더 전환했고(hero), 전환을 건너뛰어도 WebKit이 스냅샷을 걷는 순간 아직 그리지 않은 흰 화면이 보였다(시뮬레이터 녹화). SSGOI 자체 감지(가장자리 터치 뒤 600ms)와 `popstate`의 `hasUAVisualTransition`만으로는 앱 WebView에서 놓친다. 그래서 쉘(`modules/swipe-back`)이 같은 가장자리 제스처를 함께 받아 시작·취소를 `ssgoi:swipe-back` 이벤트로 알리고, `@ssgoi/core` 패치(`docs/conventions/libraries.md`)가 이 이벤트를 자체 감지와 따로 기억해(도착 화면에 들어서거나 취소 신호가 올 때 해제) 전환을 건너뛴다. 이동하는 순간 쉘이 화면을 덮개로 덮고, 웹이 돌아간 화면을 그린 뒤(`useSwipeBackSettled`, 두 프레임 뒤 화면 안 사진의 디코딩까지 최대 400ms 기다려 bridge `swipeBackSettled`) 걷는다(신호가 없으면 1초 뒤). 두 프레임만 기다리면 틀만 그리고 사진 칸이 빈 화면이 한 프레임 보였다(시뮬레이터 녹화). 뒤로 갈 때 SSGOI는 앞으로 갈 때 쓴 규칙을 기억해 다시 쓰므로 앱 설정·`middleware`로는 막을 수 없다. 뒤로 가기 버튼은 지금처럼 웹 전환을 재생한다.
 - 검증: 진행도 단위 테스트와 온보딩 회귀 테스트, Chromium의 순방향·뒤로 가기·입력 유지·헤더 유지·동작 줄이기 변경·좁은 화면/넓은 화면 중간 프레임을 확인한다. iOS WKWebView와 실제 화면 읽기 도구는 별도 확인이 필요하다. 네이티브 스와이프와 전환 중 빠른 연속 이동도 실기기에서 확인한다.
+- 공유 사진(`hero`·`zoom`으로 이어지는 사진)은 SSGOI 데모처럼 같은 주소의 이미 받은 사진을 `decoding` 속성 없이 쓴다(#573).
+  - 문제: SSGOI hero는 출발·도착 사진을 `cloneNode`로 복사해 날린다. 사진 주소가 다르거나 `decoding="async"`이면, 복사본과 돌아온 화면의 사진이 받거나 decode할 때까지 비어 깜빡였다(1.1.1 녹화, 시뮬레이터 녹화).
+  - 원인: 서버가 사진 주소를 요청마다 새로 서명해, 같은 사진도 응답마다 주소가 바뀌었다(개발 백엔드에서 사진 하나가 3시간 동안 27개 주소로 받아짐).
+  - 처리: BFF 응답을 받는 `requestData`가 같은 파일(출처+경로+서명 밖 쿼리)이면, 유효 시간이 절반 넘게 남은 이전 서명 주소를 그대로 쓴다(`shared/api/client/stableSignedUrls.ts`). 남은 시간은 받은 순간부터 잰다(기기 시계와 무관). 유효 시간이 7일을 넘는 값은 서명 주소로 보지 않는다.
+  - 한계: 기억은 메모리에만 있다. 그래서 앱을 새로 열면 저장된 캐시의 옛 주소와 첫 응답의 새 주소가 달라 사진이 한 번 바뀐다. 근본 해결은 백엔드가 같은 파일에 같은 주소를 주는 것이다(공개 CDN이나 서명 시각을 묶는 방식).
+  - 만료(2026-11-27 #587): 개발 백엔드 주소는 30분(`X-Amz-Expires=1800`) 뒤 만료된다. 켜 둔 앱이 캐시의 지난 주소로 새 사진 칸을 그리면 이미지가 비고, 앱을 다시 켜야 보였다(팀 QA). 서명 주소 이미지가 실패하면 `shared/query/SignedImageRecovery`가 그 주소를 재사용 목록에서 빼고, 그 주소를 가진 query를 무효로 해 보이는 화면만 다시 받는다. 같은 파일은 15분에 한 번만 다시 받는다(없는 사진이면 반복하지 않게, 자세한 규칙은 `docs/architecture/data-layer.md` 「서명 사진 주소 만료」). 사진 상세 원본 주소의 신선도는 무한에서 10분으로 줄였다(받은 주소는 15분 넘게 남음).
+  - 적용 범위: `decoding` 속성은 `BundlePhoto`의 키가 있는 첫 사진과 번치 격자의 한 번 보인 칸에서만 뺀다. 나머지 사진은 스크롤 중 메인 스레드를 막지 않게 `async`로 둔다.
+
+- `hero`·`zoom`은 도착 화면이 그려진 뒤 재생한다(#573, `_transitions/pageGuards.ts`의 `playAfterPaint`).
+  - 동작: 첫 재생에서 시작 모습을 적용하고 바로 멈춘 뒤, 두 프레임 뒤에 이어 간다. 기다리는 동안은 출발 화면이 그대로 보이고, 누른 뒤 반응이 약 두 프레임 늦어진다.
+  - 이유: 데모와 달리 피드는 돌아올 때 화면을 새로 그린다. iOS는 그리기 전에 재생을 시작해 돌아가기 첫 프레임이 하얗게 비었다.
+  - 근거(시뮬레이터 녹화): 이 처리를 넣으면 깜빡임이 사라지고, 빼면 다시 생겼다.
+  - 적용 범위: 사진함 hero도 같은 가드(`guardHero`)라 함께 적용된다.
 - 화면별 전환(어느 이동에 어떤 프리셋·시간을 썼고 어떻게 확인했는지)은 각 기능 스펙의 「모션」 절에 있다(2026-11-23 옮김).

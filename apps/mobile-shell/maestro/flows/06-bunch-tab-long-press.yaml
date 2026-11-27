@@ -15,7 +15,8 @@ name: 번치 탭을 꾹 누르면 번치 전환 시트가 열리고 고른 번�
           id: 'tab-bunch'
       - waitForAnimationToEnd
 - assertVisible: '번치 전환하기'
-- tapOn: '퇴근런클럽'
+# 시트 항목 이름은 알림이 있으면 「퇴근런클럽, 알림 1개」(Maestro 정규식은 글자 전체와 맞춰야 해 쉼표 뒤만 열어 둠)
+- tapOn: '퇴근런클럽(, .*)?'
 # 시트가 닫힌 뒤 화면 전체 번치 전환(modules/screen-switch)과 전환 토스트로 실제로 바뀌었는지 확인
 - extendedWaitUntil:
     notVisible: '번치 전환하기'

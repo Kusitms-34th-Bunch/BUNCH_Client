@@ -1,5 +1,6 @@
 import { LineCloseSmallIcon } from '../../../icons';
 import { cn } from '../../../utils';
+import { IconButton } from '../../core/iconButton';
 import { CommentInput, type CommentInputProps } from '../commentInput';
 
 export type CommentComposerProps = CommentInputProps & {
@@ -34,14 +35,14 @@ export const CommentComposer = ({
         <span className="truncate">{replyTarget}</span>
         <span className="flex-1 shrink-0 whitespace-nowrap">님에게 답글 남기는 중</span>
         {/* 아이콘 16px, 누르는 영역은 before로 가로 40·세로 32px(아래 입력칸과 겹치지 않게) */}
-        <button
-          type="button"
+        <IconButton
+          variant="plain"
           aria-label={cancelReplyLabel}
           onClick={onCancelReply}
-          className="text-icon-quaternary focus-visible:outline-border-brand relative flex shrink-0 cursor-pointer touch-manipulation rounded-full before:absolute before:-inset-x-3 before:-inset-y-2 focus-visible:outline-2"
+          className="text-icon-quaternary before:-inset-x-3 before:-inset-y-2"
         >
           <LineCloseSmallIcon aria-hidden />
-        </button>
+        </IconButton>
       </div>
     ) : null}
     <div className="pt-padding-p5 pb-padding-p2 px-padding-p8">

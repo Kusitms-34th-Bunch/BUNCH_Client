@@ -43,6 +43,14 @@ const capturedTimeSchema = z.union([
 
 const uploaderIdsSchema = z.array(z.number().int().positive());
 
+// 원본 크기(옛 사진은 없음). 표시 보조 값이라 잘못된 값은 목록을 깨지 않게 버림(계약 위반으로 보고되지는 않음)
+const originalSizeShape = {
+  width: z.number().int().positive().nullish().catch(undefined),
+  height: z.number().int().positive().nullish().catch(undefined),
+};
+const toAspectRatio = (width: number | null | undefined, height: number | null | undefined) =>
+  width && height ? width / height : undefined;
+
 const datedPhotoSchema = z.object({
   photoId: z.number().int().positive(),
   thumbnailUrl: z.string(),
@@ -50,6 +58,7 @@ const datedPhotoSchema = z.object({
   capturedTime: capturedTimeSchema.nullish(),
   uploaderIds: uploaderIdsSchema,
   usedInDraftBundle: z.boolean(),
+  ...originalSizeShape,
 }) satisfies z.ZodType<
   Omit<ApiContract<components['schemas']['PhotoListItem']>, 'capturedTime'> & {
     capturedTime?: unknown;
@@ -61,6 +70,7 @@ const undatedPhotoSchema = z.object({
   thumbnailUrl: z.string(),
   uploaderIds: uploaderIdsSchema,
   usedInDraftBundle: z.boolean(),
+  ...originalSizeShape,
 }) satisfies z.ZodType<ApiContract<components['schemas']['PhotoUndatedItem']>>;
 
 /** `GET /api/v1/bunches/{bunchId}/photos` 응답(날짜를 아는 사진 한 페이지) */
@@ -102,6 +112,7 @@ export const toDatedPhotoBoxPhoto = (photo: z.infer<typeof datedPhotoSchema>): P
   uploaderIds: photo.uploaderIds.map(toDomainId),
   usedInDraftBundle: photo.usedInDraftBundle,
   status: 'ready',
+  aspectRatio: toAspectRatio(photo.width, photo.height),
 });
 
 export const toUndatedPhotoBoxPhoto = (
@@ -115,6 +126,7 @@ export const toUndatedPhotoBoxPhoto = (
   uploaderIds: photo.uploaderIds.map(toDomainId),
   usedInDraftBundle: photo.usedInDraftBundle,
   status: 'ready',
+  aspectRatio: toAspectRatio(photo.width, photo.height),
 });
 
 const photoDetailUploaderSchema = z.object({

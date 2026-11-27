@@ -3559,10 +3559,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ssgoi/core@npm:^7.4.1":
+"@ssgoi/core@npm:7.4.1":
   version: 7.4.1
   resolution: "@ssgoi/core@npm:7.4.1"
   checksum: 10c0/478b89c27fd7fd4c6ad5ba7937a1e676e5594b08bb8cfeea7b9a5d46c8029a163c4446425aeeda745a50bc7595ef0066d6a6815754753c4bc86b1fdf09a7d9fd
+  languageName: node
+  linkType: hard
+
+"@ssgoi/core@patch:@ssgoi/core@npm%3A7.4.1#~/.yarn/patches/@ssgoi-core-npm-7.4.1-4c853c2efc.patch":
+  version: 7.4.1
+  resolution: "@ssgoi/core@patch:@ssgoi/core@npm%3A7.4.1#~/.yarn/patches/@ssgoi-core-npm-7.4.1-4c853c2efc.patch::version=7.4.1&hash=09b451"
+  checksum: 10c0/a684d0672d3bb33e2a1a6f1d70ab1ea99fe3bd6006f09e721a16df8cbce4ac6ea3d1094aaa74b2bb77a82ed0c60e70df8f68798847873ccd1e962c24035f26ec
   languageName: node
   linkType: hard
 

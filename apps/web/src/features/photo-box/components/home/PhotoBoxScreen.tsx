@@ -202,13 +202,16 @@ export function PhotoBoxScreen({
 
   const { bunch, members } = state.data;
   // 남은 사진을 받는 중이거나 받다 실패했으면 비었다고 단정할 수 없음(선택한 멤버의 사진이 받지 못한 쪽에 있을 수 있음)
-  const isEmpty = sections.length === 0 && undated.length === 0 && state.data.more === undefined;
+  const noVisiblePhotos = sections.length === 0 && undated.length === 0;
+  const isEmpty = noVisiblePhotos && state.data.more === undefined;
 
   let statusMessage = '';
   if (flow.saving) statusMessage = PHOTO_BOX_MESSAGES.saving;
   else if (selecting) statusMessage = PHOTO_BOX_MESSAGES.selectionStatus(selection.length);
   return (
     <PageShell
+      // 사진 격자가 화면을 채워 스크롤바를 그리지 않음(피드와 같음, #583 QA)
+      hideScrollbar
       onRefresh={onRefresh}
       refreshDisabled={selecting || busy}
       header={
@@ -218,6 +221,8 @@ export function PhotoBoxScreen({
           switcherOpen={switcherOpen}
           selecting={selecting}
           onSelectClick={flow.start}
+          // 고를 사진이 보이지 않으면 남은 사진을 받는 중·실패여도 비활성(헤더의 「보이는 목록 0장」)
+          selectDisabled={noVisiblePhotos}
           onCancelClick={handleCancel}
         />
       }

@@ -8,11 +8,20 @@ import '../src/splash/state';
 import { listenPushOpens } from '../src/push-open';
 import { SplashOverlay } from '../src/splash/SplashOverlay';
 import { postMessage } from '../src/web-view/app-bridge';
+import { listenKeyboardFrames } from '../src/web-view/keyboard-events';
 
 /** 첫 화면(WebView 하나, 로그인·온보딩)과 웹 요청 시 `(tabs)` 시스템 탭 화면 사이의 전환 틀 */
 function RootLayout() {
   // 푸시를 눌러 앱을 열면 모든 WebView에 알리고, 화면에 보이는 WebView의 웹이 가져가 그 알림 화면으로 이동
   useEffect(() => listenPushOpens(() => postMessage('pushOpened', {}, { broadcast: true })), []);
+  // 키보드가 움직이기 직전 모든 WebView에 알리고, 보이는 화면의 웹이 같은 시간에 앱 틀 높이를 맞춤
+  useEffect(
+    () =>
+      listenKeyboardFrames((height, duration) =>
+        postMessage('nativeKeyboard', { height, duration }, { broadcast: true }),
+      ),
+    [],
+  );
   return (
     <SafeAreaProvider>
       {/* 기본은 어두운 아이콘(웹 화면이 밝음). 스플래시·로그인 배경 영상이 나중에 붙어 흰 아이콘으로 덮어씀 */}

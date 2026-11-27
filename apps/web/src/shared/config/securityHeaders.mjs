@@ -49,6 +49,8 @@ export const buildCspReportOnly = (env, { report = true } = {}) => {
   const posthog = posthogOrigins(env.NEXT_PUBLIC_POSTHOG_HOST);
   const sentry = originOf(env.NEXT_PUBLIC_SENTRY_DSN);
   const ws = originOf(env.NEXT_PUBLIC_WS_URL);
+  // TestFlight 테스터용 쉘이 연결하는 개발 백엔드(#581)
+  const wsStaging = originOf(env.NEXT_PUBLIC_WS_URL_STAGING);
   const reportUri =
     env.NEXT_PUBLIC_SENTRY_DSN &&
     sentryCspReportUri(
@@ -68,7 +70,7 @@ export const buildCspReportOnly = (env, { report = true } = {}) => {
     "img-src 'self' data: blob: https:",
     "font-src 'self'",
     "media-src 'self'",
-    `connect-src ${["'self'", ws, sentry, ...posthog].filter(Boolean).join(' ')}`,
+    `connect-src ${["'self'", ws, wsStaging, sentry, ...posthog].filter(Boolean).join(' ')}`,
     "worker-src 'self' blob:",
     "frame-src 'none'",
     "object-src 'none'",

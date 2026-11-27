@@ -55,7 +55,9 @@ describe('useBunchSwitchMotion(iOS 쉘)', () => {
   it('고르면 쉘이 화면을 덮고, 새 번치가 그려진 뒤 쉘에 끝을 알린다(웹 복제본은 만들지 않음)', async () => {
     const { rerender } = render(<Screen bunchId="1" />);
 
-    act(() => motion!.begin());
+    act(() => {
+      void motion!.begin();
+    });
     expect(bridge.beginScreenSwitch).toHaveBeenCalledWith('bunch');
     expect(document.querySelector('[data-bunch-switch-snapshot]')).toBeNull();
     await covered();
@@ -70,7 +72,9 @@ describe('useBunchSwitchMotion(iOS 쉘)', () => {
   it('덮이기 전에 새 번치가 먼저 그려지면 모션 없이 바뀌고, 늦게 덮이면 바로 치운다', async () => {
     const { rerender } = render(<Screen bunchId="1" />);
 
-    act(() => motion!.begin());
+    act(() => {
+      void motion!.begin();
+    });
     rerender(<Screen bunchId="2" />);
     await covered();
     await nextFrames();
@@ -81,12 +85,16 @@ describe('useBunchSwitchMotion(iOS 쉘)', () => {
   it('전환에 실패하거나 화면이 사라지면 덮은 화면을 치운다', async () => {
     const { unmount } = render(<Screen bunchId="1" />);
 
-    act(() => motion!.begin());
+    act(() => {
+      void motion!.begin();
+    });
     await covered();
     act(() => motion!.cancel());
     expect(bridge.cancelScreenSwitch).toHaveBeenCalledTimes(1);
 
-    act(() => motion!.begin());
+    act(() => {
+      void motion!.begin();
+    });
     await covered();
     unmount();
     expect(bridge.cancelScreenSwitch).toHaveBeenCalledTimes(2);
@@ -96,7 +104,9 @@ describe('useBunchSwitchMotion(iOS 쉘)', () => {
   it('새 번치를 그린 뒤 끝을 알리기 전에 화면이 사라지면 덮개를 치운다', async () => {
     const { rerender, unmount } = render(<Screen bunchId="1" />);
 
-    act(() => motion!.begin());
+    act(() => {
+      void motion!.begin();
+    });
     await covered();
     rerender(<Screen bunchId="2" />);
     unmount();
@@ -111,7 +121,9 @@ describe('useBunchSwitchMotion(iOS 쉘)', () => {
     const sheet = document.body.appendChild(document.createElement('div'));
     sheet.setAttribute('data-bottom-sheet', '');
 
-    act(() => motion!.begin());
+    act(() => {
+      void motion!.begin();
+    });
     await nextFrames();
     expect(bridge.beginScreenSwitch).not.toHaveBeenCalled();
 
@@ -126,7 +138,9 @@ describe('useBunchSwitchMotion(iOS 쉘)', () => {
     const sheet = document.body.appendChild(document.createElement('div'));
     sheet.setAttribute('data-bottom-sheet', '');
 
-    act(() => motion!.begin());
+    act(() => {
+      void motion!.begin();
+    });
     await nextFrames();
     expect(bridge.beginScreenSwitch).not.toHaveBeenCalled();
 

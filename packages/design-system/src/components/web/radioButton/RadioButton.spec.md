@@ -9,7 +9,7 @@
 ## 목적과 범위
 
 - 16px 라디오와 글자 한 줄. 행 어디를 눌러도 선택된다(신고 사유 목록 등).
-- `core/radio`의 `Radio`(20px, 브랜드 색)와 다른 Figma 컴포넌트다. 이 컨트롤은 선택 시 회색(`icon-tertiary`)이다.
+- `core/radio`의 `Radio`(20px)와 다른 Figma 컴포넌트다. 이 컨트롤은 선택 시 회색(`icon-tertiary`)이다.
 
 ## Public API
 

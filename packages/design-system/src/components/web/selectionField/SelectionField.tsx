@@ -3,6 +3,7 @@
 import { type ComponentProps, type ReactNode, useId } from 'react';
 import { LineChevronRightSmallIcon, LineCloseSmallIcon } from '../../../icons';
 import { cn } from '../../../utils';
+import { IconButton } from '../../core/iconButton';
 import { BundleTitle, type BundleTitleMember } from '../bundleTitle';
 import { ChipButton } from '../chipButton';
 
@@ -111,19 +112,15 @@ export const SelectionField = ({
         />
         {selected ? (
           clearable && (
-            <button
-              type="button"
+            <IconButton
+              variant="plain"
               aria-label={clearLabel ?? `${label} 지우기`}
               onClick={onClear}
-              className={cn(
-                'text-icon-primary relative z-10 flex size-4 shrink-0 cursor-pointer touch-manipulation items-center justify-center',
-                // 보이는 16px보다 넓은 32px 터치 영역(design-system-icons.md의 Small 기준)
-                "before:absolute before:-inset-2 before:content-['']",
-                'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
-              )}
+              // 보이는 16px보다 넓은 32px 누르는 범위(design-system-icons.md의 Small 기준)
+              className="text-icon-primary z-10 size-4 before:-inset-2 focus-visible:outline-offset-2"
             >
               <LineCloseSmallIcon aria-hidden="true" />
-            </button>
+            </IconButton>
           )
         ) : (
           <LineChevronRightSmallIcon aria-hidden="true" className="text-icon-primary shrink-0" />

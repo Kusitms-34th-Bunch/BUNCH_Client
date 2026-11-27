@@ -32,7 +32,7 @@ export const TermsLabel = ({
       // 눌림: 선택된 모양(아이콘 80%·진한 글자)에 overlay-dim-subtle(10%)를 아이콘·글자 위까지 덮는다. Figma 실측: 아이콘 #a2a4a7→#919395
       'pr-padding-p4 relative isolate flex w-full items-center justify-between',
       'before:bg-overlay-dim-subtle press-overlay before:z-10',
-      'has-[label:active]:not-has-[input:disabled]:before:opacity-100',
+      'has-[label:active:not(:root[data-touch-scrolling]_*)]:not-has-[input:disabled]:before:opacity-100',
       className,
     )}
   >
@@ -40,9 +40,9 @@ export const TermsLabel = ({
       <input type="checkbox" className="peer sr-only" {...props} />
       <FillCircleCheckMediumIcon
         aria-hidden="true"
-        className="text-icon-quaternary shrink-0 opacity-(--semantic-opacity-disabled) group-[:active:not(:has(input:disabled))]/check:opacity-(--semantic-opacity-semi-opaque) peer-checked:opacity-(--semantic-opacity-semi-opaque)"
+        className="text-icon-quaternary shrink-0 opacity-(--semantic-opacity-disabled) group-[:active:not(:root[data-touch-scrolling]_*,:has(input:disabled))]/check:opacity-(--semantic-opacity-semi-opaque) peer-checked:opacity-(--semantic-opacity-semi-opaque)"
       />
-      <span className="typography-body-3-regular gap-s2 text-text-disabled peer-checked:text-text-secondary group-[:active:not(:has(input:disabled))]/check:text-text-secondary flex min-w-0 items-center">
+      <span className="typography-body-3-regular gap-s2 text-text-disabled peer-checked:text-text-secondary group-[:active:not(:root[data-touch-scrolling]_*,:has(input:disabled))]/check:text-text-secondary flex min-w-0 items-center">
         {tag ? <span className="shrink-0">{tag}</span> : null}
         <span className="min-w-0">{children}</span>
       </span>

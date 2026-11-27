@@ -67,7 +67,7 @@ describe('BundleTitle', () => {
     const star = screen.getByText('*');
 
     expect(star.getAttribute('aria-hidden')).toBe('true');
-    expect(star.classList.contains('text-icon-brand')).toBe(true);
+    expect(star.classList.contains('text-icon-secondary')).toBe(true);
     expect(screen.getByText('필수').classList.contains('sr-only')).toBe(true);
   });
 

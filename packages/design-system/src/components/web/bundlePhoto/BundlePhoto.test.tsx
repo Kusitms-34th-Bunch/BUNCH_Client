@@ -78,6 +78,24 @@ describe('BundlePhoto', () => {
     expect(keyed('exit')[0]?.querySelector('img')?.getAttribute('src')).toBe('a.jpg');
   });
 
+  it.each(['thumbnail', 'detail'] as const)(
+    '%s에 공유 요소 키가 있으면 첫 사진만 동기 decode, 나머지와 키가 없을 때는 async',
+    (variant) => {
+      const decodings = (heroKey?: string) =>
+        [
+          ...render(
+            <BundlePhoto variant={variant} photos={photos} heroKey={heroKey} />,
+          ).container.querySelectorAll('img'),
+        ]
+          .filter((img) => photos.some((photo) => img.getAttribute('src') === photo.src))
+          .map((img) => img.getAttribute('decoding'));
+      const [first, ...others] = decodings('bundle-photo-1');
+      expect(first).toBeNull();
+      for (const decoding of others) expect(decoding).toBe('async');
+      expect(decodings()).toEqual(photos.map(() => 'async'));
+    },
+  );
+
   it('pick 얼굴은 보일 때만 떠다니고, 사라지면 관찰을 끝낸다', () => {
     const io = stubObservers();
     const { unmount } = render(

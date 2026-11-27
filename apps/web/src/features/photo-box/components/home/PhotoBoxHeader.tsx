@@ -11,6 +11,8 @@ type PhotoBoxHeaderProps = {
   selecting?: boolean | undefined;
   /** 「선택」을 눌렀을 때 */
   onSelectClick?: (() => void) | undefined;
+  /** 고를 사진이 없음(보이는 목록 0장). 「선택」을 자리 그대로 흐리게 막음(#583) */
+  selectDisabled?: boolean | undefined;
   /** 「취소」를 눌렀을 때 */
   onCancelClick?: (() => void) | undefined;
 };
@@ -22,6 +24,7 @@ export function PhotoBoxHeader({
   switcherOpen = false,
   selecting = false,
   onSelectClick,
+  selectDisabled = false,
   onCancelClick,
 }: PhotoBoxHeaderProps) {
   return (
@@ -35,7 +38,13 @@ export function PhotoBoxHeader({
         />
       }
       trailing={
-        <TextButton size="sm" onClick={selecting ? onCancelClick : onSelectClick}>
+        <TextButton
+          size="sm"
+          onClick={selecting ? onCancelClick : onSelectClick}
+          disabled={!selecting && selectDisabled}
+          // 비활성 색으로 바로 바뀌지 않고 Figma 뗄 때 모션(180ms)으로 흐려지고 돌아옴
+          className="[--press-color-duration:180ms] [--press-color-ease:cubic-bezier(0.2,0,0,1)]"
+        >
           {selecting ? '취소' : '선택'}
         </TextButton>
       }

@@ -11,7 +11,7 @@ export type AccordionProps = Omit<ComponentProps<'div'>, 'title' | 'onChange'> &
   title: string;
   /** 있으면 제목이 18px SemiBold로 커지고 설명 줄을 보임(Figma `Description=True`) */
   description?: string | undefined;
-  /** 제목 옆 브랜드색 개수(예: "9장"), 그대로 그림 */
+  /** 제목 옆 개수(예: "9장"), 그대로 그림 */
   count?: ReactNode | undefined;
   open?: boolean | undefined;
   defaultOpen?: boolean | undefined;
@@ -77,7 +77,7 @@ export const Accordion = ({
             'p-s8 gap-s2 relative isolate flex w-full cursor-pointer touch-manipulation flex-col text-left',
             hasDescription || isOpen ? 'bg-surface-secondary' : 'bg-surface-primary',
             // 눌림은 글자 뒤 배경 층에서 겹침 처리
-            'before:bg-overlay-hover before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out active:before:opacity-100 motion-reduce:before:transition-none',
+            'press-overlay before:bg-overlay-hover before:-z-10 active:before:opacity-100',
             'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:-outline-offset-2',
           )}
         >
@@ -89,7 +89,7 @@ export const Accordion = ({
                 {title}
               </span>
               {count === undefined ? null : (
-                <span id={`${id}-count`} className="text-text-brand shrink-0">
+                <span id={`${id}-count`} className="text-text-secondary shrink-0">
                   {count}
                 </span>
               )}

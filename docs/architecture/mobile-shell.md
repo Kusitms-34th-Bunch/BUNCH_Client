@@ -24,6 +24,7 @@ apps/mobile-shell/
     tab-crossfade/      탭 전환 80ms 크로스페이드·선택 햅틱·탭 바 꾹 누르기 제스처(로컬 Expo 모듈, iOS ObjC)
     screen-switch/      번치 전환 때 화면 전체를 덮는 모션
     tab-long-press/     tab-crossfade가 잡은 꾹 누르기를 JS 이벤트로 넘기고 받을 탭을 정함
+    swipe-back/         WebView 스와이프 뒤로 가기를 웹 전환과 맞춤(시작·취소 알림, 이동 순간 덮개, iOS Swift)
   assets/
     tab-icons/          탭 아이콘(디자인 시스템 SVG → PNG 1x·2x·3x)
     toast-icons/, fonts/, login-background/   네이티브 토스트 아이콘, 글꼴, 로그인 배경 영상
@@ -103,7 +104,7 @@ packages/bridge/
 
 ### 네이티브 쪽 구현 (`apps/mobile-shell/src/web-view/app-bridge.ts`)
 
-실제 구현은 [app-bridge.ts](../../apps/mobile-shell/src/web-view/app-bridge.ts)를 따른다. 탭 바·탭 전환·플로팅 버튼·탭 화면 토스트 처리는 `bridge-tabs.ts`, 햅틱은 `bridge-haptics.ts`에 두고 `app-bridge.ts`가 펼쳐 넣는다(#540). `createWebView`는 `appPostMessageSchema`를 받는다. 네이티브 → 웹 이벤트는 플로팅 버튼 눌림(`nativeFloatingButtonPress`), 탭 알림(`nativeTabEvent`), 탭 다시 누름(`nativeTabReselect`), 탭 꾹 누름(`nativeTabLongPress`), 토스트 동작(`nativeToastAction`), 눌린 푸시(`pushOpened`)다. 탭 WebView가 여럿이라 `postMessage`의 기본값(마지막에 만든 WebView에만 보냄) 대신 `broadcast: true`로 보낸다. 여러 WebView가 같은 bridge를 쓴다.
+실제 구현은 [app-bridge.ts](../../apps/mobile-shell/src/web-view/app-bridge.ts)를 따른다. 탭 바·탭 전환·플로팅 버튼·탭 화면 토스트 처리는 `bridge-tabs.ts`, 햅틱은 `bridge-haptics.ts`에 두고 `app-bridge.ts`가 펼쳐 넣는다(#540). `createWebView`는 `appPostMessageSchema`를 받는다. 네이티브 → 웹 이벤트는 플로팅 버튼 눌림(`nativeFloatingButtonPress`), 탭 알림(`nativeTabEvent`), 탭 다시 누름(`nativeTabReselect`), 탭 꾹 누름(`nativeTabLongPress`), 토스트 동작(`nativeToastAction`), 눌린 푸시(`pushOpened`), 키보드 움직임(`nativeKeyboard`, iOS만, 아래 WebView 문서의 키보드 절)이다. 탭 WebView가 여럿이라 `postMessage`의 기본값(마지막에 만든 WebView에만 보냄) 대신 `broadcast: true`로 보낸다. 여러 WebView가 같은 bridge를 쓴다.
 
 `bridge()`에는 **인라인 객체 리터럴**을 넘긴다(기능별 처리 표는 그 안에 펼쳐 넣음). 미리 `AppBridgeMethods` 타입을 선언한 변수를 넘기면 TypeScript가 index signature 불일치로 거부한다(이름 있는 타입은 fresh literal 취급을 받지 못한다).
 

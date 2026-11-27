@@ -144,11 +144,15 @@ export function BunchJoin() {
             setPasted(false);
           }}
           inputMode="url"
+          // 키보드 완료 키는 「완료」 버튼과 같음(#579)
+          onEnterKey={() => {
+            if (!submitDisabled) submit();
+          }}
           autoComplete="off"
           autoCapitalize="none"
           spellCheck={false}
           action={
-            <Button variant="brandSubtle" size="sm" onClick={() => void paste()}>
+            <Button variant="secondary" size="sm" onClick={() => void paste()}>
               붙여넣기
             </Button>
           }

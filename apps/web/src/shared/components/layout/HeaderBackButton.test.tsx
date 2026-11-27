@@ -23,4 +23,11 @@ describe('HeaderBackButton', () => {
     expect(ref.current).toBe(screen.getByRole('button', { name: '뒤로 가기' }));
     expect(ref.current).toHaveClass('text-icon-quaternary');
   });
+
+  it('뒤로 가기는 배경 없이 아이콘이 줄며 흐려지는 눌림을 쓴다(Figma 8311:57033)', () => {
+    render(<HeaderBackButton />);
+
+    expect(screen.getByRole('button', { name: '뒤로 가기' })).toHaveClass('press-icon-fade');
+    expect(screen.getByRole('button', { name: '뒤로 가기' })).not.toHaveClass('press-icon-overlay');
+  });
 });

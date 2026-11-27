@@ -1,10 +1,20 @@
 import 'server-only';
 import type { NextRequest, NextResponse } from 'next/server';
+import { isStagingUserAgent } from './serverClient';
 
 export const ACCESS_TOKEN_COOKIE = 'accessToken';
 export const REFRESH_TOKEN_COOKIE = 'refreshToken';
 // refresh 쿠키는 `/api/auth` 아래 요청에만 전송(재발급·로그아웃과 프록시를 거치는 약관 API 포함, 프록시는 브라우저 쿠키를 백엔드로 넘기지 않음)
 export const REFRESH_TOKEN_PATH = '/api/auth';
+
+/**
+ * 이 요청의 인증 쿠키 이름. 테스터용 쉘(개발 백엔드)은 `_stg`를 붙여 나눔(#581)
+ * 같은 기기에서 운영·테스터 앱을 오가도 운영 토큰이 개발 백엔드로, 개발 토큰이 운영으로 가지 않게
+ */
+export const authCookieNames = (request: Pick<NextRequest, 'headers'>) => {
+  const suffix = isStagingUserAgent(request.headers.get('user-agent')) ? '_stg' : '';
+  return { access: `${ACCESS_TOKEN_COOKIE}${suffix}`, refresh: `${REFRESH_TOKEN_COOKIE}${suffix}` };
+};
 
 export interface TokenPair {
   accessToken: string;
@@ -40,29 +50,21 @@ const cookieOptions = (request: NextRequest, path: string, token?: string) => {
 
 /** 백엔드가 응답 본문으로 준 토큰을 httpOnly 쿠키로 발급(만료는 JWT `exp` 기준) */
 export const setAuthCookies = (response: NextResponse, request: NextRequest, tokens: TokenPair) => {
+  const names = authCookieNames(request);
   response.cookies.set(
-    ACCESS_TOKEN_COOKIE,
+    names.access,
     tokens.accessToken,
     cookieOptions(request, '/', tokens.accessToken),
   );
   response.cookies.set(
-    REFRESH_TOKEN_COOKIE,
+    names.refresh,
     tokens.refreshToken,
     cookieOptions(request, REFRESH_TOKEN_PATH, tokens.refreshToken),
   );
 };
 
 export const clearAuthCookies = (response: NextResponse, request: NextRequest) => {
-  response.cookies.set(ACCESS_TOKEN_COOKIE, '', cookieOptions(request, '/'));
-  response.cookies.set(REFRESH_TOKEN_COOKIE, '', cookieOptions(request, REFRESH_TOKEN_PATH));
-};
-
-/** access 토큰만 발급(개발 전용 토큰 로그인용). 이전 계정의 refresh 쿠키가 남아 재발급 때 계정이 섞이지 않게 함께 비우고, refresh 토큰이 없어 만료되면 다시 발급받아야 함 */
-export const setAccessTokenCookie = (
-  response: NextResponse,
-  request: NextRequest,
-  accessToken: string,
-) => {
-  response.cookies.set(ACCESS_TOKEN_COOKIE, accessToken, cookieOptions(request, '/', accessToken));
-  response.cookies.set(REFRESH_TOKEN_COOKIE, '', cookieOptions(request, REFRESH_TOKEN_PATH));
+  const names = authCookieNames(request);
+  response.cookies.set(names.access, '', cookieOptions(request, '/'));
+  response.cookies.set(names.refresh, '', cookieOptions(request, REFRESH_TOKEN_PATH));
 };

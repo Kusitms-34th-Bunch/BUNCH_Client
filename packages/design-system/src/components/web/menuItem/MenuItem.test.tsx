@@ -34,11 +34,11 @@ describe('MenuItem', () => {
     );
   });
 
-  it('누름 오버레이는 overlay-hover 75ms', () => {
+  it('누름 오버레이는 overlay-hover, 전환은 공통 덮개', () => {
     render(<MenuItem>저장</MenuItem>);
     const cls = screen.getByRole('menuitem').className;
     expect(cls).toContain('before:bg-overlay-hover');
-    // 75ms 전환은 공통 덮개 바탕(press-overlay)이 맡음
+    // 전환(150ms)은 공통 덮개 바탕(press-overlay)이 맡음
     expect(cls).toContain('press-overlay');
     expect(cls).toContain('active:before:opacity-100');
   });

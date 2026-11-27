@@ -159,6 +159,8 @@ export function FeedScreen({
       onRefresh={onRefresh}
       // 내리면 헤더를 숨기고 올리면 다시 보임(A안, Facebook 방식)
       collapsibleHeader
+      // 사진이 화면을 채우는 무한 피드라 스크롤바를 그리지 않음(인스타 메인 피드처럼, #583)
+      hideScrollbar
       header={
         <FeedHeader
           viewer={viewer}

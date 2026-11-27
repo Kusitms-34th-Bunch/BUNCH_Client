@@ -11,6 +11,8 @@ const CARD_RADIUS = '1.5rem';
 const SNAPSHOT_CAP_MS = 3000;
 // 시트에서 골랐으면 시트가 다 닫힌 뒤 쉘이 화면을 찍게 기다리는 최대 시간(닫히는 시트가 사진에 남지 않게)
 const SHEET_CLOSE_WAIT_MS = 500;
+// 쉘이 덮기에 답하지 않아도 전환을 진행하는 상한(그동안 전환이 멈추지 않게)
+const COVER_WAIT_CAP_MS = 1000;
 
 // 쉘 화면 전체 전환의 진행: 시트 닫힘 대기 → 덮음 → 끝 알림. aborted면 덮이는 즉시 치움
 type NativeCover = { stage: 'waiting' | 'covered' | 'finishing'; aborted: boolean };
@@ -23,6 +25,12 @@ const prefersReducedMotion = () =>
  * 실패하면 `cancel`. 동작 줄이기 설정이면 복제하지 않음(화면의 기존 디졸브만)
  */
 type Snapshot = { clone: HTMLElement; root: HTMLElement; timer: ReturnType<typeof setTimeout> };
+
+// PageShell 바깥 요소(헤더 포함 화면 전체). 기준이 화면 안이면 위로, 화면을 감싼 바깥이면 안에서 찾음
+const findScreenRoot = (anchor: HTMLElement | null) =>
+  anchor?.closest<HTMLElement>('[data-page-shell]') ??
+  anchor?.querySelector<HTMLElement>('[data-page-shell]') ??
+  null;
 
 // 기다리기를 끝냄: 상한 타이머를 풀고 원래 화면이 다시 터치를 받게 함
 const stopWaiting = ({ root, timer }: Snapshot) => {
@@ -52,14 +60,23 @@ export function useBunchSwitchMotion(anchorRef: RefObject<HTMLElement | null>, b
     snapshot.current = null;
   };
 
-  const begin = () => {
+  // 쉘이 화면을 덮은 뒤(덮지 못했거나 웹 복제면 바로) 끝남. 덮기 전에 번치가 바뀌면 모션 없이 바뀌므로 부르는 쪽이 기다렸다 바꿈
+  const begin = (): Promise<void> => {
     cancel();
     if (!prefersReducedMotion() && hasNativeMethod('beginScreenSwitch')) {
       const current: NativeCover = { stage: 'waiting', aborted: false };
       nativeCover.current = current;
       const startedAt = performance.now();
+      let settle = () => {};
+      const settled = new Promise<void>((resolve) => {
+        settle = resolve;
+        setTimeout(resolve, COVER_WAIT_CAP_MS);
+      });
       const cover = () => {
-        if (current.aborted) return;
+        if (current.aborted) {
+          settle();
+          return;
+        }
         if (
           document.querySelector('[data-bottom-sheet]') !== null &&
           performance.now() - startedAt < SHEET_CLOSE_WAIT_MS
@@ -78,20 +95,23 @@ export function useBunchSwitchMotion(anchorRef: RefObject<HTMLElement | null>, b
             // 덮는 사이 새 번치가 먼저 그려졌거나 취소됐으면 움직이지 않고 치움
             if (current.aborted) void appBridge.cancelScreenSwitch().catch(() => {});
             else current.stage = 'covered';
-          });
+          })
+          .finally(settle);
       };
       cover();
-      return;
+      return settled;
     }
-    // PageShell 바깥 요소(헤더 포함 화면 전체)
-    const root = anchorRef.current?.closest<HTMLElement>('[data-app-background]');
+    const root = findScreenRoot(anchorRef.current);
     // Web Animations를 모르는 환경(테스트 DOM 등)은 모션 없이 바로 바뀜
-    if (!root || prefersReducedMotion() || typeof root.animate !== 'function') return;
+    if (!root || prefersReducedMotion() || typeof root.animate !== 'function')
+      return Promise.resolve();
     const rect = root.getBoundingClientRect();
     const copy = root.cloneNode(true) as HTMLElement;
     // 상태 바 색 판단에서 빼고 같은 id가 두 개 생기지 않게. inert로 링크·버튼 동작과 초점을 막음
     copy.removeAttribute('data-app-background');
     copy.removeAttribute('data-app-background-bottom');
+    // 화면 찾기가 복제본을 새 화면으로 잡지 않게(복제본은 원래 화면 앞에 들어감)
+    copy.removeAttribute('data-page-shell');
     for (const element of copy.querySelectorAll('[id]')) element.removeAttribute('id');
     copy.inert = true;
     Object.assign(copy.style, { width: '100%', height: '100%', margin: '0' });
@@ -117,6 +137,7 @@ export function useBunchSwitchMotion(anchorRef: RefObject<HTMLElement | null>, b
     // 원래 화면 안의 z-index 요소(「+」 등)는 복제본보다 위라 원래 화면이 터치를 받지 않게 함(초점은 그대로)
     root.style.pointerEvents = 'none';
     snapshot.current = { clone, root, timer: setTimeout(cancel, SNAPSHOT_CAP_MS) };
+    return Promise.resolve();
   };
 
   // 기다리는 사이 화면이 사라지면(새 번치를 받지 못해 오류·로딩 화면으로 바뀜) 붙잡은 화면도 치움
@@ -156,7 +177,7 @@ export function useBunchSwitchMotion(anchorRef: RefObject<HTMLElement | null>, b
       };
     }
     const current = snapshot.current;
-    const root = anchorRef.current?.closest<HTMLElement>('[data-app-background]');
+    const root = findScreenRoot(anchorRef.current);
     if (!current || !root) return;
     stopWaiting(current);
     snapshot.current = null;

@@ -1,10 +1,10 @@
 import { cubicBezierEasing } from '@/shared/components/layout/easeOutIntegrator.internal';
 
-// 화면 전환(drill·slide)과 같은 시간·곡선. 브라우저 기본 smooth는 거리마다 속도가 달라 WebKit에서 시작·끝이 끊겨 보임
-const DURATION_MS = 350;
-const ease = cubicBezierEasing([0.4, 0, 0.2, 1]);
-// 이 화면 수보다 멀면 한 화면 위치로 바로 옮긴 뒤 그만큼만 움직임(iOS 상태 바 탭처럼 거리와 관계없이 같은 시간)
-const FAR_SCREENS = 2;
+// 브라우저 기본 smooth는 거리마다 속도가 달라 WebKit에서 시작·끝이 끊겨 보여 직접 움직임
+// 순간 이동 없이 전체 거리를 감속 곡선으로(빠르게 출발해 맨 위에서 천천히 멈춤, Figma 눌림 모션 곡선, #583)
+const ease = cubicBezierEasing([0.2, 0, 0, 1]);
+// 거리에 비례한 시간: 한 화면 이내 350ms, 한 화면마다 50ms씩 늘려 650ms까지(먼 거리도 너무 빠르게 튀지 않게)
+const durationFor = (screens: number) => Math.min(650, 350 + Math.max(0, screens - 1) * 50);
 
 let stopRunning: (() => void) | undefined;
 
@@ -21,8 +21,8 @@ export function scrollPageToTop() {
     main.scrollTop = 0;
     return;
   }
-  if (main.scrollTop > main.clientHeight * FAR_SCREENS) main.scrollTop = main.clientHeight;
   const from = main.scrollTop;
+  const duration = durationFor(from / Math.max(1, main.clientHeight));
   const startedAt = performance.now();
   let frame = 0;
   // 손가락·휠·스크롤바 끌기·키보드 스크롤(PageDown·Space 등)
@@ -38,7 +38,7 @@ export function scrollPageToTop() {
       stop();
       return;
     }
-    const progress = Math.min(1, (now - startedAt) / DURATION_MS);
+    const progress = Math.min(1, (now - startedAt) / duration);
     main.scrollTop = from * (1 - ease(progress));
     if (progress < 1) frame = requestAnimationFrame(step);
     else stop();

@@ -18,7 +18,7 @@
 
 - 값을 고르는 화면(바텀시트·검색 등), 선택 값의 보관은 만들지 않았다. 호출하는 쪽이 `onFieldClick`·`onSuggestionClick`·`onClear`로 처리한다.
 - 선택된 상태의 추천 값은 Figma에 없다(`Selected`는 `Suggestion=False`만 있다).
-- 눌림·호버·비활성·오류 모양은 Figma에 없어서 만들지 않았다.
+- 호버·비활성·오류 모양은 Figma에 없어서 만들지 않았다. 눌림은 지우기 버튼만 아이콘이 0.917로 줄고 뒤에 overlay-hover 배경(36×36·모서리 8)이 깔린다(Figma `8311:57033` 아이콘 버튼 눌림, `press-icon-overlay`).
 - 추천 칩은 `ChipButton`의 `size="M"`(Solid·Default, 아이콘 없음)을 쓴다. 선택 필드의 칩에는 Figma 호버 모양이 따로 없지만 `ChipButton`의 호버(검정 10% 오버레이)가 그대로 적용된다.
 
 ## Public API
@@ -33,7 +33,7 @@
 - 한 줄(추천 없음): 세로 여백 10px(`s5`), 높이 44px. 핀(16px, `icon-primary`) + 제목 + 별표가 왼쪽, 아이콘이 오른쪽(Default는 화살표, Selected는 지우기, 둘 다 16px).
 - 추천 있음: 세로 여백 16px(`s8`), 높이 102px. 위 줄(제목 + 화살표) 아래 10px 띄워 추천 칩이 가로로 놓인다. 칩은 `ChipButton` M(높이 36px, 좌우 10px, 원형, 글자 14/21 `text-tertiary`)이고 회색 카드 위에서 보이도록 배경만 흰색(`surface-primary`)으로 덮어쓴다. 칩 사이는 6px(`s3`)이다. 줄이 넘치면 줄바꿈한다.
 - 제목: `typography-body-3-regular`(14/21, 400, 자간 0, `BundleTitle` `weak`), `text-secondary`(`#25282D`). 길면 한 줄로 줄인다.
-- 별표: `icon-brand`(`#454EDF`) 16px, 스크린 리더에는 숨기고 "필수"를 따로 읽어 준다.
+- 별표: `icon-secondary`(`#25282D`, 2026-11-24 색상 변경으로 `icon-brand`에서 변경) 16px, 스크린 리더에는 숨기고 "필수"를 따로 읽어 준다.
 - 필드 전체(여백 포함)가 눌리도록 필드 버튼은 카드 전체를 덮는 빈 버튼(`absolute inset-0`)이다. 추천 칩과 지우기 버튼은 그 위(`z-10`)에 있어 따로 눌린다. 추천 칩 줄의 빈 영역도 클릭이 필드 버튼으로 통과한다(`ul`은 `pointer-events-none`, 칩만 `pointer-events-auto`).
 
 ## 접근성

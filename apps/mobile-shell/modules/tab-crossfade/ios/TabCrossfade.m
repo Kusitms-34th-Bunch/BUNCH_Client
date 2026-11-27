@@ -1,3 +1,4 @@
+#import <QuartzCore/QuartzCore.h>
 #import <UIKit/UIKit.h>
 #import <WebKit/WebKit.h>
 #import <objc/runtime.h>
@@ -6,6 +7,13 @@
 static const NSTimeInterval kTabCrossfadeDuration = 0.08;
 // 들어오는 탭 WebView가 다시 그려지기를 기다리는 최대 시간. 다시 붙은 WebView는 약 60ms 빈 화면이라 그린 뒤 페이드
 static const NSTimeInterval kWebViewPaintTimeout = 0.15;
+
+// 꾹 누르기가 인식된 뒤 손을 뗄 때까지(그동안 다른 탭 선택은 무시, 아래 shouldSelect). 상한을 둔 시각으로 저장
+// iOS 26 탭 바는 누른 채 끌어 탭을 고를 수 있어, 전환 시트가 열린 채 다른 탭으로 넘어갔음(#583 시뮬레이터)
+static CFTimeInterval BNTabLongPressUntil = 0;
+// 상한: 시트를 연 채 끄는 시간(손 뗌 알림이 빠져도 풀리게)
+// 전환 중 다른 탭 선택은 막지 않음: 빠른 연타의 두 번째 누름이 버려졌음(#587 쉘 E2E 02 탭 전환 실패, 막았던 탭 어긋남은 재현되지 않은 방어였음)
+static const CFTimeInterval kTabLongPressGuard = 3;
 
 static WKWebView *BNFindWebView(UIView *view)
 {
@@ -184,7 +192,16 @@ static NSInteger BNTabIndexAtPoint(UITabBar *tabBar, CGPoint point)
 
 - (void)handleLongPress:(UILongPressGestureRecognizer *)recognizer
 {
-  if (recognizer.state != UIGestureRecognizerStateBegan) {
+  UIGestureRecognizerState state = recognizer.state;
+  if (state == UIGestureRecognizerStateEnded || state == UIGestureRecognizerStateCancelled ||
+      state == UIGestureRecognizerStateFailed) {
+    // 손을 떼는 순간 들어오는 끌기 선택까지 막도록 다음 실행 순서에 풂
+    dispatch_async(dispatch_get_main_queue(), ^{
+      BNTabLongPressUntil = 0;
+    });
+    return;
+  }
+  if (state != UIGestureRecognizerStateBegan) {
     return;
   }
   UITabBar *tabBar = (UITabBar *)recognizer.view;
@@ -192,6 +209,7 @@ static NSInteger BNTabIndexAtPoint(UITabBar *tabBar, CGPoint point)
   if (index == NSNotFound) {
     return;
   }
+  BNTabLongPressUntil = CACurrentMediaTime() + kTabLongPressGuard;
   [[UIImpactFeedbackGenerator new] impactOccurred];
   [[NSNotificationCenter defaultCenter] postNotificationName:BNTabLongPressNotification
                                                       object:nil
@@ -199,6 +217,101 @@ static NSInteger BNTabIndexAtPoint(UITabBar *tabBar, CGPoint point)
 }
 
 @end
+
+/**
+ * iOS 26 UIKit 버그(FB24250687): 탭 바가 화면에 붙은 뒤 첫 레이아웃 전에 항목의 제목·이미지(비동기 PNG 아이콘)가 바뀌면
+ * 선택하지 않은 탭 라벨을 찌그러뜨려 아래로 밀어 그림(누르면 그 탭만 정상, #575·#462). react-native-screens PR #5242와 같은 우회
+ */
+static const void *kBNTitleRefitPendingKey = &kBNTitleRefitPendingKey;
+
+// 탭을 설치한 뒤 다음 레이아웃에서 한 번 라벨을 다시 맞추도록 표시(iOS 27은 버그가 없어 하지 않음)
+static void BNMarkTitleRefit(UITabBarController *controller)
+{
+  if (@available(iOS 27.0, *)) {
+    return;
+  }
+  if (@available(iOS 26.0, *)) {
+    objc_setAssociatedObject(controller, kBNTitleRefitPendingKey, @YES, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+    [controller.view setNeedsLayout];
+  }
+}
+
+// 화면에 붙은 뒤 탭 바를 먼저 레이아웃하고, 같은 제목을 nil을 거쳐 다시 넣어 UIKit이 라벨 크기를 다시 맞추게 함(같은 값 대입은 무시됨)
+static void BNRefitTabTitlesIfNeeded(UITabBarController *controller)
+{
+  if (!objc_getAssociatedObject(controller, kBNTitleRefitPendingKey) || !controller.view.window) {
+    return;
+  }
+  // VoiceOver 초점이 탭 바 안이면 다음 레이아웃으로 미룸(제목을 다시 넣으면 초점이 풀리거나 다시 읽힘, 낭독은 접근성 라벨이라 잘림과 무관)
+  if (UIAccessibilityIsVoiceOverRunning()) {
+    id focused = UIAccessibilityFocusedElement(UIAccessibilityNotificationVoiceOverIdentifier);
+    if ([focused isKindOfClass:[UIView class]] && [(UIView *)focused isDescendantOfView:controller.tabBar]) {
+      return;
+    }
+  }
+  objc_setAssociatedObject(controller, kBNTitleRefitPendingKey, nil, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+  [controller.tabBar layoutIfNeeded];
+  for (UITabBarItem *item in controller.tabBar.items) {
+    NSString *title = item.title;
+    if (title.length == 0) {
+      continue;
+    }
+    item.title = nil;
+    item.title = title;
+  }
+}
+
+// 탭 설치(UIKit 공개 API: 이전 방식 setViewControllers, iOS 26.1+ setTabs) 뒤에 표시를 남기게 감쌈. 상속 구현이면 이 클래스에만 덮어씀
+static void BNWrapTabInstall(Class tabBarController, SEL selector)
+{
+  Method method = class_getInstanceMethod(tabBarController, selector);
+  if (!method) {
+    return;
+  }
+  void (*original)(id, SEL, id, BOOL) = (void (*)(id, SEL, id, BOOL))method_getImplementation(method);
+  IMP wrapped = imp_implementationWithBlock(^(UITabBarController *controller, id value, BOOL animated) {
+    original(controller, selector, value, animated);
+    BNMarkTitleRefit(controller);
+  });
+  if (!class_addMethod(tabBarController, selector, wrapped, method_getTypeEncoding(method))) {
+    method_setImplementation(method, wrapped);
+  }
+}
+
+static void BNWrapLayoutForTitleRefit(Class tabBarController)
+{
+  SEL selector = @selector(viewDidLayoutSubviews);
+  Method method = class_getInstanceMethod(tabBarController, selector);
+  if (!method) {
+    return;
+  }
+  void (*original)(id, SEL) = (void (*)(id, SEL))method_getImplementation(method);
+  IMP wrapped = imp_implementationWithBlock(^(UITabBarController *controller) {
+    original(controller, selector);
+    BNRefitTabTitlesIfNeeded(controller);
+  });
+  if (!class_addMethod(tabBarController, selector, wrapped, method_getTypeEncoding(method))) {
+    method_setImplementation(method, wrapped);
+  }
+}
+
+// 탭 바가 다시 나타날 때는 iOS 애니메이션 없이 바로(#583). iOS 26의 나타나는 애니메이션은 아이콘 없는 유리 막대가 먼저 보여 어색함(시뮬레이터 녹화)
+// 숨길 때는 iOS 기본 애니메이션 그대로. 웹이 시트·화면이 비켜난 순간에 맞춰 보내므로 바로 나타나도 튀지 않음
+static void BNWrapTabBarHidden(Class tabBarController)
+{
+  SEL selector = NSSelectorFromString(@"setTabBarHidden:animated:");
+  Method method = class_getInstanceMethod(tabBarController, selector);
+  if (!method) {
+    return;
+  }
+  void (*original)(id, SEL, BOOL, BOOL) = (void (*)(id, SEL, BOOL, BOOL))method_getImplementation(method);
+  IMP wrapped = imp_implementationWithBlock(^(UITabBarController *controller, BOOL hidden, BOOL animated) {
+    original(controller, selector, hidden, hidden && animated);
+  });
+  if (!class_addMethod(tabBarController, selector, wrapped, method_getTypeEncoding(method))) {
+    method_setImplementation(method, wrapped);
+  }
+}
 
 static const void *kBNTabLongPressHandlerKey = &kBNTabLongPressHandlerKey;
 
@@ -238,6 +351,14 @@ static void BNInstallTabLongPress(UITabBarController *controller)
   SEL animationSelector = @selector(tabBarController:animationControllerForTransitionFromViewController:toViewController:);
   class_addMethod(tabBarController, animationSelector, (IMP)BNTabAnimationController, "@@:@@@");
 
+  // iOS 26 탭 라벨 잘림 우회(위 BNRefitTabTitlesIfNeeded)
+  BNWrapTabInstall(tabBarController, @selector(setViewControllers:animated:));
+  BNWrapTabInstall(tabBarController, NSSelectorFromString(@"setTabs:animated:"));
+  BNWrapLayoutForTitleRefit(tabBarController);
+
+  // 탭 바가 다시 나타날 때 iOS 애니메이션 끔(위 BNWrapTabBarHidden)
+  BNWrapTabBarHidden(tabBarController);
+
   // 꾹 누르기: 탭 컨트롤러가 화면에 붙을 때 탭 바에 제스처를 한 번 붙임(라이브러리가 직접 구현한 메서드를 감쌈)
   SEL attachSelector = @selector(didMoveToParentViewController:);
   Method attach = class_getInstanceMethod(tabBarController, attachSelector);
@@ -264,6 +385,14 @@ static void BNInstallTabLongPress(UITabBarController *controller)
       (BOOL (*)(id, SEL, UITabBarController *, UIViewController *))method_getImplementation(shouldSelect);
   method_setImplementation(
       shouldSelect, imp_implementationWithBlock(^BOOL(id controller, UITabBarController *tabBar, UIViewController *target) {
+        // 꾹 누르는 중 다른 탭 선택은 무시(누른 채 끌어 다른 탭으로 넘어가지 않게). 지금 탭 다시 누름은 그대로
+        // VoiceOver·스위치 제어는 막지 않음(누른 채 끌기가 없고, 무시되면 알 수 없음)
+        CFTimeInterval now = CACurrentMediaTime();
+        BOOL assistive = UIAccessibilityIsVoiceOverRunning() || UIAccessibilityIsSwitchControlRunning();
+        if (!assistive && now < BNTabLongPressUntil &&
+            tabBar.selectedViewController != target) {
+          return NO;
+        }
         BOOL allowed = original(controller, shouldSelectSelector, tabBar, target);
         // 이동하는 탭과 지금 탭 재선택만(라이브러리가 막은 선택 제외). 햅틱 객체는 처음 누를 때 생성
         if (allowed || tabBar.selectedViewController == target) {

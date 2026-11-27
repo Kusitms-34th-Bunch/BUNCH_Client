@@ -117,11 +117,7 @@ export function LoginEntry({
         }
       >
         {/* 워드마크는 버튼 바로 위(Figma 5878:77389: 워드마크 아래 40, 버튼 간격 8, 버튼 아래 14). 새 디자인은 슬로건 없음 */}
-        {/* `data-dev-login-trigger`: 개발 전용 토큰 로그인(`DevTokenLogin`)이 로고를 3번 누르는 동작을 셀 때 쓰는 표시(꺼져 있으면 아무 일도 없음) */}
-        <div
-          data-dev-login-trigger
-          className="px-padding-p8 pb-padding-p18 flex min-h-full flex-col items-center justify-end"
-        >
+        <div className="px-padding-p8 pb-padding-p18 flex min-h-full flex-col items-center justify-end">
           <h1 className={ENTER_MOTION} style={{ animationDelay: `${WORDMARK_DELAY_MS}ms` }}>
             <Image src={WORDMARK} alt="Bunch" width={171} height={43} priority />
           </h1>

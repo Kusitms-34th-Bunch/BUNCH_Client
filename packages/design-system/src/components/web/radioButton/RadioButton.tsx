@@ -8,7 +8,7 @@ export type RadioButtonProps = Omit<ComponentProps<'input'>, 'type' | 'children'
 
 /**
  * 16px 라디오 + 글자 한 줄(Figma `Radio Button`, 컨트롤은 `Control Radio - S`): 행 어디를 눌러도 선택
- * `core/radio`(20px·브랜드 색)와 다른 회색 컨트롤. 그룹(`name`·`fieldset`)은 호출자 담당, `className`은 행에 적용
+ * `core/radio`(20px)와 다른 Figma 컨트롤. 그룹(`name`·`fieldset`)은 호출자 담당, `className`은 행에 적용
  */
 export const RadioButton = ({ children, className, ...props }: RadioButtonProps) => (
   <label

@@ -22,6 +22,8 @@ type PageShellProps = {
    * 맨 위 근처는 항상 보이고, 숨은 동안은 inert, 헤더 안에 초점이 있으면 숨기지 않음
    */
   collapsibleHeader?: boolean | undefined;
+  /** 스크롤바를 그리지 않음(사진이 화면을 채우는 메인 피드·사진함). 기본은 iOS 기본 표시기(스크롤할 때만 보임)로 길이·위치를 알림(#583) */
+  hideScrollbar?: boolean | undefined;
   /** 하단 고정 영역(내비게이션·CTA) */
   bottom?: ReactNode;
   /** 바깥 틀에 더하는 class. 배경색이 흰색이 아닌 화면은 여기서 `bg-*`로 변경 */
@@ -51,9 +53,9 @@ type PageShellProps = {
   children: ReactNode;
 };
 
-/** 본문 스크롤 영역. `scrollbar-none`: 앱처럼 스크롤바를 그리지 않음(globals.css) */
+/** 본문 스크롤 영역 */
 const MAIN_CLASS =
-  'min-h-32 flex-1 scroll-pb-(--main-tab-bar-height,0px) scrollbar-none overflow-y-auto overscroll-y-contain pb-(--main-tab-bar-scroll-inset,0px)';
+  'min-h-32 flex-1 scroll-pb-(--main-tab-bar-height,0px) overflow-y-auto overscroll-y-contain pb-(--main-tab-bar-scroll-inset,0px)';
 
 // 접는 헤더가 숨은 동안 상태 표시줄 뒤로 지나가는 본문을 흐림(Instagram 방식, motion.md 피드 헤더)
 // 세기가 다른 층을 겹쳐 위가 가장 흐리고 아래로 갈수록 사라지게 함. 한 장을 투명도로 옅게 하면 경계가 보이고, 흰색을 얹으면 띠처럼 보여 쓰지 않음
@@ -71,6 +73,7 @@ const STATUS_BAR_BLUR_LAYERS = [
 export function PageShell({
   header,
   collapsibleHeader = false,
+  hideScrollbar = false,
   bottom,
   className,
   onRefresh,
@@ -107,6 +110,7 @@ export function PageShell({
       ref={mainRef}
       className={cn(
         MAIN_CLASS,
+        hideScrollbar && 'scrollbar-none',
         collapsible && 'scroll-pt-(--page-top-inset) pt-(--page-top-inset)',
       )}
     >
@@ -117,6 +121,8 @@ export function PageShell({
   return (
     <div
       ref={rootRef}
+      // 화면 전체를 찾는 표식(번치 전환 모션이 붙잡을 화면)
+      data-page-shell=""
       // 바깥 전환 틀(AppTransitions)이 위쪽을 자르지 않게 하는 표식
       data-collapsible-header={collapsible ? '' : undefined}
       data-app-background={appBackground}

@@ -98,13 +98,14 @@ describe('SuggestedBundleCard', () => {
     expect(screen.getByText('지예').className).toContain('bg-surface-secondary');
   });
 
-  it('selected면 aria-pressed가 true이고 칩과 글자가 brand다', () => {
-    renderCard({ selected: true });
+  it('selected면 aria-pressed가 true이고 테두리만 바뀌며 칩과 글자는 그대로다', () => {
+    const { container } = renderCard({ selected: true });
     const card = screen.getByRole('button', { name: '성수동 러닝 모임' });
 
     expect(card.getAttribute('aria-pressed')).toBe('true');
-    expect(card.className).toContain('text-text-brand');
-    expect(screen.getByText('지예').className).toContain('bg-surface-brand-subtle-1');
+    expect(container.firstElementChild?.className).toContain('ring-border-strong-lighter');
+    expect(card.className).toContain('text-text-tertiary');
+    expect(screen.getByText('지예').className).toContain('bg-surface-secondary');
   });
 
   it('카드를 누르면 onCardClick, 화살표를 누르면 onDetailClick만 호출된다', () => {

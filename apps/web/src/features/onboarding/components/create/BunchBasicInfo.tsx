@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@app/design-system';
-import { DescriptionRadioCard, LabeledTextField, PageHeader } from '@app/design-system/web';
+import { LabeledTextField, PageHeader, RadioCard } from '@app/design-system/web';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { PageShell } from '@/shared/components/layout/PageShell';
@@ -78,6 +78,7 @@ export function BunchBasicInfo({ checkName = checkBunchNameAvailability }: Bunch
       <div className="pt-s15 px-padding-p8">
         <LabeledTextField
           title="번치 이름"
+          option="required"
           placeholder="번치 이름을 입력해주세요"
           value={name}
           maxLength={BUNCH_NAME_MAX_LENGTH}
@@ -97,7 +98,7 @@ export function BunchBasicInfo({ checkName = checkBunchNameAvailability }: Bunch
         <fieldset className="min-w-0">
           <legend className="typography-body-3-semibold text-text-primary pb-s2">공개 범위</legend>
           <div className="gap-s3 flex flex-col">
-            <DescriptionRadioCard
+            <RadioCard
               name="visibility"
               value="public"
               title="공개 번치"
@@ -105,7 +106,7 @@ export function BunchBasicInfo({ checkName = checkBunchNameAvailability }: Bunch
               checked={visibility === 'public'}
               onChange={() => setVisibility('public')}
             />
-            <DescriptionRadioCard
+            <RadioCard
               name="visibility"
               value="private"
               title="비공개 번치"

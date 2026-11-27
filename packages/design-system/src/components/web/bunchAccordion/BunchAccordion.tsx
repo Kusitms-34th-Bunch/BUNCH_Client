@@ -18,7 +18,7 @@ export type BunchAccordionProps = Omit<ComponentProps<'div'>, 'title' | 'onChang
   onOpenChange?: ((_open: boolean) => void) | undefined;
   /** 비활성: 카드 전체 40%, 누를 수 없음 */
   disabled?: boolean | undefined;
-  /** 안에서 무언가 고른 상태(Figma `Status=Selected`). 접혔을 때만 연한 브랜드 배경·테두리로 표시 */
+  /** 안에서 무언가 고른 상태(Figma `Status=Selected`). 접혔을 때만 회색 배경·테두리로 표시 */
   selected?: boolean | undefined;
   /** 고른 값 낭독(예: 「새 관리자: 서현」). `selected`를 쓰면 함께 줌(빠지면 선택이 색으로만 전달됨) */
   selectedLabel?: string | undefined;
@@ -76,7 +76,7 @@ export const BunchAccordion = ({
         // 선택 표시 전환(화면 설계서: On click / Dissolve / Ease out / 200ms)
         'rounded-r4 overflow-hidden outline -outline-offset-1 transition-colors duration-200 ease-out motion-reduce:transition-none',
         showSelected
-          ? 'bg-surface-brand-subtle-1 outline-border-brand-subtle'
+          ? 'bg-surface-secondary outline-border-secondary'
           : 'bg-surface-primary outline-border-tertiary',
         disabled && 'opacity-(--semantic-opacity-disabled)',
         className,
@@ -94,7 +94,7 @@ export const BunchAccordion = ({
           className={cn(
             'px-padding-p6 py-padding-p5 gap-s3 relative isolate flex w-full cursor-pointer touch-manipulation items-center text-left disabled:cursor-not-allowed',
             // 눌림은 글자 뒤 배경 층에서 겹침 처리
-            'before:bg-overlay-hover before:absolute before:inset-0 before:-z-10 before:opacity-0 before:transition-opacity before:duration-75 before:ease-out enabled:active:before:opacity-100 motion-reduce:before:transition-none',
+            'press-overlay before:bg-overlay-hover before:-z-10 enabled:active:before:opacity-100',
             'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:-outline-offset-2',
           )}
         >
@@ -107,7 +107,7 @@ export const BunchAccordion = ({
           </span>
           <Chevron
             aria-hidden="true"
-            className={cn('shrink-0', showSelected ? 'text-chip-blue-fg' : 'text-icon-quaternary')}
+            className={cn('shrink-0', showSelected ? 'text-icon-tertiary' : 'text-icon-quaternary')}
           />
         </button>
       </Heading>

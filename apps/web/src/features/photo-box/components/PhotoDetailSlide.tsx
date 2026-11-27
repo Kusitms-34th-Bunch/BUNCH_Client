@@ -57,7 +57,8 @@ export function PhotoDetailSlide({ photo, members, chromeHidden, current }: Phot
     setReadySrc(null);
   }
   const showPlaceholder = photo.status !== 'ready' || (shownBroken && pendingSrc === null);
-  const ratio = getPhotoRatio(shownSrc);
+  // 서버가 준 원본 비율이 있으면 이미지를 받기 전부터 최종 크기(도착 뒤 커지지 않게, #583), 없으면 받은 이미지 비율
+  const ratio = photo.aspectRatio ?? getPhotoRatio(shownSrc);
   const remember = (image: HTMLImageElement, src: string) => {
     rememberPhotoRatio(src, image.naturalWidth, image.naturalHeight);
     setRatioVersion((version) => version + 1);

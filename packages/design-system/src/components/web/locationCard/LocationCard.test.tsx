@@ -34,6 +34,13 @@ describe('LocationCard', () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
+  it('카드 버튼의 덮개는 카드 여백까지 누름을 받는다(공통 덮개는 포인터를 받지 않음, #583)', () => {
+    render(<LocationCard {...base} onClick={() => {}} />);
+    const { classList } = screen.getByText('봄날카페').closest('button')!;
+    expect(classList.contains('press-overlay')).toBe(true);
+    expect(classList.contains('before:pointer-events-auto')).toBe(true);
+  });
+
   it('번들 제목이 없으면 구분선 없이 출처 한 문구만 보이고 길면 그 문구를 줄인다', () => {
     render(<LocationCard {...base} source="BUNCH PICK" bundleTitle={undefined} />);
 

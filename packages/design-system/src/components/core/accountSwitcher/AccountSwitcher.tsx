@@ -22,7 +22,7 @@ export function AccountSwitcher({
       type={type}
       className={cn(
         // 헤더 안 요소라 왼쪽 가운데 기준으로 제자리에서 줄어듦(글자·화살표 함께, 헤더 높이·옆 아이콘 위치는 그대로)
-        'press-scale-small origin-left group rounded-r10 p-s3 text-text-primary inline-flex max-w-full cursor-pointer items-center',
+        'press-scale-small origin-left will-change-transform group rounded-r10 p-s3 text-text-primary inline-flex max-w-full cursor-pointer items-center',
         'not-disabled:active:bg-overlay-hover',
         'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
         'disabled:text-text-disabled disabled:cursor-not-allowed disabled:opacity-(--semantic-opacity-disabled)',

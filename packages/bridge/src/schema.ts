@@ -399,6 +399,24 @@ export type PushOpen = z.infer<typeof pushOpenSchema>;
 export const pushOpenedSchema = z.object({}).strict();
 export type PushOpened = z.infer<typeof pushOpenedSchema>;
 
+/**
+ * 설치된 앱의 버전(`1.2.0`, App Store 버전)과 빌드 번호(`3`). 웹이 최소 버전과 비교해 업데이트 모달을 띄움(#577)
+ * 같은 형식을 웹 route(`/api/app-version`)의 입력 검증에도 씀
+ */
+export const appVersionSchema = z
+  .object({
+    version: z.string().regex(/^\d{1,4}(\.\d{1,4}){0,2}$/),
+    build: z.string().regex(/^\d{1,9}$/),
+  })
+  .strict();
+export type AppVersion = z.infer<typeof appVersionSchema>;
+
+/**
+ * TestFlight 테스터용(staging) 쉘이 WebView User-Agent 끝에 붙이는 표시(#581). 웹이 보면 개발 백엔드·실시간 주소를 씀
+ * 누구나 꾸밀 수 있는 값이라 권한 판단에 쓰지 않음
+ */
+export const STAGING_SHELL_USER_AGENT = 'BunchShell/staging';
+
 /** 화면 사건에 맞춘 햅틱 종류. `success`: 완료 축하(컨페티), `tap`: 가벼운 누름(좋아요·콕하기·피드 끝) */
 export const hapticKindSchema = z.enum(['success', 'tap']);
 export type HapticKind = z.infer<typeof hapticKindSchema>;
@@ -411,6 +429,15 @@ export type NativeTabReselect = z.infer<typeof nativeTabReselectSchema>;
 export const nativeTabLongPressSchema = z.object({ tab: tabIdSchema }).strict();
 export type NativeTabLongPress = z.infer<typeof nativeTabLongPressSchema>;
 
+/**
+ * iOS 키보드가 움직이기 직전 알림(keyboardWillChangeFrame, #568). 웹이 같은 시간 동안 앱 틀 높이를 키보드에 맞춤
+ * `height`는 화면 아래에서 키보드가 덮는 높이(pt, 닫힘은 0), `duration`은 키보드 애니메이션 시간(ms). 모든 WebView에 보내므로 보이는 화면만 따름
+ */
+export const nativeKeyboardSchema = z
+  .object({ height: z.number().min(0).max(2000), duration: z.number().min(0).max(1000) })
+  .strict();
+export type NativeKeyboard = z.infer<typeof nativeKeyboardSchema>;
+
 // @webview-bridge의 이벤트 schema에 필요한 validate 인터페이스 적용
 const validator = <T extends z.ZodType>(schema: T) => ({
   validate: (data: unknown): z.infer<T> => schema.parse(data),
@@ -419,6 +446,7 @@ const validator = <T extends z.ZodType>(schema: T) => ({
 /** `createWebView({ postMessageSchema })`와 `linkBridge`가 같이 쓰는 네이티브 → 웹 이벤트 목록 */
 export const appPostMessageSchema = {
   nativeFloatingButtonPress: validator(nativeFloatingButtonPressSchema),
+  nativeKeyboard: validator(nativeKeyboardSchema),
   nativeTabEvent: validator(nativeTabEventSchema),
   nativeTabReselect: validator(nativeTabReselectSchema),
   nativeTabLongPress: validator(nativeTabLongPressSchema),

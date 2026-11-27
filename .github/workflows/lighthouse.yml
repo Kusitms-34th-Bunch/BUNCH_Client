@@ -43,14 +43,13 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # 로그인 없이 열리는 페이지(운영 빌드). 쉘 밖이라 `/intro`는 앱 설치 안내, `/login`도 같은 안내라 뺌
+          # 로그인 없이 열리는 페이지(운영 빌드). `/intro`·`/login`은 쉘 밖에서 앱 설치 안내라 뺌(docs/workflows/ci.md)
           # 초대 토큰은 버튼을 눌러야 확인하므로 가짜 토큰으로도 실제 초대 링크의 첫 화면과 같음
           - id: public
             title: 공개 페이지
             mocking: ''
             note: ''
             urls: >-
-              http://127.0.0.1:3300/intro
               http://127.0.0.1:3300/invite/lighthouse-check
           # 로그인 뒤 화면. 가짜 서버(MSW)가 세션 요청에 시작 데이터의 계정으로 답해 쿠키 없이 로그인 상태
           - id: signed-in

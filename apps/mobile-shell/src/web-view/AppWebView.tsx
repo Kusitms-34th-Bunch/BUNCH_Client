@@ -18,6 +18,8 @@ import { tabsStore } from '../tabs/tabs-store';
 import { blocksBackNavigation, isAppWebUrl } from '../web-url';
 import { WEB_URL, toAppWebUrl } from './app-web-url';
 import { WebView } from './app-bridge';
+import { attachSwipeBack } from './swipe-back';
+import { shellUserAgentName } from './user-agent';
 import { floatingButtons, isVisibleWebView } from './visible-web-view';
 
 /** 쉘의 모든 화면이 쓰는 WebView. 출처 제한·Safe Area·뒤로가기·오류 화면 설정 포함 */
@@ -84,11 +86,22 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
   }, [tabId]);
   useEffect(() => incomingLinkStore.subscribe(deliverIncomingLink), [deliverIncomingLink]);
 
+  // 처음 불러올 때 화면 밖이던 탭 WebView는 그때 찾지 못하므로 탭이 바뀔 때도 붙임(이미 붙은 것은 건너뜀)
+  useEffect(() => {
+    // 인스턴스마다 새 함수로 구독(같은 함수면 store Set에 하나만 남아 한 화면의 정리가 다른 화면 구독까지 지움)
+    const unsubscribe = tabsStore.subscribe(() => attachSwipeBack());
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   return (
     <WebView
       key={webViewKey}
       ref={webViewRef}
       source={{ uri: restoreUri ?? uri }}
+      // TestFlight 테스터용 빌드만 개발 서버 표시(웹이 개발 백엔드로 보냄, #581). Metro가 넣도록 직접 접근
+      applicationNameForUserAgent={shellUserAgentName(process.env.EXPO_PUBLIC_API_ENV)}
       style={transparent ? [styles.webview, styles.transparent] : styles.webview}
       injectedJavaScriptBeforeContentLoaded={
         tabId ? `${buildShellTabScript(tabId)}${safeAreaScript}` : safeAreaScript
@@ -97,6 +110,8 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
       contentInsetAdjustmentBehavior="never"
       // 스크롤은 웹 화면 안쪽 영역(PageShell main)이 맡으므로 문서 전체가 당겨지며 바깥 흰 배경이 드러나지 않게
       bounces={false}
+      // 키보드가 뜰 때 iOS가 문서 전체를 끌어올리지 않게(앱 틀 높이는 웹 KeyboardViewport가 맞춤, 올린 채 남아 헤더까지 못 내려가던 문제 #568)
+      scrollEnabled={false}
       overScrollMode="never"
       // 링크를 꾹 눌렀을 때 뜨는 브라우저 미리보기(Open Link·Copy Link·Share)를 막아 앱처럼 보이게
       allowsLinkPreview={false}
@@ -119,7 +134,11 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
         if (tabId && tabsStore.get()?.selectedId === tabId) markTabWebViewLoading();
         onLoadStart?.();
       }}
-      onLoadEnd={deliverIncomingLink}
+      // 스와이프 뒤로 가기를 웹 전환과 맞추는 네이티브 제스처를 붙임(iOS, 이미 붙은 WebView는 건너뜀)
+      onLoadEnd={() => {
+        attachSwipeBack();
+        deliverIncomingLink();
+      }}
       onError={forceWebReady}
       onHttpError={forceWebReady}
       // 오래 백그라운드에 있으면 OS가 웹 프로세스를 끝내 화면이 하얗게 남으므로 다시 불러옴

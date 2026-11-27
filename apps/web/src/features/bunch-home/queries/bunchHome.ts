@@ -10,8 +10,10 @@ import { useEffect, useRef } from 'react';
 import type { MyBunches } from '@/shared/api/myBunches';
 import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { toDomainId } from '@/shared/api/client/ids';
-import { getMyProfile } from '@/shared/api/myProfile';
+import { getMyProfile, toMyBunch } from '@/shared/api/myProfile';
 import { sharedKeys } from '@/shared/query/keys';
+import { myProfileQueryOptions } from '@/shared/query/myProfile';
+import { writeLocalOnly } from '@/shared/query/nativeTabSync';
 import { persistedQuery } from '@/shared/query/persistence';
 import {
   deleteBunchAccessNotice,
@@ -41,6 +43,14 @@ export const bunchHomeQueryOptions = (bunchId: string | undefined) =>
     // 앱을 다시 열 때 번치 홈을 바로 그리도록 저장(shared/query/persistence.ts)
     ...persistedQuery,
   });
+
+/** 번치 탭 두 번 누르기로 갈 번치의 홈을 미리 받아 둠(누르면 저장을 기다리지 않고 바로 그 번치로 그림, #568) */
+export const usePrefetchBunchHome = (bunchId: string | undefined) => {
+  const queryClient = useQueryClient();
+  useEffect(() => {
+    if (bunchId) void queryClient.prefetchQuery(bunchHomeQueryOptions(bunchId));
+  }, [queryClient, bunchId]);
+};
 
 /**
  * 발행된 번들(쪽 단위, 그리드 끝에서 이어서 받음). 번들 발행 뒤에는 번치 홈 key 전체와 함께 무효화됨(`sharedKeys.bunchHomeScope`)
@@ -106,14 +116,14 @@ export const useRefetchListsOnCountChange = (
 };
 
 /**
- * 번치 전환: 마지막 사용 번치를 저장한 뒤 기본 번치(`members/me`)를 다시 읽음(번들 목록은 저장과 함께, 번치 홈은 저장 뒤 받음)
- * 사진함·번들 만들기 등 앱 전체가 기본 번치를 보므로 모두 새 번치 기준이 됨(5.2.2 로직 2)
- * 새 번치 홈을 먼저 받아 두어 기본 번치가 바뀔 때 로딩 화면 없이 새 번치가 바로 그려짐
- * 기본 번치가 요청한 번치로 바뀌지 않았으면 실패로 던짐(성공 토스트만 뜨고 화면이 그대로인 것을 막음)
- * 미리 받기가 실패해도 기본 번치는 확인함: 저장이 됐으면 전환 성공이고 새 번치 홈은 화면이 다시 받음
+ * 번치 전환: 마지막 사용 번치를 저장하고 기본 번치(`members/me`)를 다시 읽음. 사진함·번들 만들기 등 앱 전체가 새 번치 기준(5.2.2 로직 2)
+ * 새 번치 홈은 저장과 동시에 받고(미리 받아 뒀으면 바로) 받는 즉시 지금 번치를 먼저 바꿈(저장 왕복을 기다리지 않고 바로 전환, #568)
+ * 저장이 실패하면 지금 번치를 되돌리고 던짐. 저장 뒤 번치 홈·내 정보를 서버 값으로 다시 맞추고, 기본 번치가 요청한 번치가 아니면 실패
  */
 // 가장 최근에 시작한 번치 전환(시트·푸시 열기 등 여러 곳에서 겹쳐 불릴 수 있음). 늦게 끝난 이전 전환이 내 정보를 덮지 않게
 let latestSwitch = 0;
+// 번치 전환에서 미리 받아 둔 새 번치 홈을 그대로 쓰는 기간(기본 staleTime과 같음)
+const RECENT_HOME_MS = 5 * 60 * 1000;
 
 export const useSwitchBunchMutation = () => {
   const queryClient = useQueryClient();
@@ -121,20 +131,48 @@ export const useSwitchBunchMutation = () => {
     mutationFn: async (bunchId: string) => {
       const mine = ++latestSwitch;
       // 발행·작성 중 목록은 번치 id로만 정해져 저장과 동시에 받음(차례로 받으면 왕복이 하나 늘어 전환이 늦음, #532)
-      // 번치 홈은 지금 번치인지(isCurrentBunch 등)가 저장 결과에 달려 저장 뒤 내 정보와 함께 받음. 5분 안의 저장값이어도 서버 값으로
+      // 번치 홈은 바로 그리려고 저장과 동시에 받고, 지금 번치인지(isCurrentBunch 등)가 저장 결과에 달려 저장 뒤 서버 값으로 다시 맞춤
       const lists = Promise.allSettled([
         queryClient.fetchInfiniteQuery({ ...publishedBundlesQueryOptions(bunchId), staleTime: 0 }),
         queryClient.fetchQuery({ ...draftBundlesQueryOptions(bunchId), staleTime: 0 }),
       ]);
-      await updateLastUsedBunch(bunchId);
+      const saved = updateLastUsedBunch(bunchId);
+      // 홈을 기다리는 사이 저장이 먼저 실패해도 처리되지 않은 오류로 잡히지 않게(아래에서 기다려 처리)
+      saved.catch(() => {});
+      const previous = queryClient.getQueryData(myProfileQueryOptions().queryKey);
+      // 미리 받아 둔 홈은 5분 안의 것만 그대로(오래 저장된 홈의 이름·이미지로 먼저 바뀌지 않게)
+      const home = await queryClient
+        .fetchQuery({ ...bunchHomeQueryOptions(bunchId), staleTime: RECENT_HOME_MS })
+        .catch(() => undefined);
       // 저장 전에 시작한 members/me 응답(이전 번치)을 다시 쓰지 않게 멈춤
       await queryClient.cancelQueries({ queryKey: sharedKeys.me() });
-      // 내 정보는 캐시 밖에서 받아 번치 홈까지 받은 뒤 넣음(먼저 넣으면 홈이 오기 전에 새 번치로 바뀌어 로딩이 보임)
+      if (previous && home?.myMembership && mine === latestSwitch) {
+        // 다른 탭에는 저장이 끝난 뒤의 값으로 알림(먼저 알리면 저장 전 서버 값을 받아 이전 번치에 남음)
+        writeLocalOnly(() =>
+          queryClient.setQueryData(myProfileQueryOptions().queryKey, {
+            ...previous,
+            bunch: toMyBunch(home.bunch),
+          }),
+        );
+        // 쓰는 사이 시작된 members/me 응답(저장 전 서버 값)이 먼저 바꾼 값을 덮지 않게
+        await queryClient.cancelQueries({ queryKey: sharedKeys.me() });
+      }
+      try {
+        await saved;
+      } catch (error) {
+        if (previous && mine === latestSwitch) {
+          queryClient.setQueryData(myProfileQueryOptions().queryKey, previous);
+        }
+        throw error;
+      }
+      await queryClient.cancelQueries({ queryKey: sharedKeys.me() });
+      // 저장 뒤 내 정보는 캐시 밖에서 받아 번치 홈까지 다시 받은 뒤 넣음(다른 탭에는 이 값으로 알림)
       const [, , me] = await Promise.all([
         lists,
         queryClient
           .fetchQuery({ ...bunchHomeQueryOptions(bunchId), staleTime: 0 })
-          .catch(() => undefined),
+          // 저장 전에 받은 홈(지금 번치 기준이 이전 값)이 남지 않게 다음에 다시 받음
+          .catch(() => queryClient.invalidateQueries({ queryKey: sharedKeys.bunchHome(bunchId) })),
         getMyProfile(),
       ]);
       if (mine === latestSwitch) queryClient.setQueryData(sharedKeys.me(), me);

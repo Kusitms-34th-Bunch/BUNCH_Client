@@ -9,12 +9,12 @@ apps/web은 Next.js Route Handler(`src/app/api/*/route.ts`)를 BFF로 써서 브
 - 로그인·재발급은 access·refresh 토큰을 응답 본문으로 주고, 인증은 `Authorization: Bearer`로만 받는다. 백엔드는 쿠키와 `Set-Cookie`를 쓰지 않고 CORS도 꺼져 있어 브라우저가 직접 호출할 수 없다.
 - 응답은 `{ success, data, error: { code, message, detail } }` envelope이다. 성공은 `@app/api-core`의 `unwrapEnvelope`로 `data`를 꺼내고, 실패는 `normalizeError`가 `error` 안의 `code`·`message`를 읽는다.
 - 재발급은 refresh 토큰을 원자적으로 교체한다. 같은 refresh 토큰으로 두 번 재발급하면 두 번째는 401이다.
-- 백엔드 주소는 서버 전용 환경 변수 `API_BASE_URL`이다. `NEXT_PUBLIC_`를 붙이지 않는다. 끝 `/`는 없어도 보정한다(경로가 든 주소 대응).
+- 백엔드 주소는 서버 전용 환경 변수 `API_BASE_URL`이다. `NEXT_PUBLIC_`를 붙이지 않는다. 끝 `/`는 없어도 보정한다(경로가 든 주소 대응). `API_BASE_URL_STAGING`이 있으면 TestFlight 테스터용 쉘의 요청(User-Agent에 `BunchShell/staging`)만 그 주소로 보낸다(`serverClient.ts`의 `apiBaseUrl`, #581). 이 표시는 꾸밀 수 있어 접근 제어에 쓰지 않는다.
 - CSRF: 백엔드는 CSRF·Origin 검사가 없어 BFF가 막는다. 쿠키는 `SameSite=Lax`이고, `src/proxy.ts`(Next.js proxy, `/api/*`)가 모든 BFF 요청 앞에서 상태 변경 요청(GET·HEAD 외)의 `Sec-Fetch-Site`가 `cross-site`·`same-site`(형제 서브도메인)이면 403(`BFF_CROSS_SITE`)으로 막는다. 그래서 새 Route Handler는 따로 검사하지 않는다. `Sec-Fetch-Site`를 보내지 않는 오래된 브라우저(Safari 16.4 미만 등)는 SameSite=Lax로 cross-site만 막고 same-site는 막지 못한다. 백엔드 GET은 상태를 바꾸지 않는다는 전제다.
 
 ## 구성 요소(`src/shared/api/`)
 
-서버(Route Handler·RSC·middleware)에서만 쓰는 파일은 `src/shared/api/server/`에 둔다: `authCookies`, `authSession`, `backendProxy`, `createAuthorizedRoute`, `crossSite`, `devToken`, `devTokenFlag`, `invitationPreview`, `rateLimit`, `requestBody`, `routeError`, `serverClient`. `invitationPreview`는 초대 route의 `generateMetadata`가 쓰는 공개 조회다(feature는 서버 전용 모듈을 import할 수 없어 여기에 둔다). 쿠키·백엔드 주소·토큰을 다루므로 브라우저 코드에서 import하지 않는다(`apps/web/eslint.config.mjs`가 `src/features`·`src/shared`에서 막음). 브라우저 요청 기반(`bffApi`, `browserClient`, `idempotencyKey`, `ids`, `errorStatus`)은 `src/shared/api/client/`에, 여러 feature가 쓰는 요청 함수는 `src/shared/api/` 바로 아래에 둔다.
+서버(Route Handler·RSC·middleware)에서만 쓰는 파일은 `src/shared/api/server/`에 둔다: `authCookies`, `authSession`, `backendProxy`, `createAuthorizedRoute`, `crossSite`, `invitationPreview`, `rateLimit`, `requestBody`, `routeError`, `serverClient`. `invitationPreview`는 초대 route의 `generateMetadata`가 쓰는 공개 조회다(feature는 서버 전용 모듈을 import할 수 없어 여기에 둔다). 쿠키·백엔드 주소·토큰을 다루므로 브라우저 코드에서 import하지 않는다(`apps/web/eslint.config.mjs`가 `src/features`·`src/shared`에서 막음). 브라우저 요청 기반(`bffApi`, `browserClient`, `idempotencyKey`, `ids`, `errorStatus`)은 `src/shared/api/client/`에, 여러 feature가 쓰는 요청 함수는 `src/shared/api/` 바로 아래에 둔다.
 
 - **`createAuthorizedRoute`**: 인증이 필요한 BFF endpoint의 wrapper다. httpOnly `accessToken` 쿠키가 없으면 401을 반환하고, 있으면 handler에 `accessToken`·검증된 `body`·`params`를 넘긴다. handler 오류는 `toErrorResponse`로 변환해, 백엔드 HTTP 오류는 상태·`code`를 그대로 전달하고(브라우저가 401로 재발급을 판단) 백엔드 연결 실패는 502(`BFF_UPSTREAM_UNAVAILABLE`), 그 외는 내부 메시지 없이 500으로 돌려준다. BFF 오류 응답은 `{ message, code }`이고, BFF가 직접 만드는 오류 코드는 `BFF_` 접두사(`BFF_UNAUTHENTICATED`, `BFF_INVALID_REQUEST`)다. 인증이 필요한 전용 BFF endpoint(아래 "BFF 경로")는 Route Handler를 직접 작성하지 않고 이 wrapper로 만든다(인증 Route Handler 제외). 일반 요청은 범용 프록시가 맡는다.
 - **`serverClient`(`createServerApi`)**: RSC·Route Handler 전용 백엔드 클라이언트다(`server-only`). `accessToken`을 주면 `Authorization: Bearer`로 붙이고, 주지 않으면 공개 API(초대장 조회 등)를 인증 없이 호출한다. 브라우저 쿠키를 백엔드로 넘기지 않는다.
@@ -41,5 +41,6 @@ apps/web은 Next.js Route Handler(`src/app/api/*/route.ts`)를 BFF로 써서 브
 - MSW 가짜 서버(`src/mocks/`, `NEXT_PUBLIC_API_MOCKING=enabled`)는 브라우저 → BFF 요청(`/api/…`)을 BFF 앞에서 가로채므로 쿠키와 로그인이 필요 없다. BFF Route Handler와 서버 컴포넌트의 서버 요청(`serverClient`)은 가로채지 않는다.
 - 화면용 집계는 기본으로 두지 않는다. 요청이 서로 의존해 느리거나(측정으로 확인), 필요 없는 큰 데이터·민감한 필드를 걸러야 할 때만 더한다. 묶은 응답은 TanStack Query의 데이터 단위 무효화를 어렵게 만든다.
 - 집계가 필요하면 가벼운 순서로 고른다: ① 백엔드에 화면용 API 요청 ② Server Component에서 `serverClient`로 병렬 호출(Route Handler를 거치지 않음) ③ 브라우저에서 다시 불러야 하는 조합만 전용 Route Handler(`createAuthorizedRoute`).
+- 백엔드를 부르지 않는 웹 정책 판정도 전용 Route Handler로 둔다: 앱 업데이트 필요 여부(`GET /api/app-version`, #577)는 인증 없이 받고 envelope 없이 `{ updateRequired }`를 60초 공개 캐시로 돌려준다(응답이 URL에만 달려 있고 개인 정보가 없음).
 - 외부 API를 대신 부르는 전용 Route Handler(위치 검색 `GET /api/places/search`)는 호출 남용을 막으려고 사용자(토큰 해시)·IP별 호출 제한과 같은 검색어의 동시 요청 합치기를 둔다(`src/shared/api/server/rateLimit.ts`, 근거는 결정 기록 027). 서버 인스턴스마다 따로 세는 최선 노력 제한이라 다중 인스턴스에서는 정확한 상한이 아니다.
 - 이 BFF는 화면 데이터 집계보다 토큰을 브라우저에서 떼어 내는 인증 경계가 주 역할이다(백엔드가 쿠키를 쓰지 않고 CORS가 꺼져 있음). 비즈니스 로직은 두지 않는다.

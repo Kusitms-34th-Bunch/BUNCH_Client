@@ -25,28 +25,19 @@ export const RadioCard = ({ className, title, description, ...props }: RadioCard
       className={cn(
         'press-scale-large bg-surface-secondary px-padding-p8 py-s9 gap-s7 rounded-r4 relative isolate flex w-full cursor-pointer touch-manipulation items-center',
         // hover는 카드 위에 겹쳐 라디오 원까지 함께 어두워지게 처리
-        'before:rounded-r4 before:bg-overlay-hover before:pointer-events-none before:absolute before:inset-0 before:z-10 before:opacity-0',
+        'press-overlay before:rounded-r4 before:bg-overlay-hover before:z-10',
         // Pressed(2026-11-25): 선택 여부와 관계없이 누르는 동안 overlay-hover
         'hover:not-has-checked:before:opacity-100 active:not-has-disabled:before:opacity-100',
-        'has-checked:bg-surface-brand-subtle-1 has-checked:ring-border-brand-subtle has-checked:ring-1 has-checked:ring-inset',
-        'has-focus-visible:outline-border-brand has-focus-visible:outline-2 has-focus-visible:outline-offset-2',
+        'has-checked:ring-border-strong has-checked:ring-1 has-checked:ring-inset',
         className,
       )}
     >
-      <Radio
-        className="has-focus-visible:outline-0"
-        aria-labelledby={`${id}-title`}
-        aria-describedby={`${id}-description`}
-        {...props}
-      />
+      <Radio aria-labelledby={`${id}-title`} aria-describedby={`${id}-description`} {...props} />
       <span className="gap-s2 flex min-w-0 flex-1 flex-col wrap-break-word break-keep">
         <span id={`${id}-title`} className="typography-body-2-medium text-text-tertiary">
           {title}
         </span>
-        <span
-          id={`${id}-description`}
-          className="typography-caption-1-regular text-text-quaternary"
-        >
+        <span id={`${id}-description`} className="typography-caption-1-regular text-text-tertiary">
           {description}
         </span>
       </span>

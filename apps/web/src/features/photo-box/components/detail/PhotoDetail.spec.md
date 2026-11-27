@@ -44,7 +44,7 @@
 
 ## 데이터 의존성
 
-- Query: 사진 상세는 `photoDetailQueryOptions`(키 `photoBoxKeys.photoDetail`, `staleTime: Infinity`)로 원본 주소를 받고 목록 query 캐시는 읽지 않는다. 삭제 뒤에는 목록·상세 key를 함께 무효화한다. 저장은 query 캐시를 거치지 않고 상세 API를 직접 불러 원본 주소를 받는다.
+- Query: 사진 상세는 `photoDetailQueryOptions`(키 `photoBoxKeys.photoDetail`, `staleTime` 10분, #587. 서명 주소가 30분 뒤 만료되므로 10분이 지나면 화면에 들어올 때·앱으로 돌아올 때 다시 받고, 화면을 켜 둔 채 만료되면 이미지 오류에서 `SignedImageRecovery`가 다시 받음)로 원본 주소를 받고 목록 query 캐시는 읽지 않는다. 삭제 뒤에는 목록·상세 key를 함께 무효화한다. 저장은 query 캐시를 거치지 않고 상세 API를 직접 불러 원본 주소를 받는다.
 - API 계약 확인 항목: 사진 상세에 필요한 필드(원본 URL, 올린 멤버들의 현재 프로필, 촬영 날짜와 출처), 삭제 시 「내 이름만 빠짐」과 「사라짐」의 구분 응답.
 
 ## UI와 접근성

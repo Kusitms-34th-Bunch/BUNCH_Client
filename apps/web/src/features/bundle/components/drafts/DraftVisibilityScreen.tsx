@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, Header, toast } from '@app/design-system';
-import { DescriptionRadioCard } from '@app/design-system/web';
+import { RadioCard } from '@app/design-system/web';
 import { useId } from 'react';
 import { HeaderBackButton } from '@/shared/components/layout/HeaderBackButton';
 import { PageShell } from '@/shared/components/layout/PageShell';
@@ -94,7 +94,7 @@ export function DraftVisibilityScreen({
         inert={uploading}
       >
         {options.map((option) => (
-          <DescriptionRadioCard
+          <RadioCard
             key={option.value}
             name="draft-visibility"
             value={option.value}

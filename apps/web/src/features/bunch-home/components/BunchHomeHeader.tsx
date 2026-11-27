@@ -21,9 +21,9 @@ type BunchHomeHeaderProps = {
   hasUnreadNotifications?: boolean | undefined;
 };
 
-// 24px 아이콘, 터치 영역은 before로 40px까지 넓힘(아이콘 사이 16px 간격 유지)
+// 24px 아이콘, 터치 영역은 before로 40px까지 넓힘(아이콘 사이 16px 간격 유지). 누르는 동안 아이콘 0.95와 뒤 배경(Figma 8311:57033)
 export const headerIconLinkClass =
-  'text-icon-primary focus-visible:outline-border-brand relative flex size-6 cursor-pointer touch-manipulation items-center justify-center rounded-full before:absolute before:-inset-2 focus-visible:outline-2 focus-visible:outline-offset-2';
+  'press-icon-overlay text-icon-primary focus-visible:outline-border-brand relative flex size-6 cursor-pointer touch-manipulation items-center justify-center rounded-full before:absolute before:-inset-2 focus-visible:outline-2 focus-visible:outline-offset-2';
 
 /** 번치 홈 상단 헤더: 번치 전환(이름·화살표), 알림, 더보기. 배경은 프로필 이미지 영역과 같은 성격 색 */
 export function BunchHomeHeader({

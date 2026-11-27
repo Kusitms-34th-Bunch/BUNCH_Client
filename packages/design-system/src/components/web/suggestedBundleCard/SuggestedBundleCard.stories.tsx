@@ -33,7 +33,7 @@ type Story = StoryObj<typeof meta>;
 
 export const Default: Story = {};
 
-/** Figma `Selected`: 브랜드색 글자·칩과 안쪽 1px 테두리 */
+/** Figma `Selected`: 글자·칩은 그대로 두고 안쪽 1px 회색 테두리만 더함 */
 export const Selected: Story = { args: { selected: true } };
 
 /** 멤버가 6명을 넘으면 마지막 칩이 "마지막 멤버 외 N명"으로 줄어듦 */

@@ -19,6 +19,23 @@ const Controlled = ({ maxLength, error }: { maxLength?: number; error?: string }
 };
 
 describe('LabeledTextArea', () => {
+  it('필수면 라벨 옆에 별표를 보이고 입력창을 필수로 알린다(별표는 낭독에서 뺌)', () => {
+    render(<LabeledTextArea label="한 줄 소개" option="required" value="" onChange={() => {}} />);
+
+    const input = screen.getByRole('textbox', { name: '한 줄 소개' });
+    expect(input.getAttribute('aria-required')).toBe('true');
+    const star = screen.getByText('*');
+    expect(star.getAttribute('aria-hidden')).toBe('true');
+    expect(star.classList.contains('text-icon-secondary')).toBe(true);
+  });
+
+  it('선택이면 「선택」 표시를 보이고 필수로 알리지 않는다', () => {
+    render(<LabeledTextArea label="한 줄 소개" option="optional" value="" onChange={() => {}} />);
+
+    expect(screen.getByText('선택')).toBeTruthy();
+    expect(screen.getByRole('textbox').hasAttribute('aria-required')).toBe(false);
+  });
+
   it('보이는 라벨이 입력창의 이름이고 안내 문구를 보여 준다', () => {
     render(<Controlled />);
 

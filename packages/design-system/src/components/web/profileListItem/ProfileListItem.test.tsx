@@ -30,6 +30,9 @@ describe('ProfileListItem', () => {
 
     expect(more.disabled).toBe(true);
     expect(onMore).not.toHaveBeenCalled();
+    // 줄 전체가 흐려지므로 버튼은 한 번 더 흐리지 않음(IconButton plain의 비활성 흐림을 덮어씀)
+    expect(more.classList.contains('disabled:opacity-100')).toBe(true);
+    expect(more.classList.contains('disabled:opacity-(--semantic-opacity-disabled)')).toBe(false);
   });
 
   it('비활성이면 action 슬롯을 inert로 막는다', () => {

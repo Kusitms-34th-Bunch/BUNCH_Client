@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { ApiMockingGate } from '@/mocks/ApiMockingGate';
 import './globals.css';
 import { NativeShellViewport } from '@/shared/components/layout/NativeShellViewport';
+import { PressScrollGuard } from '@/shared/components/layout/PressScrollGuard';
 import { WebVitalsReporter } from '@/shared/components/layout/WebVitalsReporter';
 import { SITE_NAME, SITE_OG_IMAGE, SITE_SLOGAN } from '@/shared/constants/site';
 
@@ -42,6 +43,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
       <body>
         <NativeShellViewport />
         <WebVitalsReporter />
+        {/* 누른 채 움직이면 버튼·목록 줄의 눌림 표시를 풂, 앱 밖 초대 화면도 포함 */}
+        <PressScrollGuard />
         <ApiMockingGate>{children}</ApiMockingGate>
       </body>
     </html>

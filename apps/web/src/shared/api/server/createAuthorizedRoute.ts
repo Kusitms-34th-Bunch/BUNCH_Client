@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { ACCESS_TOKEN_COOKIE } from './authCookies';
+import { authCookieNames } from './authCookies';
 import { parseRequestBody } from './requestBody';
 import { toErrorResponse } from './routeError';
 
@@ -21,9 +21,8 @@ export const createAuthorizedRoute = <Body = unknown, Params = Record<string, st
   handler: (_ctx: AuthorizedRouteContext<Body, Params>) => Promise<unknown>,
   options: CreateAuthorizedRouteOptions = {},
 ) => {
-  const accessTokenCookieName = options.accessTokenCookieName ?? ACCESS_TOKEN_COOKIE;
-
   return async (...[request, context]: RouteHandlerArgs<Params>): Promise<Response> => {
+    const accessTokenCookieName = options.accessTokenCookieName ?? authCookieNames(request).access;
     const accessToken = request.cookies.get(accessTokenCookieName)?.value;
 
     if (!accessToken) {

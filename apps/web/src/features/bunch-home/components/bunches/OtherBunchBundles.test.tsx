@@ -14,7 +14,7 @@ import { OtherBunch } from './OtherBunch';
 
 const push = vi.fn();
 vi.mock('next/navigation', () => ({
-  useRouter: () => ({ push, back: vi.fn(), replace: vi.fn() }),
+  useRouter: () => ({ push, back: vi.fn(), replace: vi.fn(), prefetch: vi.fn() }),
   notFound: vi.fn(),
 }));
 vi.mock('@/shared/lib/navigation/toastAfterNavigation', () => ({ toastAfterNavigation: vi.fn() }));

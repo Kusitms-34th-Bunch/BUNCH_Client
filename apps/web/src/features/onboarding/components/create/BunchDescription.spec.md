@@ -11,7 +11,7 @@
 ### 포함
 
 - 번치를 한 줄로 소개하는 2단계의 UI와 입력 규칙.
-- 구성: 헤더(왼쪽 뒤로 가기), `Stepper`(3단계 중 2단계), 제목 「번치를 소개해주세요」, 한 줄 소개 입력(`LabeledTextArea`, 최대 50자), TIP 영역(배지 + 「이런 소개는 어때요?」 + 예시 3개), 하단 「이전」·「다음」.
+- 구성: 헤더(왼쪽 뒤로 가기), `Stepper`(3단계 중 2단계), 제목 「번치를 소개해주세요」, 한 줄 소개 입력(`LabeledTextArea`, 최대 50자, 필수 별표 `option="required"`), TIP 영역(배지 + 「이런 소개는 어때요?」 + 예시 3개), 하단 「이전」·「다음」.
 - 소개를 입력하면 「다음」이 활성화된다. 「다음」을 누르면 서버가 금칙어를 먼저 검사하고(`POST /bunches/introduction-validation`, 기능명세 2.2.6 로직 4), 통과한 입력만 3단계로 넘어간다. TIP 영역은 입력과 관계없이 항상 보인다(설계서 4번).
 
 ### 범위 외
@@ -43,18 +43,18 @@
 
 ## UI와 접근성
 
-- Component mapping: `CreateBunchFrame`(헤더·진행 표시줄, `BunchBasicInfo.spec.md`), `PageHeader`(제목만), `LabeledTextArea`(한 줄 소개), `Badge`(`size="sm"`, TIP), `Button`(`secondary` 이전 / `primary` 다음).
+- Component mapping: `CreateBunchFrame`(헤더·진행 표시줄, `BunchBasicInfo.spec.md`), `PageHeader`(제목만), `LabeledTextArea`(한 줄 소개), `Badge`(`variant="strong" color="gray" size="sm"`, TIP), `Button`(`secondary` 이전 / `primary` 다음).
 - Keyboard·focus·accessible name: 소개 입력은 보이는 라벨 「한 줄 소개」로 이름을 얻고 글자 수는 입력창 설명으로 연결된다. TIP 영역은 `h2`와 목록이라 구조로 읽힌다. 「다음」은 비활성일 때 native `disabled`다.
 - Responsive·긴 텍스트·overflow: 입력창은 줄바꿈되고 높이가 늘어난다. 375px에서 가로 넘침이 없다.
 
-| Figma          | 값                                                                         | 사용한 토큰·utility                           |
-| -------------- | -------------------------------------------------------------------------- | --------------------------------------------- |
-| 소개 입력 영역 | 위 36, 좌우 16                                                             | `pt-s15 px-padding-p8`                        |
-| TIP 영역       | 위 36, 배지와 제목 간격 6, 박스까지 6                                      | `pt-s15 px-padding-p8 gap-s3`, `gap-s3`       |
-| TIP 배지       | 7×3 패딩, 12/16 Medium, `chip-blue`                                        | `Badge size="sm"`                             |
-| 예시 박스      | 패딩 16, radius 8, `surface-secondary`, 13/18 `text-tertiary`, 목록 간격 4 | `p-s8 rounded-r4 bg-surface-secondary gap-s2` |
-| 목록 들여쓰기  | 19.5                                                                       | `ms-[19.5px]`(토큰 없음)                      |
-| 하단 버튼      | 위 10, 좌우 16, 간격 10, 「이전」 88px                                     | `pt-s5 px-padding-p8 gap-s5`, `w-22`          |
+| Figma          | 값                                                                                    | 사용한 토큰·utility                             |
+| -------------- | ------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| 소개 입력 영역 | 위 36, 좌우 16                                                                        | `pt-s15 px-padding-p8`                          |
+| TIP 영역       | 위 36, 배지와 제목 간격 6, 박스까지 6                                                 | `pt-s15 px-padding-p8 gap-s3`, `gap-s3`         |
+| TIP 배지       | 7×3 패딩, 12/16 Medium, 바탕 `chip-gray-fg`·글자 `chip-gray-bg`(2026-11-24 색상 변경) | `Badge variant="strong" color="gray" size="sm"` |
+| 예시 박스      | 패딩 16, radius 8, `surface-secondary`, 13/18 `text-tertiary`, 목록 간격 4            | `p-s8 rounded-r4 bg-surface-secondary gap-s2`   |
+| 목록 들여쓰기  | 19.5                                                                                  | `ms-[19.5px]`(토큰 없음)                        |
+| 하단 버튼      | 위 10, 좌우 16, 간격 10, 「이전」 88px                                                | `pt-s5 px-padding-p8 gap-s5`, `w-22`            |
 
 ## 검증
 
@@ -71,7 +71,7 @@
 - 뒤로 가기·이전 (확정, 설계서대로): 헤더 뒤로 가기는 설계서대로 중단 확인 모달을 연다(`BunchBasicInfo.spec.md`). 「이전」은 설계서가 "1단계로 이동"이지만 이전 화면으로 돌아간다(`router.back()`). 이 화면을 URL로 직접 열었다면 「이전」이 1단계가 아니라 브라우저 이전 기록으로 나가고, 이전 기록이 없으면 동작이 없을 수 있다.
 - 글자 수 최대치 (확정): 50자. 설계서 목업의 `0/30`은 오기로 본다.
 - 입력 조건 (제안): 「다음」 활성 조건을 공백 제외 1자 이상으로 했다. 설계서는 "입력 조건 충족 시"만 적었다. 기획 확인.
-- 줄바꿈 (제안): 한 줄 소개라 Enter를 막았다(한글 조합 확정 Enter는 막지 않고 모바일 키보드에는 `enterKeyHint="done"`). 설계서에 없는 동작이다. 막은 이유를 화면에 알리지는 않는다(보이는 안내는 디자이너 협의). 기획 확인.
+- 줄바꿈 (확정): 기능명세 2.2.6대로 줄바꿈을 허용해 Enter는 줄바꿈이고 키보드 키도 줄바꿈이다. 다음 단계는 「다음」 버튼으로만 간다(#579에서 예전 「Enter 막음·완료 키」 서술을 바로잡음).
 - 소개 예시 (확정): 설계서 4번의 고정 문구 3개를 그대로 쓴다.
 - 입력 포커스 표시 (확정): 포커스 시 1px 테두리가 `border-strong` 색상(#25282d)으로 바뀌고 안내 문구를 숨긴다. 포커스 해제 시 기본 테두리로 돌아간다(`LabeledTextArea.spec.md`).
 - 「다음」 비활성 사유 (미정): 비활성일 때 이유를 알리는 보이는 안내가 Figma에 없다. 포커스에서 빠지는 native `disabled`와 함께 접근성 개선 후보이며 디자이너 협의 대상이다.

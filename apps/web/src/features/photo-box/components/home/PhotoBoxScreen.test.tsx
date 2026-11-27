@@ -95,7 +95,8 @@ describe('PhotoBoxScreen 목록', () => {
 
     // 사진은 장식이고 이름은 덮은 상세 링크가 가짐
     expect(screen.getByRole('link', { name: '깨진 사진' })).toBeTruthy();
-    const image = document.querySelector('img[src="/missing.jpg"]');
+    // 칸 뒤에 숨겨 둔 hero용 같은 사진(aria-hidden)이 아닌 썸네일
+    const image = document.querySelector('img[src="/missing.jpg"]:not([aria-hidden])');
     if (!image) throw new Error('사진 없음');
     fireEvent.error(image);
 
@@ -412,5 +413,24 @@ describe('PhotoBoxScreen 로딩·오류', () => {
     await user.click(screen.getByRole('button', { name: '다시 시도' }));
 
     expect(onRetry).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('PhotoBoxScreen 선택 버튼(#583)', () => {
+  it('보이는 사진이 없으면 「선택」을 자리 그대로 비활성으로 두고, 사진이 있으면 켠다', () => {
+    const { unmount } = renderScreen(ready(emptyData));
+    expect(screen.getByRole('button', { name: '선택' })).toHaveProperty('disabled', true);
+    unmount();
+
+    renderScreen();
+    expect(screen.getByRole('button', { name: '선택' })).toHaveProperty('disabled', false);
+  });
+
+  it('보이는 사진이 없으면 남은 사진을 받는 중이거나 실패해도 「선택」을 끈다', () => {
+    for (const more of ['loading', 'error'] as const) {
+      const { unmount } = renderScreen(ready({ ...emptyData, more }));
+      expect(screen.getByRole('button', { name: '선택' })).toHaveProperty('disabled', true);
+      unmount();
+    }
   });
 });

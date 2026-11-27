@@ -66,9 +66,12 @@ for (const item of OVERLAYS) {
 
     // Tab 가두기 확인은 Chromium만(macOS WebKit은 Tab이 버튼을 건너뛰고 Option+Tab은 실행마다 창 밖으로 빠져 흔들림)
     // iPad 키보드는 mobile-testing.md 체크리스트로 확인
+    // 끝에서 Tab하면 Base UI 초점 가드(창 밖 span)가 잠깐 받은 뒤 처음으로 돌려 보내므로 돌아올 때까지 기다림(바로 읽으면 흔들림)
     for (let i = 0; i < (browserName === 'chromium' ? 8 : 0); i++) {
       await page.keyboard.press('Tab');
-      expect(await overlay.evaluate((el) => el.contains(document.activeElement))).toBe(true);
+      await expect
+        .poll(() => overlay.evaluate((el) => el.contains(document.activeElement)))
+        .toBe(true);
     }
 
     await page.keyboard.press('Escape');

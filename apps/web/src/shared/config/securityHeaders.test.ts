@@ -35,6 +35,14 @@ describe('buildCspReportOnly', () => {
     expect(csp).not.toContain("'unsafe-eval'");
   });
 
+  it('TestFlight 테스터용 개발 WS 출처도 connect-src에 넣는다(#581)', () => {
+    const csp = buildCspReportOnly({
+      NEXT_PUBLIC_WS_URL: 'wss://api.bunch.example/ws',
+      NEXT_PUBLIC_WS_URL_STAGING: 'wss://dev.bunch.example/ws',
+    });
+    expect(csp).toContain("connect-src 'self' wss://api.bunch.example wss://dev.bunch.example ");
+  });
+
   it('환경 변수가 없으면 같은 출처와 PostHog 기본 호스트만 허용하고 보고 주소를 빼며, 개발에서만 eval을 허용한다', () => {
     const csp = buildCspReportOnly({ NODE_ENV: 'development' });
     expect(csp).toContain(

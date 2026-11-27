@@ -31,7 +31,7 @@ function Screen({ bunchId }: { bunchId: string }) {
   const value = useBunchSwitchMotion(contentRef, bunchId);
   useEffect(() => keepMotion(value));
   return (
-    <div data-app-background="orange-50" data-testid="root">
+    <div data-page-shell="" data-app-background="orange-50" data-testid="root">
       <main>
         <div key={bunchId} ref={contentRef}>
           <button type="button">{bunchId}</button>
@@ -49,10 +49,13 @@ describe('useBunchSwitchMotion', () => {
   it('고르면 지금 화면을 붙잡아 두고, 새 번치가 그려지면 두 화면을 움직인 뒤 치운다', async () => {
     const { rerender } = render(<Screen bunchId="1" />);
 
-    act(() => motion!.begin());
+    act(() => {
+      void motion!.begin();
+    });
     expect(clones()).toHaveLength(1);
     // 붙잡은 화면은 상태 바 색 판단에서 빠짐
     expect(clones()[0]!.querySelector('[data-app-background]')).toBeNull();
+    expect(clones()[0]!.querySelector('[data-page-shell]')).toBeNull();
     // 바깥 틀은 터치를 받아 막고(inert 아님), 안의 복제 화면은 inert라 링크·버튼이 동작하지 않음
     expect(clones()[0]!.getAttribute('aria-hidden')).toBe('true');
     expect(clones()[0]!.hasAttribute('inert')).toBe(false);
@@ -71,7 +74,9 @@ describe('useBunchSwitchMotion', () => {
   it('전환에 실패하면 붙잡은 화면을 바로 치우고 움직이지 않는다', () => {
     render(<Screen bunchId="1" />);
 
-    act(() => motion!.begin());
+    act(() => {
+      void motion!.begin();
+    });
     act(() => motion!.cancel());
 
     expect(clones()).toHaveLength(0);
@@ -82,7 +87,9 @@ describe('useBunchSwitchMotion', () => {
   it('기다리는 사이 화면이 사라지면 붙잡은 화면도 치운다', () => {
     const { unmount } = render(<Screen bunchId="1" />);
 
-    act(() => motion!.begin());
+    act(() => {
+      void motion!.begin();
+    });
     unmount();
 
     expect(clones()).toHaveLength(0);

@@ -116,8 +116,8 @@ function CoverImage({ src, alt, lazy }: { src: string; alt: string; lazy: boolea
       }}
       src={src}
       alt={alt}
-      decoding="async"
-      // 이미 받은 사진은 바로(상세에서 아래 칸으로 돌아오는 전환 첫 프레임이 비지 않게)
+      // 이미 받은 사진은 바로·decoding 없이(상세에서 칸으로 돌아오는 전환 첫 프레임이 비지 않게, async면 decode 전까지 빔 #573)
+      decoding={shownCovers.has(src) ? undefined : 'async'}
       loading={lazy && !shownCovers.has(src) ? 'lazy' : undefined}
       onLoad={() => {
         rememberShownCover(src);
