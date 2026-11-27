@@ -35,6 +35,7 @@ import {
   guardSheet,
   guardZoom,
 } from './_transitions/pageGuards';
+import { PHOTO_HERO_EASING, PHOTO_HERO_MS } from './_transitions/photoHeroMotion';
 import { tabCrossfade } from './_transitions/tabCrossfade';
 
 const SIGNUP_DISSOLVE_DURATION_MS = 300;
@@ -118,11 +119,10 @@ const feedBundleHero = hero(
   { type: 'fade' },
   { override: { forward: tuneFeedBundleHero, backward: tuneFeedBundleHero } },
 );
-// 사진함 썸네일 → 사진 상세 hero(Figma에 정의 없음). 들어갈 때는 피드와 같은 곡선을 조금 짧게(550ms는 느리다는 사용자 의견, #568)
-// 돌아갈 때는 부드러운 spring(smooth) 그대로(사용자 확인)
-const PHOTO_HERO_MS = 450;
+// 사진함 썸네일 → 사진 상세 hero(Figma에 정의 없음, 시간·곡선은 photoHeroMotion). 돌아갈 때는 부드러운 spring(smooth) 그대로(사용자 확인)
+// 사진함에서 앱 안 이동으로 열면 겹쳐 띄운 상세(@overlay)가 직접 움직이고, 이 규칙은 주소로 바로 연 상세에서 돌아갈 때 씀(결정 기록 032)
 const tunePhotoHero = ({ animation }: { animation: MultiAnimation<'shared' | 'out' | 'in'> }) => {
-  animation.set({ integrator: cubicBezierIntegrator(PHOTO_HERO_MS, [0.3, 0, 0.15, 1]) });
+  animation.set({ integrator: cubicBezierIntegrator(PHOTO_HERO_MS, PHOTO_HERO_EASING) });
   guardHero({ animation });
 };
 const photoHero = hero(

@@ -43,3 +43,4 @@
 - [029: 앱 쉘 핵심 흐름은 Maestro로 iOS 시뮬레이터에서 확인한다](./records/029-maestro-shell-e2e.md) (proposed)
 - [030: 네이티브 플로팅 버튼이 떠 있는 화면의 토스트는 쉘이 네이티브로 띄운다](./records/030-native-toast-on-floating-screens.md) (proposed)
 - [031: apps/admin 기능 개발 보류를 해제하고 운영 도구로 개발한다](./records/031-admin-resumed.md)
+- [032: 사진함에서 연 사진 상세는 사진함을 유지한 채 위에 겹쳐 띄운다](./records/032-photo-detail-overlay.md) (proposed)

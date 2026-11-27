@@ -42,7 +42,13 @@ const DESTINATIONS = {
 // 로그아웃·탈퇴·세션 만료 뒤 도착하는 로그인 전 화면
 const SIGNED_OUT_PATHS = [INTRO_PATH, LOGIN_PATH];
 
-export default function AppLayout({ children }: { children: ReactNode }) {
+export default function AppLayout({
+  children,
+  overlay,
+}: {
+  children: ReactNode;
+  overlay: ReactNode;
+}) {
   return (
     <QueryProvider>
       <OverlayProvider>
@@ -50,7 +56,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <AppOnlyGate fallback={<AppInstallGuide />}>
           <AppFrame>
             <AuthGate destinations={DESTINATIONS}>
-              <AppTransitions>{children}</AppTransitions>
+              {/* 사진 상세처럼 위에 겹쳐 띄운 화면(overlay)이 있는 동안 뒤 화면은 inert(data-overlay-under) */}
+              <div data-overlay-under="" className="contents">
+                <AppTransitions>{children}</AppTransitions>
+              </div>
+              {overlay}
             </AuthGate>
           </AppFrame>
         </AppOnlyGate>
