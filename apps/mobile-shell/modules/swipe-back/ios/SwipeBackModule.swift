@@ -54,6 +54,8 @@ final class SwipeBackWatcher: NSObject, UIGestureRecognizerDelegate {
   private static let settleWindow: TimeInterval = 1.0
   // 웹 신호가 오지 않아도 덮개를 걷는 시간
   private static let coverLimit: TimeInterval = 1.0
+  // 손을 뗀 뒤 iOS가 남은 거리를 미는 애니메이션을 기다리는 최대 시간
+  private static let slideLimit: TimeInterval = 0.6
 
   weak var webView: WKWebView?
   private var urlObservation: NSKeyValueObservation?
@@ -63,6 +65,11 @@ final class SwipeBackWatcher: NSObject, UIGestureRecognizerDelegate {
   private var cancelCheck: DispatchWorkItem?
   private var coverLimit: DispatchWorkItem?
   private var cover: UIView?
+  // 주소가 바뀐 뒤 밀어내기 애니메이션이 끝나기를 기다리는 동안(끝나면 덮음)
+  private var slideWait: CADisplayLink?
+  private var slideStartedAt: CFTimeInterval = 0
+  // 덮기 전에 웹이 이미 그렸으면 덮지 않음
+  private var settledEarly = false
 
   init(webView: WKWebView) {
     self.webView = webView
@@ -113,12 +120,44 @@ final class SwipeBackWatcher: NSObject, UIGestureRecognizerDelegate {
     }
   }
 
-  // 스와이프로 이동한 순간 화면(WebKit이 깐 앞 화면 스냅샷)을 덮개로 덮음
+  // 스와이프로 이동하면 iOS가 남은 거리를 다 민 뒤 그 화면(WebKit이 깐 앞 화면 스냅샷)을 덮개로 덮음
+  // 실기기는 손을 떼자마자 주소가 바뀌어 바로 찍으면 반쯤 밀린 화면이 웹 신호까지 멈춰 보였음(#598)
   private func urlChanged() {
-    guard swiping, released, let webView, let container = webView.superview else { return }
+    guard swiping, released, webView != nil else { return }
     swiping = false
     released = false
     cancelCheck?.cancel()
+    settledEarly = false
+    slideWait?.invalidate()
+    slideStartedAt = CACurrentMediaTime()
+    let link = CADisplayLink(target: self, selector: #selector(checkSlide))
+    link.add(to: .main, forMode: .common)
+    slideWait = link
+  }
+
+  @objc private func checkSlide() {
+    guard let webView, let container = webView.superview else { return stopSlideWait() }
+    let timedOut = CACurrentMediaTime() - slideStartedAt > Self.slideLimit
+    if !timedOut && Self.isAnimating(container.layer) { return }
+    stopSlideWait()
+    // 미는 중에 앱이 뒤로 갔다 돌아오면 그때 화면을 찍어 덮지 않음(밀던 장면이 아님)
+    if settledEarly || UIApplication.shared.applicationState != .active { return }
+    addCover(over: container)
+  }
+
+  private func stopSlideWait() {
+    slideWait?.invalidate()
+    slideWait = nil
+  }
+
+  // 레이어 트리 어딘가에 애니메이션이 걸려 있으면 아직 미는 중
+  private static func isAnimating(_ layer: CALayer, depth: Int = 0) -> Bool {
+    if let keys = layer.animationKeys(), !keys.isEmpty { return true }
+    guard depth < 6 else { return false }
+    return layer.sublayers?.contains { isAnimating($0, depth: depth + 1) } ?? false
+  }
+
+  private func addCover(over container: UIView) {
     guard cover == nil, let snapshot = container.snapshotView(afterScreenUpdates: false) else { return }
     snapshot.frame = container.bounds
     // 덮는 동안에도 누름은 아래 WebView로(덮개는 그림만)
@@ -131,6 +170,8 @@ final class SwipeBackWatcher: NSObject, UIGestureRecognizerDelegate {
   }
 
   func removeCover() {
+    // 미는 중에 웹이 먼저 그렸으면 덮지 않음
+    if slideWait != nil { settledEarly = true }
     coverLimit?.cancel()
     coverLimit = nil
     cover?.removeFromSuperview()
