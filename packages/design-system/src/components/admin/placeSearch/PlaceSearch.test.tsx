@@ -311,16 +311,12 @@ describe('PlaceSearch', () => {
 
   it('패널이 떠 있는 동안 받는 중에서 결과로 바뀌어도 상자는 그대로 두고 내용만 바꾼다', () => {
     const { rerender } = render(<Example status="loading" query="플로디" />);
-    const box = screen.getByRole('combobox', { name: '장소검색' }).closest('div')
-      ?.nextElementSibling?.firstElementChild;
+    const box = document.querySelector('[data-place-search-box]');
     expect(box).toBeTruthy();
 
     rerender(<Example status="results" query="플로디" />);
 
-    expect(
-      screen.getByRole('combobox', { name: '장소검색' }).closest('div')?.nextElementSibling
-        ?.firstElementChild,
-    ).toBe(box);
+    expect(document.querySelector('[data-place-search-box]')).toBe(box);
   });
 
   it('패널이 완전히 없어질 때는 마지막 내용을 누를 수 없게 잠깐 남겼다가 지운다', async () => {

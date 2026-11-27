@@ -54,7 +54,7 @@
 | 목록 테두리 `border-tertiary`, 여백 `padding-p3`(6), `radius-r3`, 그림자 0 4 12 검정 6%                             | `border p-padding-p3 rounded-r3 shadow-[0px_4px_12px_0px_rgba(0,0,0,0.06)]`(토큰 없음)                     |
 | 결과 항목 여백 10, `radius` 4, 가리킴 `surface-secondary`                                                           | `p-2.5 rounded-r2 data-highlighted:bg-surface-secondary`                                                   |
 | 이름 `Body-3`(검색어 SemiBold), 업종 `Caption-1-Regular` `text-quaternary`, 주소 `Body-4-Regular` `text-quaternary` | `typography-body-3-*`, `typography-caption-1-regular`, `typography-body-4-regular text-text-quaternary`    |
-| 결과 없음 위아래 20·좌우 12, 간격 `spacing-s8`, 버튼 `Label-S` 밑줄 `text-tertiary`                                 | `px-3 py-5 gap-s8`, `typography-label-s underline text-text-tertiary`                                      |
+| 결과 없음 위아래 20·좌우 12, 간격 `spacing-s8`, 버튼 `Label-S` 밑줄 `text-tertiary`                                 | 상자 `p-padding-p3`(6) + 안쪽 `px-1.5 py-3.5`, `gap-s8`, `typography-label-s underline text-text-tertiary` |
 | 장소 칸 바탕 `surface-secondary`, 왼쪽 `padding-p8`·오른쪽 `padding-p6`·위아래 `padding-p5`, 핀 `icon-primary`      | `bg-surface-secondary pl-padding-p8 pr-padding-p6 py-padding-p5`, `FillMapPinMediumIcon text-icon-primary` |
 | 「변경」 바탕 `surface-primary`, 테두리 `border-secondary`, `radius-r4`, 높이 32, 좌우 `spacing-s6`                 | `bg-surface-primary border-border-secondary rounded-r4 h-8 px-s6`                                          |
 
@@ -66,7 +66,7 @@
 - 패널 자리(2026-11-27 사용자 결정): 처음 나타날 때 투명도 0→1 150ms ease-out(CSS `@starting-style`), 완전히 없어질 때 1→0 100ms ease-in. 사라지는 동안은 마지막 내용을 그대로 그리되 `inert`·`aria-hidden`으로 누르거나 읽히지 않게 하고, 결과 목록은 Combobox 대신 정적 사본으로 그린다.
 - 떠 있는 동안 받는 중·결과·결과 없음 사이로 바뀌면 흰 상자는 그대로 두고 안의 내용만 투명도 150ms로 나타난다. 결과 ↔ 고른 장소 칸은 상자 모양이 달라 상자는 바로 바뀌고 내용만 나타난다. 검색어마다 결과만 바뀌면 다시 나타나지 않는다.
 - 처음 나타날 때는 패널 자리만 흐려지고 안쪽 내용은 따로 흐려지지 않는다(두 번 흐려지지 않게). 편집 화면처럼 처음부터 고른 장소가 있으면 고른 장소 칸도 같은 150ms로 나타난다. 사라지는 사본에는 방향키 강조가 남지 않는다.
-- 높이 변화(아래 내용이 밀리는 것)는 검색마다 바뀌어 애니메이션하지 않는다. 동작 줄이기면 바로 나타나고 사라진다.
+- 높이 변화(아래 내용이 밀리는 것)는 검색마다 바뀌어 애니메이션하지 않는다. 투명도만 바뀌어 동작 줄이기에도 그대로 둔다(motion.md 「접근성」).
 
 ## 확인할 항목
 

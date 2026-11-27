@@ -78,13 +78,12 @@ const SKELETON_ROWS = [
 ] as const;
 
 // 패널 모션(2026-11-27 사용자 결정): 패널 자리 자체는 처음 나타날 때(투명도 150ms ease-out)와 완전히 없어질 때(100ms ease-in)만 움직임
-// 떠 있는 동안 받는 중·결과·결과 없음·고른 장소로 바뀌면 상자는 그대로 두고 안의 내용만 살짝 나타남. 동작 줄이기면 바로 바뀜
+// 떠 있는 동안 받는 중·결과·결과 없음·고른 장소로 바뀌면 상자는 그대로 두고 안의 내용만 살짝 나타남. 투명도만 바뀌어 동작 줄이기에도 남김(motion.md 「접근성」)
 const PANEL_SLOT = [
-  'transition-opacity duration-150 ease-out starting:opacity-0 motion-reduce:transition-none',
+  'transition-opacity duration-150 ease-out starting:opacity-0',
   'data-leaving:pointer-events-none data-leaving:opacity-0 data-leaving:duration-100 data-leaving:ease-in',
 ].join(' ');
-const CONTENT_ENTER =
-  'transition-opacity duration-150 ease-out starting:opacity-0 motion-reduce:transition-none';
+const CONTENT_ENTER = 'transition-opacity duration-150 ease-out starting:opacity-0';
 const LEAVE_MS = 100;
 
 // 받는 중·결과·결과 없음 상자(Figma dropdown)
@@ -209,7 +208,7 @@ export const PlaceSearch = ({
       ? 'selected'
       : null;
   // 보이는 동안 마지막 내용을 기억했다가 없어질 때 그 내용으로 흐려지며 사라짐
-  // 검색어마다 렌더하지 않게 내용이 실제로 바뀔 때만 갱신(호출자가 렌더마다 새 배열·객체를 넘겨도 값으로 비교)
+  // 내용(종류·결과 id·검색어·문구·고른 장소)이 바뀔 때만 갱신(호출자가 렌더마다 새 배열·객체를 넘겨도 값으로 비교)
   const panelKey =
     panelKind === null
       ? null
@@ -236,11 +235,10 @@ export const PlaceSearch = ({
     });
   }
   const leaving = panelKind === null && snapshot !== null;
-  // 사라지는 모션이 끝나면 패널 자리를 지움(동작 줄이기면 바로)
+  // 사라지는 모션이 끝나면 패널 자리를 지움
   useEffect(() => {
     if (!leaving) return;
-    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    const timer = window.setTimeout(() => setSnapshot(null), reduce ? 0 : LEAVE_MS);
+    const timer = window.setTimeout(() => setSnapshot(null), LEAVE_MS);
     return () => window.clearTimeout(timer);
   }, [leaving]);
   // 그릴 내용: 보이는 동안은 지금 값, 사라지는 동안은 마지막 값
@@ -357,7 +355,7 @@ export const PlaceSearch = ({
             className={PANEL_SLOT}
           >
             {shownKind === 'selected' ? (
-              <div className={SELECTED_BOX}>
+              <div data-place-search-box="" className={SELECTED_BOX}>
                 <div key="selected" className={cn('gap-s5 flex items-center', contentEnter)}>
                   <FillMapPinMediumIcon className="text-icon-primary shrink-0" />
                   <div className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -386,7 +384,7 @@ export const PlaceSearch = ({
               </div>
             ) : (
               // 받는 중·결과·결과 없음은 같은 상자를 두고 안의 내용만 바꿈
-              <div className={SEARCH_BOX}>
+              <div data-place-search-box="" className={SEARCH_BOX}>
                 {shownKind === 'loading' ? (
                   <div key="loading" className={contentEnter}>
                     {SKELETON_ROWS.map(([title, address]) => (

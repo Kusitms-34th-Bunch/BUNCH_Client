@@ -93,11 +93,21 @@ Figma `공통 모션`(node `1962:18333`)이 정한 값이다. 디자이너가 �
 | 모달                | 패널 중앙에서 opacity 0→1·scale 1.3→1, 200ms `0.03, 0.4, 0.1, 1`. 딤 100ms `0, 0, 0.15, 1`. 닫힘은 크기 유지·패널과 딤 100ms `0.35, 0, 1, 1` 페이드 아웃                                | `Dialog`(`ConfirmDialog`·`ActionDialog` 포함)의 Popup·Backdrop 기본 transition. 값 출처는 온보딩 나가기 모달(`BunchMood.spec.md`)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
 | 메뉴 탭(아이콘)     | 탭을 누르면 Dissolve·Ease out·75ms(화면설계서 `1892:37781` 3번)                                                                                                                         | `MenuTabs.IconTab`이 겹친 Line·Fill 아이콘 투명도·색을 75ms ease-out으로 바꿈. 선택 밑줄은 Dissolve 대신 250ms ease-out으로 미끄러짐([bunch-home.md](../specs/bunch-home.md)의 「모션」 「메뉴 탭 밑줄 이동」). 번치 홈 탭 패널은 좌우 밀기([bunch-home.md](../specs/bunch-home.md)의 「모션」 「번치 홈 번들 탭 패널 밀기」)                                                                                                                                                                                                                                                                                                                                                       |
 
-- 어드민(2026-11-27): 어드민 Figma에 모션이 없어 web 값을 따른다. `Dropdown`·`DatePickerField` 펼침은 위 「물리감」·duration 기준대로 scale 0.9→1·투명도, 열기 150ms ease-out·닫기 100ms ease-in(Base UI transition, 기준점 `--transform-origin`. 팝오버 메뉴의 0.35→1·280ms는 모바일 값이라 데스크톱에서 튀어 보여 쓰지 않음), `TabList` 선택 선은 메뉴 탭 밑줄 값(250ms ease-out), `SideMenu`는 배경·글자 색만 150ms ease-out으로 바꾸고, `PlaceSearch` 패널 자리는 나타날 때(150ms ease-out)·없어질 때(100ms ease-in)만 투명도로 움직이고 떠 있는 동안은 안의 내용만 바뀐다(선택 배경 이동은 시선이 쏠려 쓰지 않음). 버튼·행 눌림 축소는 데스크톱이라 넣지 않았다. 기록은 각 컴포넌트 spec의 「모션」.
 - 위쪽 토스트(`toast`의 `position: 'top'`, 제거된 사진 캡션 화면에서 쓰던 규칙): 같은 곡선·350ms로 등장은 5px 아래로 내려오며 0%→100%, 퇴장은 5px 위로 올라가며 100%→0%(화면설계서 `2034:24751` 3번, Chrome에서 프레임 측정으로 44→49px·49→44px 확인).
 - 토스트·메뉴처럼 반복해서 열리는 요소는 `@keyframes`보다 transition을 우선하지만, 메뉴는 열릴 때마다 처음부터 재생하는 모양이라 `@keyframes`를 쓴다(닫는 도중 다시 열면 현재 위치에서 이어지지 않는 점은 수용).
 - Gentle 값(100·15·1)은 Figma 프리셋의 알려진 값 기준이고 노드 데이터에서는 직접 확인하지 못했다. 디자이너가 다른 값을 쓰면 곡선만 바꾼다.
 - 칩 버튼의 "Ease out"은 지금 Tailwind `ease-out`(`cubic-bezier(0, 0, 0.2, 1)`)이다. 버튼 눌림 항목과 마찬가지로 CSS 표준 곡선과 다르다.
+
+## 어드민 모션
+
+어드민 Figma에 모션이 없어 web 값과 이 문서의 기본 규칙을 따른다(2026-11-27 사용자 결정). 위 「공통 모션」처럼 디자이너가 지정한 값이 아니므로 기본 규칙보다 우선하지 않는다. 기록은 각 컴포넌트 spec의 「모션」이다.
+
+- `Dropdown`·`DatePickerField` 펼침: 「물리감」·duration 기준대로 트리거 쪽에서 scale 0.9→1·투명도, 열기 150ms ease-out. 닫기는 100ms ease-in으로 팝오버 메뉴 닫기와 같은 예외다(진입·이탈 ease-out 기본과 다름). Base UI transition, 기준점 `--transform-origin`. 팝오버 메뉴의 0.35→1·280ms는 모바일 값이라 데스크톱에서 튀어 보여 쓰지 않는다.
+- `TabList` 선택 선: 메뉴 탭 밑줄과 같은 250ms ease-out 이동(`left`·`width` 예외 포함).
+- `SideMenu`: 배경·글자 색만 150ms `ease`. 선택 배경이 항목 사이를 미끄러지는 방식은 시선이 쏠려 쓰지 않는다.
+- `PlaceSearch`: 패널 자리는 나타날 때(150ms ease-out)·없어질 때(100ms ease-in, 같은 예외)만 투명도로 움직이고, 떠 있는 동안은 안쪽 내용만 바뀐다.
+- 동작 줄이기: 이동·크기 변화(선택 선 이동, 팝업 크기)만 빼고 투명도·색 전환은 남긴다.
+- 버튼·행 눌림 축소는 데스크톱이라 넣지 않는다.
 
 ## 사진함 업로드 상태 줄
 
