@@ -347,4 +347,30 @@ describe('PlaceSearch', () => {
     expect(leaving?.getAttribute('aria-hidden')).toBe('true');
     await waitFor(() => expect(document.querySelector('[data-leaving]')).toBeNull());
   });
+
+  it('비활성이면 변경·직접 입력하기 버튼도 누를 수 없다', () => {
+    const onChangeSelected = vi.fn();
+    const { rerender } = render(
+      <Example
+        status="idle"
+        disabled
+        selected={{ name: '플로디스튜디오 연남점', address: '서울 마포구 연남로 12, 2층' }}
+        onChangeSelected={onChangeSelected}
+      />,
+    );
+
+    const change = screen.getByRole('button', { name: '변경' });
+    expect(change).toHaveProperty('disabled', true);
+    fireEvent.click(change);
+    expect(onChangeSelected).not.toHaveBeenCalled();
+
+    rerender(
+      <Example
+        status="empty"
+        disabled
+        manualInput={{ label: '직접 입력하기', onClick: vi.fn() }}
+      />,
+    );
+    expect(screen.getByRole('button', { name: '직접 입력하기' })).toHaveProperty('disabled', true);
+  });
 });

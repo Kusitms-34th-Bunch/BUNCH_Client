@@ -368,6 +368,8 @@ export const PlaceSearch = ({
                   </div>
                   <button
                     type="button"
+                    // 비활성 필드에서는 「변경」·「직접 입력하기」도 누를 수 없음
+                    disabled={disabled}
                     onClick={() => {
                       onChangeSelected?.();
                       clearSelectedNotice();
@@ -376,7 +378,7 @@ export const PlaceSearch = ({
                       setEditedAfterSelect(true);
                       inputRef.current?.focus();
                     }}
-                    className="bg-surface-primary border-border-secondary rounded-r4 px-s6 typography-label-s text-text-secondary focus-visible:outline-border-brand flex h-8 shrink-0 cursor-pointer items-center border focus-visible:outline-2 focus-visible:outline-offset-2"
+                    className="bg-surface-primary border-border-secondary rounded-r4 px-s6 typography-label-s text-text-secondary focus-visible:outline-border-brand flex h-8 shrink-0 cursor-pointer items-center border focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed"
                   >
                     {changeLabel}
                   </button>
@@ -452,12 +454,14 @@ export const PlaceSearch = ({
                     {!leaving && manualInput ? (
                       <button
                         type="button"
+                        // 비활성 필드에서는 「변경」·「직접 입력하기」도 누를 수 없음
+                        disabled={disabled}
                         onClick={() => {
                           manualInput.onClick();
                           // 결과 없음 패널이 사라져도 초점을 잃지 않게 입력칸으로
                           inputRef.current?.focus();
                         }}
-                        className="typography-label-s text-text-tertiary px-s6 rounded-r4 focus-visible:outline-border-brand flex h-8 cursor-pointer items-center underline focus-visible:outline-2"
+                        className="typography-label-s text-text-tertiary px-s6 rounded-r4 focus-visible:outline-border-brand flex h-8 cursor-pointer items-center underline focus-visible:outline-2 disabled:cursor-not-allowed"
                       >
                         {manualInput.label}
                       </button>

@@ -1,4 +1,5 @@
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { DatePickerField } from './DatePickerField';
 import { parseDateInput } from './DatePickerField.internal';
@@ -195,5 +196,74 @@ describe('DatePickerField', () => {
     await vi.waitFor(() =>
       expect(within(dialog).getByRole('grid').contains(document.activeElement)).toBe(true),
     );
+  });
+
+  describe('Tab 이동', () => {
+    const WithNext = () => (
+      <>
+        <DatePickerField
+          aria-label="시작일"
+          calendarLabel="시작일 달력"
+          value={NOV_25}
+          onValueChange={() => {}}
+        />
+        <button type="button">다음 칸</button>
+      </>
+    );
+
+    it('입력칸에서 Tab을 누르면 달력을 닫고 다음 칸으로 간다', async () => {
+      render(<WithNext />);
+      const user = userEvent.setup();
+
+      await user.click(screen.getByRole('combobox', { name: '시작일' }));
+      expect(screen.queryByRole('dialog')).not.toBeNull();
+      await user.tab();
+
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: '다음 칸' }));
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
+    it('달력 안에서 Tab으로 끝을 지나면 닫고 다음 칸으로, Shift+Tab으로 처음을 지나면 입력칸으로 간다', async () => {
+      render(<WithNext />);
+      const user = userEvent.setup();
+      const input = screen.getByRole('combobox', { name: '시작일' });
+
+      await user.click(input);
+      await user.keyboard('{ArrowDown}');
+      expect(screen.getByRole('dialog').contains(document.activeElement)).toBe(true);
+
+      // 첫 요소(이전 달)까지 Shift+Tab, 한 번 더 누르면 입력칸
+      await user.tab({ shift: true });
+      await user.tab({ shift: true });
+      await user.tab({ shift: true });
+      expect(document.activeElement).toBe(input);
+
+      // 다시 격자로 들어가 Tab으로 끝을 지나면 다음 칸
+      await user.keyboard('{ArrowDown}');
+      await user.tab();
+
+      expect(document.activeElement).toBe(screen.getByRole('button', { name: '다음 칸' }));
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
+
+    it('다음 칸이 없으면 달력 안에서 Tab으로 끝을 지날 때 닫히고 다시 열리지 않는다', async () => {
+      render(
+        <DatePickerField
+          aria-label="시작일"
+          calendarLabel="시작일 달력"
+          value={NOV_25}
+          onValueChange={() => {}}
+        />,
+      );
+      const user = userEvent.setup();
+
+      await user.click(screen.getByRole('combobox', { name: '시작일' }));
+      // 25일(말일 아님)이 격자의 Tab 대상
+      await user.keyboard('{ArrowDown}');
+      expect(document.activeElement?.getAttribute('aria-label')).toContain('25일');
+      await user.tab();
+
+      expect(screen.queryByRole('dialog')).toBeNull();
+    });
   });
 });

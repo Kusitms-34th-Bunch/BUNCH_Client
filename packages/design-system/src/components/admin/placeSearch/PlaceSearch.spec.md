@@ -41,6 +41,7 @@
 - Base UI Combobox: 입력칸 `combobox`, 결과 `listbox`/`option`, 방향키로 결과 이동·Enter로 선택. inline이라 Base UI가 입력칸을 늘 펼쳐짐으로 표시해, 실제로 결과 목록이 보일 때만 `aria-expanded="true"`로 덮어쓴다.
 - 라벨은 `<label for>`로 입력칸에 연결. 필수는 별표(장식) + `aria-required`.
 - 받는 중·결과 건수·결과 없음은 항상 있는 `Combobox.Status`(`role="status"`)의 글자만 바꿔 알린다. 검색 중일 때만 글자를 넣는다(고른 장소 칸을 보여 줄 때는 비움).
+- 비활성(`disabled`)이면 입력칸과 함께 「변경」·「직접 입력하기」 버튼도 비활성이다(#600 리뷰).
 - 입력칸 윤곽(`outline-border-brand` 2px)은 Tab 등 키보드로 들어왔을 때만 켠다(SearchBar와 같음).
 - 결과 없음 패널도 같은 자리라 Tab으로 「직접 입력하기」에 닿는다. 누르면 초점을 입력칸으로 옮긴다.
 

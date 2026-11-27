@@ -36,6 +36,33 @@ const defaultFormatValue = (date: Date) =>
 
 const startOfDay = (date: Date) => new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
+const FOCUSABLE =
+  'a[href], button:not([disabled]), input:not([disabled]):not([type="hidden"]), select:not([disabled]), textarea:not([disabled]), [tabindex]';
+
+// Tab 순서에 들어가는 요소만(roving tabindex의 -1, 숨김·inert 안의 요소 제외)
+const isTabbable = (element: HTMLElement) =>
+  element.tabIndex >= 0 && !element.closest('[inert], [hidden], [aria-hidden="true"]');
+const tabbablesIn = (root: ParentNode) =>
+  [...root.querySelectorAll<HTMLElement>(FOCUSABLE)].filter(isTabbable);
+
+// Base UI가 포털 앞뒤에 두는 포커스 가드(보이지 않는 span)
+const isFocusGuard = (element: Element) =>
+  element.tagName === 'SPAN' &&
+  element.hasAttribute('data-type') &&
+  element.getAttribute('tabindex') === '0';
+
+// 입력칸 다음 Tab 순서의 요소(달력과 포커스 가드는 건너뜀). 달력이 포털에 그려져 Tab 순서가 입력칸 뒤에 오지 않아 직접 찾음
+const nextTabbableAfter = (input: HTMLElement, popup: HTMLElement | null) => {
+  const candidates = tabbablesIn(document).filter(
+    (element) => element === input || (!popup?.contains(element) && !isFocusGuard(element)),
+  );
+  return candidates[candidates.indexOf(input) + 1] ?? null;
+};
+
+// 달력 안에서 Tab으로 닿는 요소(날짜 격자는 roving tabindex라 하나만)
+const popupTabbables = (popup: HTMLElement) =>
+  tabbablesIn(popup).filter((element) => !isFocusGuard(element));
+
 /**
  * 어드민 날짜 입력칸(Figma `어드민 컴포넌트` > `Date Picker Text Field`): 입력칸 + 펼치는 core `Calendar`, Default·Focused·Selected·Filled
  * 입력칸을 누르면 달력이 열리고 직접 입력도 받음. 입력은 칸을 벗어나거나 Enter일 때 해석하고, 해석할 수 없거나 고를 수 없는 날이면 이전 값으로 되돌림
@@ -136,7 +163,28 @@ export const DatePickerField = ({
     inputRef.current?.focus();
   };
 
+  // 달력을 닫고 Tab 순서상 입력칸 다음 칸으로 초점 이동(포털 달력과 포커스 가드를 건너뜀)
+  const closeToNext = (event: KeyboardEvent<HTMLElement>) => {
+    const input = inputRef.current;
+    if (!input) return;
+    const next = nextTabbableAfter(input, popupRef.current);
+    commitDraft();
+    next?.focus();
+    if (next && document.activeElement === next) {
+      event.preventDefault();
+    } else if (popupRef.current?.contains(document.activeElement)) {
+      // 다음 칸이 없거나 옮기지 못했으면 기본 Tab에 맡김. 달력 안이었으면 입력칸으로 돌아가며 다시 열리지 않게 함
+      skipNextFocusOpen();
+    }
+    setOpen(false);
+  };
+
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    // Tab은 달력을 닫고 다음 칸으로(달력에는 ↓로 들어감)
+    if (event.key === 'Tab' && !event.shiftKey && open) {
+      closeToNext(event);
+      return;
+    }
     // 입력 중이거나 달력이 열려 있을 때만 Enter로 확정(그 밖에는 form 제출을 막지 않음)
     if (event.key === 'Enter' && (draftRef.current !== null || open)) {
       event.preventDefault();
@@ -230,6 +278,10 @@ export const DatePickerField = ({
               return;
             }
             commitDraft();
+            // Shift+Tab 등으로 다른 칸에 초점이 가면 달력도 닫음(포커스 가드로 가는 경우는 Tab 처리가 맡음)
+            if (event.relatedTarget instanceof Element && !isFocusGuard(event.relatedTarget)) {
+              setOpen(false);
+            }
           }}
           onKeyDown={handleKeyDown}
           className={cn(
@@ -250,6 +302,17 @@ export const DatePickerField = ({
           <Popover.Popup
             onPointerDown={() => {
               pointerInPopupRef.current = true;
+            }}
+            // 달력 안에서 Tab으로 끝을 지나면 닫고 다음 칸으로, Shift+Tab으로 처음을 지나면 입력칸으로
+            onKeyDown={(event) => {
+              if (event.key !== 'Tab' || !popupRef.current) return;
+              const tabbables = popupTabbables(popupRef.current);
+              if (!event.shiftKey && document.activeElement === tabbables.at(-1)) {
+                closeToNext(event);
+              } else if (event.shiftKey && document.activeElement === tabbables[0]) {
+                event.preventDefault();
+                inputRef.current?.focus();
+              }
             }}
             onPointerUp={() => {
               pointerInPopupRef.current = false;

@@ -39,6 +39,7 @@
 
 - 입력칸: `role="combobox"`, `aria-haspopup="dialog"`, `aria-expanded`, `aria-controls`(열렸을 때 달력).
 - 달력 팝업: Base UI Popover(`dialog`), 이름은 `calendarLabel`. 열어도 초점은 입력칸에 둔다(바로 입력). ↓ 키로 열거나 열린 상태에서 ↓면 날짜 격자로 초점 이동. 닫는 순간 초점이 달력 안에 있을 때만 입력칸으로 되돌린다(다른 칸을 눌러 닫히면 그 칸의 초점을 빼앗지 않음).
+- Tab: 입력칸에서 Tab을 누르면 달력을 닫고 다음 칸으로 간다(달력에는 ↓로 들어감). 달력 안에서 Tab으로 마지막 요소를 지나면 닫고 다음 칸으로, Shift+Tab으로 첫 요소를 지나면 입력칸으로 간다. 입력칸에서 다른 칸으로 초점이 옮겨 가도 닫는다. 달력이 포털에 그려지고 입력칸이 Base UI Trigger가 아니라 Base UI 포커스 가드가 돌아갈 곳을 몰라 직접 처리한다(#600 리뷰).
 - 달력 격자의 키보드 이동은 core `Calendar`가 맡는다.
 
 ## Styling과 의존성
