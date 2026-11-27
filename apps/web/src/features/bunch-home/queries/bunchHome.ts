@@ -35,6 +35,12 @@ import { bunchHomeKeys } from './keys';
  */
 export const LIVE_REFRESH = { staleTime: 0, refetchInterval: 20_000 } as const;
 
+/**
+ * 번치 전환 중에는 번치 홈을 다시 받지 않음
+ * 저장 전 서버는 이전 번치를 지금 번치로 보고 새 번치 홈을 소속 없이(EXTERNAL) 돌려줘 오류 화면이 잠깐 보임. 저장 뒤에는 전환이 다시 받음
+ */
+export const PAUSED_REFRESH = { staleTime: Infinity, refetchInterval: false } as const;
+
 /** 번치 홈 프로필·개수. 번치를 아직 모르면 요청하지 않음(skipToken) */
 export const bunchHomeQueryOptions = (bunchId: string | undefined) =>
   queryOptions({
@@ -128,6 +134,7 @@ const RECENT_HOME_MS = 5 * 60 * 1000;
 export const useSwitchBunchMutation = () => {
   const queryClient = useQueryClient();
   return useMutation({
+    mutationKey: bunchHomeKeys.switchBunch(),
     mutationFn: async (bunchId: string) => {
       const mine = ++latestSwitch;
       // 발행·작성 중 목록은 번치 id로만 정해져 저장과 동시에 받음(차례로 받으면 왕복이 하나 늘어 전환이 늦음, #532)
@@ -162,6 +169,10 @@ export const useSwitchBunchMutation = () => {
       } catch (error) {
         if (previous && mine === latestSwitch) {
           queryClient.setQueryData(myProfileQueryOptions().queryKey, previous);
+          // 전환 중이라 홈 다시 받기가 멈춰 있어 되돌린 번치 홈은 직접 다시 받음
+          void queryClient.invalidateQueries({
+            queryKey: sharedKeys.bunchHome(previous.bunch?.id),
+          });
         }
         throw error;
       }

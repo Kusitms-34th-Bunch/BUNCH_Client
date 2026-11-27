@@ -28,19 +28,42 @@ permissions:
   contents: read
 
 jobs:
+  # PR은 바뀐 경로로 돌릴 앱(admin·web)을 고름(옮긴 파일은 옛 경로도 보게 --no-renames). 공통 패키지·설정이 바뀌거나 push·수동 실행이면 둘 다(scripts/select-e2e-apps.mjs)
+  changes:
+    name: E2E 대상 고르기
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      matrix: ${{ steps.select.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }}
+      - run: node scripts/select-e2e-apps.mjs --check
+      - id: select
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          if [ "${{ github.event_name }}" = pull_request ]; then
+            git diff --name-only --no-renames "origin/$BASE_REF...HEAD" | node scripts/select-e2e-apps.mjs
+          else
+            node scripts/select-e2e-apps.mjs --all
+          fi
+
   e2e:
     name: E2E (${{ matrix.name }})
+    needs: changes
+    if: needs.changes.outputs.matrix != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     # 엔진별로 러너를 나눠 동시에 돌림(한 job에서 차례로 돌리면 web spec이 두 번이라 시간이 두 배)
+    # chromium은 고른 앱 전부, webkit은 web만. 고른 앱의 서버만 띄움(E2E_APPS, playwright.config.ts)
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - name: chromium
-            projects: --project=admin-chromium --project=web-chromium
-          - name: webkit
-            projects: --project=web-webkit
+        include: ${{ fromJSON(needs.changes.outputs.matrix) }}
+    env:
+      E2E_APPS: ${{ matrix.apps }}
     # 브라우저·시스템 라이브러리·글꼴이 든 Playwright 공식 이미지에서 실행해 매번 설치하지 않음
     # 태그는 @playwright/test(.yarnrc.yml catalog) 버전과 같아야 함(다르면 브라우저 실행 파일을 못 찾아 실패)
     container:
@@ -65,7 +88,8 @@ jobs:
       - run: yarn install --immutable
 
       # 가짜 서버 웹 빌드의 Next 캐시. develop push가 남긴 캐시를 새 PR이 이어 받음(restore-keys로 소스가 달라도 가장 가까운 것)
-      - uses: actions/cache@v5
+      - if: contains(matrix.apps, 'web')
+        uses: actions/cache@v5
         with:
           path: apps/web/.next/cache
           key: e2e-next-${{ matrix.name }}-${{ hashFiles('yarn.lock') }}-${{ hashFiles('apps/web/src/**', 'packages/*/src/**') }}

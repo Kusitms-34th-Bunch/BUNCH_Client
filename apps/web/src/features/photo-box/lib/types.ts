@@ -35,6 +35,8 @@ export type PhotoBoxPhoto = {
    * 상세가 이미지를 받기 전에 최종 크기로 그림(#583). 옛 사진은 없음
    */
   aspectRatio?: number | undefined;
+  /** 상세가 `src`를 원본으로 바꾼 경우의 목록 썸네일. 원본을 다 받기 전에 대신 보임(hero가 빈 원본으로 날아가지 않게) */
+  thumbnailSrc?: string | undefined;
 };
 
 /** 지금 사진함을 보는 멤버. 삭제 권한과 확인 창 문구를 정하는 기준 */
