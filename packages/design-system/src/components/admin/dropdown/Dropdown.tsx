@@ -29,6 +29,15 @@ export type DropdownProps = {
   className?: string | undefined;
 } & ({ 'aria-label': string } | { 'aria-labelledby': string });
 
+// 펼침 모션(웹 드롭다운 일반값, motion.md 기준, 2026-11-27 사용자 결정): 트리거 쪽에서 scale 0.9→1·투명도 0→1 150ms ease-out, 닫기는 반대로 100ms ease-in
+// 동작 줄이기에서는 크기 변화를 빼고 투명도만 바뀜
+const POPUP_MOTION = [
+  'origin-(--transform-origin) transition-[scale,opacity] duration-150 ease-out',
+  'data-starting-style:scale-90 data-starting-style:opacity-0',
+  'data-ending-style:pointer-events-none data-ending-style:scale-90 data-ending-style:opacity-0 data-ending-style:duration-100 data-ending-style:ease-in',
+  'motion-reduce:data-starting-style:scale-100 motion-reduce:data-ending-style:scale-100',
+];
+
 const dropdown = tv({
   slots: {
     trigger: [
@@ -45,6 +54,7 @@ const dropdown = tv({
       'bg-surface-primary gap-s1 flex max-h-(--available-height) w-(--anchor-width) flex-col overflow-y-auto outline-none',
       // 그림자는 토큰이 없어 Figma 값 그대로(토큰 추가 필요)
       'shadow-[0px_6px_10px_0px_rgba(0,0,0,0.07)]',
+      POPUP_MOTION,
     ],
     item: [
       'bg-surface-primary pl-padding-p6 pr-padding-p5 gap-s4 flex cursor-pointer items-center justify-between outline-none select-none',

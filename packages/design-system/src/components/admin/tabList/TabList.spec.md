@@ -45,6 +45,11 @@
 - 허용되는 dependency: `@base-ui/react`(Tabs). Base UI 타입은 공개하지 않는다(`MenuTabs`와 같은 원칙).
 - Storybook state matrix: `Default`(전체·접수·조치·비활성 탭).
 
+## 모션
+
+- 선택 선 이동(2026-11-27 사용자 결정, 어드민 Figma에 모션이 없어 web `MenuTabs` 값을 따름): 선택한 탭으로 선이 미끄러진다. Base UI `Tabs.Indicator`의 `--active-tab-left`·`--active-tab-width`를 250ms ease-out으로 전환(`left`·`width`, motion.md의 메뉴 탭 밑줄 예외와 같음).
+- 동작 줄이기: 전환 없이 바로 옮긴다. 강제 색상 모드는 시스템 글자색으로 그린다.
+
 ## 확인할 항목
 
 - 선택 방식 (제안): 방향키는 초점만 옮기고 Enter·Space로 선택한다. 선택이 목록을 다시 불러오므로 초점 이동마다 불러오지 않게 했다.

@@ -274,6 +274,11 @@ export const DatePickerField = ({
               'rounded-r5 w-(--anchor-width) overflow-hidden outline-none',
               // 그림자는 토큰이 없어 Figma 값 그대로(토큰 추가 필요)
               'drop-shadow-[4px_4px_2px_rgba(0,0,0,0.1)]',
+              // 펼침 모션은 Dropdown과 같은 값: 입력칸 쪽에서 살짝 커지며 열리고 줄며 닫힘, 동작 줄이기면 투명도만
+              'origin-(--transform-origin) transition-[scale,opacity] duration-150 ease-out',
+              'data-starting-style:scale-90 data-starting-style:opacity-0',
+              'data-ending-style:pointer-events-none data-ending-style:scale-90 data-ending-style:opacity-0 data-ending-style:duration-100 data-ending-style:ease-in',
+              'motion-reduce:data-starting-style:scale-100 motion-reduce:data-ending-style:scale-100',
             )}
           >
             <Calendar

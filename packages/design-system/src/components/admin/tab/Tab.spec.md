@@ -33,7 +33,7 @@
 
 - Default: 라벨 `heading-2-medium` `text-secondary`, 건수 `body-3-regular` `text-tertiary`.
 - Hover(선택 안 된 탭): `overlay-hover` 덮개를 글자 위까지 얹어 글자도 함께 어두워진다.
-- Selected: 아래쪽 2px `border-brand` 선. 선은 높이(31px) 안쪽에 그려 선택해도 높이가 그대로다.
+- Selected: 아래쪽 2px `border-brand` 선. 선은 탭마다 그리지 않고 `TabList`의 Indicator 하나가 선택된 탭 아래로 옮겨 다닌다(높이 31px 안쪽, 모션은 `TabList.spec.md`).
 - Disabled: 전체 흐림 40%, 누를 수 없다.
 - 긴 텍스트·overflow: 줄바꿈하지 않는다(`whitespace-nowrap`). 탭 폭은 내용을 따른다.
 
@@ -52,7 +52,7 @@
 | 간격 `spacing-s2`(4), 아래 정렬                           | `gap-s2 items-end`                                    |
 | 라벨 `Heading-2-Medium` 18/27, `text-secondary`           | `typography-heading-2-medium text-text-secondary`     |
 | 건수 `Body-3-Regular` 14/21, `text-tertiary`              | `typography-body-3-regular text-text-tertiary`        |
-| Selected 아래 선 `border-width-strong`(2), `border-brand` | `after:h-0.5 data-active:after:bg-border-brand`       |
+| Selected 아래 선 `border-width-strong`(2), `border-brand` | `TabList`의 `Tabs.Indicator` `h-0.5 bg-border-brand`  |
 | Hover `overlay-hover`(글자 위 덮개)                       | `before:bg-overlay-hover hover:before:opacity-100`    |
 | Disabled `opacity-disabled`(40)                           | `data-disabled:opacity-(--semantic-opacity-disabled)` |
 

@@ -53,6 +53,11 @@
 - 허용되는 dependency: `@base-ui/react`(Popover), core `Calendar`. 날짜 해석은 `DatePickerField.internal.ts`(공개하지 않음).
 - Storybook state matrix: `Default`, `Period`(시작 00:00·종료 23:59, 종료일 최소값 = 시작일), `Disabled`.
 
+## 모션
+
+- 펼침(2026-11-27 사용자 결정, 어드민 Figma에 모션이 없어 `Dropdown`과 같은 값): 입력칸 쪽에서 scale 0.9→1·투명도 0→1, 150ms ease-out. 닫기는 1→0.9·1→0, 100ms ease-in. 기준점은 Base UI `--transform-origin`. Base UI `data-starting-style`·`data-ending-style` + CSS transition(`scale`·`opacity`).
+- 동작 줄이기: 크기 변화를 빼고 투명도만 바뀐다.
+
 ## 확인할 항목
 
 - 잘못 입력했을 때 (제안): Figma에 오류 모양이 없어 화면은 이전 값으로 되돌리고, `invalidInputMessage`가 있으면 항상 있는 `role="status"`로 낭독한다. 같은 잘못을 반복해도 다시 읽히게 비웠다가 넣는다. 오류 모양이 정해지면 추가한다.

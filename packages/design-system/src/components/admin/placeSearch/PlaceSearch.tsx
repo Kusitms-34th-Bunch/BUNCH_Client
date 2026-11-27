@@ -77,9 +77,56 @@ const SKELETON_ROWS = [
   ['w-25', 'w-40'],
 ] as const;
 
-// 결과 목록·결과 없음 패널의 공통 모양(Figma dropdown)
-const PANEL =
+// 패널 모션(2026-11-27 사용자 결정): 패널 자리 자체는 처음 나타날 때(투명도 150ms ease-out)와 완전히 없어질 때(100ms ease-in)만 움직임
+// 떠 있는 동안 받는 중·결과·결과 없음·고른 장소로 바뀌면 상자는 그대로 두고 안의 내용만 살짝 나타남. 동작 줄이기면 바로 바뀜
+const PANEL_SLOT = [
+  'transition-opacity duration-150 ease-out starting:opacity-0 motion-reduce:transition-none',
+  'data-leaving:pointer-events-none data-leaving:opacity-0 data-leaving:duration-100 data-leaving:ease-in',
+].join(' ');
+const CONTENT_ENTER =
+  'transition-opacity duration-150 ease-out starting:opacity-0 motion-reduce:transition-none';
+const LEAVE_MS = 100;
+
+// 받는 중·결과·결과 없음 상자(Figma dropdown)
+const SEARCH_BOX =
   'bg-surface-primary border-border-tertiary rounded-r3 p-padding-p3 border shadow-[0px_4px_12px_0px_rgba(0,0,0,0.06)]';
+// 고른 장소 칸
+const SELECTED_BOX =
+  'bg-surface-secondary border-border-tertiary rounded-r3 pl-padding-p8 pr-padding-p6 py-padding-p5 border';
+
+type PanelKind = 'loading' | 'results' | 'empty' | 'selected';
+
+// 사라지는 동안 그릴 마지막 내용
+type PanelSnapshot = {
+  key: string;
+  kind: PanelKind;
+  results: readonly PlaceSearchResult[];
+  selected: Pick<PlaceSearchResult, 'name' | 'address'> | null;
+  query: string;
+  emptyTitle: string;
+  emptyDescription: string | undefined;
+  manualInputLabel: string | undefined;
+};
+
+// 결과 항목 안쪽(Combobox 항목과 사라지는 동안의 정적 사본이 함께 씀)
+const ResultRow = ({ result, query }: { result: PlaceSearchResult; query: string }) => (
+  <>
+    <span className="gap-s3 text-text-secondary flex min-w-0 items-center">
+      <span className="truncate">
+        <HighlightedName name={result.name} query={query} />
+      </span>
+      {result.category ? (
+        <span className="typography-caption-1-regular text-text-quaternary shrink-0">
+          {result.category}
+        </span>
+      ) : null}
+    </span>
+    <span className="typography-body-4-regular text-text-quaternary truncate">
+      {result.address}
+    </span>
+  </>
+);
+const RESULT_ITEM = 'rounded-r2 flex flex-col gap-0.5 p-2.5 whitespace-nowrap';
 
 /**
  * 어드민 장소 검색(Figma `어드민 컴포넌트` > `Place Search`): 라벨 + 검색 입력 + 결과 목록(받는 중·결과) + 결과 없음 + 고른 장소 칸
@@ -153,6 +200,60 @@ export const PlaceSearch = ({
     announceSelected(selected.name);
   };
   const listVisible = isSearching && status === 'results';
+
+  // 패널 자리에 보일 내용 종류(없으면 패널 자리 없음)
+  // isSearching이면 status는 idle이 아님
+  const panelKind: PanelKind | null = isSearching
+    ? status
+    : selected && showSelected
+      ? 'selected'
+      : null;
+  // 보이는 동안 마지막 내용을 기억했다가 없어질 때 그 내용으로 흐려지며 사라짐
+  // 검색어마다 렌더하지 않게 내용이 실제로 바뀔 때만 갱신(호출자가 렌더마다 새 배열·객체를 넘겨도 값으로 비교)
+  const panelKey =
+    panelKind === null
+      ? null
+      : [
+          panelKind,
+          panelKind === 'results' ? results.map((result) => result.id).join(',') : '',
+          panelKind === 'results' ? query : '',
+          panelKind === 'empty'
+            ? [emptyTitle, emptyDescription, manualInput?.label].join('\t')
+            : '',
+          panelKind === 'selected' ? selectedKey : '',
+        ].join('\n');
+  const [snapshot, setSnapshot] = useState<PanelSnapshot | null>(null);
+  if (panelKind !== null && panelKey !== null && snapshot?.key !== panelKey) {
+    setSnapshot({
+      key: panelKey,
+      kind: panelKind,
+      results,
+      selected: selected ?? null,
+      query,
+      emptyTitle,
+      emptyDescription,
+      manualInputLabel: manualInput?.label,
+    });
+  }
+  const leaving = panelKind === null && snapshot !== null;
+  // 사라지는 모션이 끝나면 패널 자리를 지움(동작 줄이기면 바로)
+  useEffect(() => {
+    if (!leaving) return;
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    const timer = window.setTimeout(() => setSnapshot(null), reduce ? 0 : LEAVE_MS);
+    return () => window.clearTimeout(timer);
+  }, [leaving]);
+  // 그릴 내용: 보이는 동안은 지금 값, 사라지는 동안은 마지막 값
+  const shownKind = panelKind ?? snapshot?.kind ?? null;
+  // 패널 자리가 나타난 뒤인지(처음 나타날 때 패널 자리와 안쪽 내용이 함께 흐려져 두 번 흐려지지 않게)
+  const [slotEntered, setSlotEntered] = useState(false);
+  if (shownKind === null && slotEntered) setSlotEntered(false);
+  useEffect(() => {
+    if (shownKind === null || slotEntered) return;
+    const frame = requestAnimationFrame(() => setSlotEntered(true));
+    return () => cancelAnimationFrame(frame);
+  }, [shownKind, slotEntered]);
+  const contentEnter = slotEntered ? CONTENT_ENTER : undefined;
 
   // 항상 있는 알림 영역의 글자만 바꿔 받는 중·결과·결과 없음을 낭독
   const announcement = !isSearching
@@ -246,95 +347,130 @@ export const PlaceSearch = ({
           {/* 받는 중·결과 건수·결과 없음 알림(항상 두고 글자만 바꿈) */}
           <Combobox.Status className="sr-only">{announcement}</Combobox.Status>
         </div>
-        {/* 입력칸 아래 8px(바깥 gap spacing-s4)에 받는 중·결과 목록 */}
-        {isSearching && (status === 'loading' || status === 'results') ? (
-          <div className={PANEL}>
-            {status === 'loading'
-              ? SKELETON_ROWS.map(([title, address]) => (
-                  <div key={title} aria-hidden="true" className="flex flex-col gap-2 px-2.5 py-3">
-                    <Skeleton className={cn('h-3', title)} />
-                    <Skeleton className={cn('h-2.5', address)} />
+        {/* 입력칸 아래 8px(바깥 gap spacing-s4)에 패널 자리 하나: 받는 중·결과·결과 없음·고른 장소 */}
+        {shownKind !== null ? (
+          <div
+            data-leaving={leaving || undefined}
+            // 사라지는 동안의 사본은 누르거나 읽히지 않게 함
+            inert={leaving || undefined}
+            aria-hidden={leaving || undefined}
+            className={PANEL_SLOT}
+          >
+            {shownKind === 'selected' ? (
+              <div className={SELECTED_BOX}>
+                <div key="selected" className={cn('gap-s5 flex items-center', contentEnter)}>
+                  <FillMapPinMediumIcon className="text-icon-primary shrink-0" />
+                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <p className="typography-body-3-semibold text-text-secondary truncate">
+                      {(leaving ? snapshot?.selected : selected)?.name}
+                    </p>
+                    <p className="typography-body-4-regular text-text-quaternary truncate">
+                      {(leaving ? snapshot?.selected : selected)?.address}
+                    </p>
                   </div>
-                ))
-              : null}
-            {status === 'results' ? (
-              <Combobox.List className="gap-s1 flex flex-col">
-                {(result: PlaceSearchResult) => (
-                  <Combobox.Item
-                    key={result.id}
-                    value={result}
-                    className="rounded-r2 data-highlighted:bg-surface-secondary flex cursor-pointer flex-col gap-0.5 p-2.5 whitespace-nowrap outline-none"
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChangeSelected?.();
+                      clearSelectedNotice();
+                      // 입력칸을 비우고 초점을 줘 바로 새 검색어를 입력하게 함(고른 값은 새로 고를 때까지 유지)
+                      onQueryChange('');
+                      setEditedAfterSelect(true);
+                      inputRef.current?.focus();
+                    }}
+                    className="bg-surface-primary border-border-secondary rounded-r4 px-s6 typography-label-s text-text-secondary focus-visible:outline-border-brand flex h-8 shrink-0 cursor-pointer items-center border focus-visible:outline-2 focus-visible:outline-offset-2"
                   >
-                    <span className="gap-s3 text-text-secondary flex min-w-0 items-center">
-                      <span className="truncate">
-                        <HighlightedName name={result.name} query={query} />
-                      </span>
-                      {result.category ? (
-                        <span className="typography-caption-1-regular text-text-quaternary shrink-0">
-                          {result.category}
-                        </span>
+                    {changeLabel}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              // 받는 중·결과·결과 없음은 같은 상자를 두고 안의 내용만 바꿈
+              <div className={SEARCH_BOX}>
+                {shownKind === 'loading' ? (
+                  <div key="loading" className={contentEnter}>
+                    {SKELETON_ROWS.map(([title, address]) => (
+                      <div
+                        key={title}
+                        aria-hidden="true"
+                        className="flex flex-col gap-2 px-2.5 py-3"
+                      >
+                        <Skeleton className={cn('h-3', title)} />
+                        <Skeleton className={cn('h-2.5', address)} />
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+                {shownKind === 'results' && !leaving ? (
+                  <Combobox.List key="results" className={cn('gap-s1 flex flex-col', contentEnter)}>
+                    {(result: PlaceSearchResult) => (
+                      <Combobox.Item
+                        key={result.id}
+                        value={result}
+                        className={cn(
+                          RESULT_ITEM,
+                          'data-highlighted:bg-surface-secondary cursor-pointer outline-none',
+                        )}
+                      >
+                        <ResultRow result={result} query={query} />
+                      </Combobox.Item>
+                    )}
+                  </Combobox.List>
+                ) : null}
+                {/* 사라지는 동안은 Combobox 목록 대신 마지막 결과의 정적 사본 */}
+                {shownKind === 'results' && leaving && snapshot ? (
+                  <div className="gap-s1 flex flex-col">
+                    {snapshot.results.map((result) => (
+                      <div key={result.id} className={RESULT_ITEM}>
+                        <ResultRow result={result} query={snapshot.query} />
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+                {shownKind === 'empty' ? (
+                  // 상자 여백(6) + 안쪽 여백으로 Figma 결과 없음 여백(위아래 20·좌우 12)
+                  <div
+                    key="empty"
+                    className={cn(
+                      'gap-s8 flex flex-col items-center px-1.5 py-3.5 text-center',
+                      contentEnter,
+                    )}
+                  >
+                    <div className="gap-s2 flex flex-col items-center">
+                      <p className="typography-body-3-semibold text-text-secondary">
+                        {leaving ? snapshot?.emptyTitle : emptyTitle}
+                      </p>
+                      {(leaving ? snapshot?.emptyDescription : emptyDescription) ? (
+                        <p className="typography-body-4-regular text-text-quaternary">
+                          {leaving ? snapshot?.emptyDescription : emptyDescription}
+                        </p>
                       ) : null}
-                    </span>
-                    <span className="typography-body-4-regular text-text-quaternary truncate">
-                      {result.address}
-                    </span>
-                  </Combobox.Item>
-                )}
-              </Combobox.List>
-            ) : null}
+                    </div>
+                    {leaving && snapshot?.manualInputLabel ? (
+                      <span className="typography-label-s text-text-tertiary px-s6 flex h-8 items-center underline">
+                        {snapshot.manualInputLabel}
+                      </span>
+                    ) : null}
+                    {!leaving && manualInput ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          manualInput.onClick();
+                          // 결과 없음 패널이 사라져도 초점을 잃지 않게 입력칸으로
+                          inputRef.current?.focus();
+                        }}
+                        className="typography-label-s text-text-tertiary px-s6 rounded-r4 focus-visible:outline-border-brand flex h-8 cursor-pointer items-center underline focus-visible:outline-2"
+                      >
+                        {manualInput.label}
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
+            )}
           </div>
         ) : null}
       </Combobox.Root>
-      {isSearching && status === 'empty' ? (
-        <div className={cn(PANEL, 'gap-s8 flex flex-col items-center px-3 py-5 text-center')}>
-          <div className="gap-s2 flex flex-col items-center">
-            <p className="typography-body-3-semibold text-text-secondary">{emptyTitle}</p>
-            {emptyDescription ? (
-              <p className="typography-body-4-regular text-text-quaternary">{emptyDescription}</p>
-            ) : null}
-          </div>
-          {manualInput ? (
-            <button
-              type="button"
-              onClick={() => {
-                manualInput.onClick();
-                // 결과 없음 패널이 사라져도 초점을 잃지 않게 입력칸으로
-                inputRef.current?.focus();
-              }}
-              className="typography-label-s text-text-tertiary px-s6 rounded-r4 focus-visible:outline-border-brand flex h-8 cursor-pointer items-center underline focus-visible:outline-2"
-            >
-              {manualInput.label}
-            </button>
-          ) : null}
-        </div>
-      ) : null}
-      {selected && showSelected ? (
-        <div className="bg-surface-secondary border-border-tertiary rounded-r3 pl-padding-p8 pr-padding-p6 py-padding-p5 gap-s5 flex items-center border">
-          <FillMapPinMediumIcon className="text-icon-primary shrink-0" />
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <p className="typography-body-3-semibold text-text-secondary truncate">
-              {selected.name}
-            </p>
-            <p className="typography-body-4-regular text-text-quaternary truncate">
-              {selected.address}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() => {
-              onChangeSelected?.();
-              clearSelectedNotice();
-              // 입력칸을 비우고 초점을 줘 바로 새 검색어를 입력하게 함(고른 값은 새로 고를 때까지 유지)
-              onQueryChange('');
-              setEditedAfterSelect(true);
-              inputRef.current?.focus();
-            }}
-            className="bg-surface-primary border-border-secondary rounded-r4 px-s6 typography-label-s text-text-secondary focus-visible:outline-border-brand flex h-8 shrink-0 cursor-pointer items-center border focus-visible:outline-2 focus-visible:outline-offset-2"
-          >
-            {changeLabel}
-          </button>
-        </div>
-      ) : null}
     </div>
   );
 };

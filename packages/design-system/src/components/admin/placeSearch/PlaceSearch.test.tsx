@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ComponentProps, useState } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -307,5 +307,48 @@ describe('PlaceSearch', () => {
 
     expect(screen.getAllByRole('option')).toHaveLength(2);
     expect(screen.queryByRole('button', { name: '변경' })).toBeNull();
+  });
+
+  it('패널이 떠 있는 동안 받는 중에서 결과로 바뀌어도 상자는 그대로 두고 내용만 바꾼다', () => {
+    const { rerender } = render(<Example status="loading" query="플로디" />);
+    const box = screen.getByRole('combobox', { name: '장소검색' }).closest('div')
+      ?.nextElementSibling?.firstElementChild;
+    expect(box).toBeTruthy();
+
+    rerender(<Example status="results" query="플로디" />);
+
+    expect(
+      screen.getByRole('combobox', { name: '장소검색' }).closest('div')?.nextElementSibling
+        ?.firstElementChild,
+    ).toBe(box);
+  });
+
+  it('패널이 완전히 없어질 때는 마지막 내용을 누를 수 없게 잠깐 남겼다가 지운다', async () => {
+    const Controlled = () => {
+      const [query, setQuery] = useState('');
+      return (
+        <PlaceSearch
+          {...COPY}
+          query={query}
+          onQueryChange={setQuery}
+          status={query ? 'results' : 'idle'}
+          results={RESULTS}
+          onSelect={vi.fn()}
+        />
+      );
+    };
+    render(<Controlled />);
+    const user = userEvent.setup();
+    const input = screen.getByRole('combobox', { name: '장소검색' });
+
+    await user.type(input, '플로디');
+    expect(screen.getAllByRole('option')).toHaveLength(2);
+    await user.clear(input);
+
+    // 사라지는 동안: 선택할 수 있는 결과는 없고, 남은 사본은 읽히지 않음
+    expect(screen.queryByRole('option')).toBeNull();
+    const leaving = document.querySelector('[data-leaving]');
+    expect(leaving?.getAttribute('aria-hidden')).toBe('true');
+    await waitFor(() => expect(document.querySelector('[data-leaving]')).toBeNull());
   });
 });

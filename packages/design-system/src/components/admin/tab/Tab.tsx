@@ -25,9 +25,7 @@ export const Tab = ({ children, count, className, ...props }: TabProps) => (
       // Hover 덮개는 글자 위까지 덮어 글자도 함께 어둡게(Figma Hover 글자색 = 토큰 색 + 검정 10%). 선택·비활성 탭은 Hover 모양 없음
       'before:bg-overlay-hover before:pointer-events-none before:absolute before:inset-0 before:opacity-0',
       'not-data-active:not-data-disabled:hover:before:opacity-100',
-      // 선택 선은 Figma처럼 높이(31px) 안쪽에 그려 선택해도 높이 유지
-      'after:absolute after:inset-x-0 after:bottom-0 after:h-0.5',
-      'data-active:after:bg-border-brand',
+      // 선택 선은 TabList의 Indicator 하나가 선택된 탭 아래로 옮겨 다니며 그림(탭 높이 31px 안쪽)
       'data-disabled:cursor-not-allowed data-disabled:opacity-(--semantic-opacity-disabled)',
       'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:-outline-offset-2',
       className,

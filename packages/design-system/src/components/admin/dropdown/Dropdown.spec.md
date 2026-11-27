@@ -54,6 +54,11 @@
 - 허용되는 dependency: `@base-ui/react`(Select). Base UI 타입은 공개하지 않는다.
 - Storybook state matrix: `Large`(선택 전·후·비활성), `Small`, `Filter`.
 
+## 모션
+
+- 펼침(2026-11-27 사용자 결정, 어드민 Figma에 모션이 없어 motion.md의 웹 드롭다운 기준(90~97%에서 시작, 150~250ms)을 따름. web `Menu`의 모바일 값(0.35→1·280ms)은 데스크톱에서 튀어 보여 쓰지 않음): 트리거 쪽에서 scale 0.9→1·투명도 0→1, 150ms ease-out. 닫기는 1→0.9·1→0, 100ms ease-in. 기준점은 Base UI `--transform-origin`. Base UI `data-starting-style`·`data-ending-style` + CSS transition(`scale`·`opacity`).
+- 동작 줄이기: 크기 변화를 빼고 투명도만 바뀐다.
+
 ## 확인할 항목
 
 - 패널 그림자 (확정): 토큰이 없어 Figma 값을 그대로 쓴다. 그림자 토큰을 추가하면 바꾼다(2026-11-27 사용자).
