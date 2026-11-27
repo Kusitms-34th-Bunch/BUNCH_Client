@@ -34,7 +34,12 @@ export function PhotoDetailSlide({ photo, members, chromeHidden, current }: Phot
   const [brokenSrcs, setBrokenSrcs] = useState<readonly string[]>([]);
   const uploaders = getUploaders(photo, members);
   // 보이는 이미지 주소. 새 주소는 다 받은 뒤 바꾸고, 그동안 이전 이미지를 그대로 둠
-  const [shownSrc, setShownSrc] = useState(photo.src);
+  // 처음부터 원본 주소여도 아직 다 받지 못했으면 썸네일부터(받는 중인 원본으로 hero가 날면 흐려지다 툭 나타남, #596)
+  const [shownSrc, setShownSrc] = useState(() =>
+    photo.thumbnailSrc !== undefined && getPhotoRatio(photo.src) === undefined
+      ? photo.thumbnailSrc
+      : photo.src,
+  );
   // 새 이미지가 페이드인하는 동안 아래에 남겨 둘 이전 이미지
   const [underSrc, setUnderSrc] = useState<string | null>(null);
   // 페이드 중 동작 줄이기를 켜면 animationend가 오지 않으므로 바로 치움(남으면 hero 짝이 이전 썸네일에 남음)

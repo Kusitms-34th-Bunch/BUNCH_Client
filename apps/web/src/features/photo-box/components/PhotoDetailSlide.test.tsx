@@ -227,6 +227,37 @@ describe('PhotoDetailSlide 틀 높이', () => {
     });
   });
 
+  it('처음부터 원본 주소여도 다 받기 전이면 썸네일을 보이고 원본은 숨겨 받는다(#596)', async () => {
+    const { container } = render(
+      <PhotoDetailSlide
+        photo={{ ...photo('/original-11.jpg'), thumbnailSrc: '/thumb-11.jpg' }}
+        {...props}
+      />,
+    );
+    // hero 짝은 다 받은 썸네일(받는 중인 원본이면 빈 이미지로 날아감)
+    const shown = screen.getByRole('img', { name: '사진' });
+    expect(shown.getAttribute('src')).toBe('/thumb-11.jpg');
+    expect(shown.getAttribute('data-hero-exit-key')).not.toBeNull();
+
+    load(pending(container, '/original-11.jpg'), 300, 400);
+    await nextFrame();
+    expect(screen.getByRole('img', { name: '사진' }).getAttribute('src')).toBe('/original-11.jpg');
+  });
+
+  it('이미 받은 원본은 썸네일을 거치지 않고 바로 그린다', () => {
+    const first = render(<PhotoDetailSlide photo={photo('/original-12.jpg')} {...props} />);
+    load(screen.getByRole('img', { name: '사진' }), 300, 400);
+    first.unmount();
+
+    render(
+      <PhotoDetailSlide
+        photo={{ ...photo('/original-12.jpg'), thumbnailSrc: '/thumb-12.jpg' }}
+        {...props}
+      />,
+    );
+    expect(screen.getByRole('img', { name: '사진' }).getAttribute('src')).toBe('/original-12.jpg');
+  });
+
   it('미리 받아 비율을 아는 원본은 처음부터 그 높이로 그린다', () => {
     const first = render(<PhotoDetailSlide photo={photo('/known.jpg')} {...props} />);
     load(screen.getByRole('img', { name: '사진' }), 400, 200);
