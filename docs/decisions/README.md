@@ -15,7 +15,7 @@
 - [001: 빌드타임 모노레포 통합 유지](./records/001-build-time-integration.md)
 - [002: Yarn PnP workspace 설치 방식 유지](./records/002-yarn-pnp-workspace-installation.md)
 - [003: apps/mobile-shell은 Yarn PnP 예외로 pnpm을 쓴다](./records/003-mobile-shell-pnpm-exception.md)
-- [004: apps/admin은 scaffold로 유지하고 기능 개발은 보류한다](./records/004-admin-deferred.md)
+- [004: apps/admin은 scaffold로 유지하고 기능 개발은 보류한다](./records/004-admin-deferred.md) (031로 대체)
 - [005: 작업은 develop으로 모으고 main은 프로덕션용으로 둔다](./records/005-branch-strategy.md)
 - [006: 웹 오류 수집에 Sentry를 사용한다](./records/006-web-sentry-error-monitoring.md)
 - [007: 로그인·온보딩 API 계약 확정 후 MSW를 도입한다](./records/007-msw-adoption-after-api-contract.md)
@@ -42,3 +42,4 @@
 - [028: iOS 쉘의 로그인 배경 영상은 네이티브로 재생한다](./records/028-native-login-background-video.md) (proposed)
 - [029: 앱 쉘 핵심 흐름은 Maestro로 iOS 시뮬레이터에서 확인한다](./records/029-maestro-shell-e2e.md) (proposed)
 - [030: 네이티브 플로팅 버튼이 떠 있는 화면의 토스트는 쉘이 네이티브로 띄운다](./records/030-native-toast-on-floating-screens.md) (proposed)
+- [031: apps/admin 기능 개발 보류를 해제하고 운영 도구로 개발한다](./records/031-admin-resumed.md)

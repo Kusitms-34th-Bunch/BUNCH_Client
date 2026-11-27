@@ -2,7 +2,7 @@ import type { PlopTypes } from '@turbo/gen';
 import { execFileSync } from 'node:child_process';
 
 const componentNamePattern = /^[A-Z][A-Za-z0-9]*$/;
-const zones = ['core', 'web'];
+const zones = ['core', 'web', 'admin'];
 
 export default function generator(plop: PlopTypes.NodePlopAPI): void {
   plop.setActionType('syncDesignSystemBarrels', () => {
@@ -26,7 +26,7 @@ export default function generator(plop: PlopTypes.NodePlopAPI): void {
       {
         type: 'list',
         name: 'zone',
-        message: 'Zone (core: every app, web: apps/web only)',
+        message: 'Zone (core: every app, web: apps/web only, admin: apps/admin only)',
         choices: zones,
         default: 'core',
       },

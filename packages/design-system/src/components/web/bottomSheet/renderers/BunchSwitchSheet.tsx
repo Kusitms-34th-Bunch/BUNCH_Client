@@ -2,8 +2,8 @@
 
 import { LineAddIcon } from '../../../../icons';
 import { Button } from '../../../core/button';
+import { ColorBadge } from '../../../core/colorBadge';
 import { BunchListItem, type BunchListItemStatus } from '../../bunchListItem';
-import { ColorBadge } from '../../colorBadge';
 import { BottomSheet, type BottomSheetRootProps } from '../BottomSheet';
 
 export type BunchSwitchItem = {

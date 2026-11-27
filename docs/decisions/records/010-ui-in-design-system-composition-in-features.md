@@ -17,6 +17,7 @@ Figma 컴포넌트 페이지에는 공통 부품과 사용자 앱 전용 부품(
 - 두 구역 모두 route, domain data, API를 직접 알지 않고 props·slot·callback으로 받는다. 그것들을 조합해 문구·route·데이터·행동을 붙이는 일은 앱의 `src/features/<feature>/`가 맡는다.
 - 화면 틀(`AppFrame`, `PageShell`)과 route shell은 앱에 남는다.
 - 구역 이름은 `core`/`web`으로 정했다. 어드민 전용 UI가 DS 수준 검증을 필요로 하면 `admin`을 추가한다. 비어 있는 구역은 만들지 않는다.
+  - 2026-11-27 변경(#590, [031](./031-admin-resumed.md)): 어드민 개발을 시작하며 `admin` 구역을 추가했다. 공개 주소는 `@app/design-system/admin`이고 `web`과 서로 import하지 않는다.
 
 ## 비교한 대안
 

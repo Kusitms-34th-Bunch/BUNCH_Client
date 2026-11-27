@@ -1,7 +1,7 @@
 import type { ComponentProps } from 'react';
 import { FillCircleCheckLargeIcon } from '../../../icons';
 import { cn } from '../../../utils';
-import { ColorBadge } from '../colorBadge';
+import { ColorBadge } from '../../core/colorBadge';
 import { ProfileImage } from '../profileImage';
 
 export type BunchRadioItemProps = Omit<ComponentProps<'input'>, 'type' | 'children'> & {

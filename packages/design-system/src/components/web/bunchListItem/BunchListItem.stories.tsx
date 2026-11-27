@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
-import { ColorBadge } from '../colorBadge';
+import { ColorBadge } from '../../core/colorBadge';
 import { BunchListItem } from './BunchListItem';
 
 const meta = {
