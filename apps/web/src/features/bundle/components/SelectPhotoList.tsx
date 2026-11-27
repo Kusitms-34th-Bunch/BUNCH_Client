@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import type { PhotoSelection } from '@/features/photo-box/lib/selection';
 import { MemberFilter } from '@/features/photo-box/components/MemberFilter';
 import { PhotoBoxEmpty } from '@/features/photo-box/components/PhotoBoxEmpty';
@@ -43,10 +42,7 @@ export function SelectPhotoList({
 }: SelectPhotoListProps) {
   const clientYear = useCurrentYear();
   const currentYear = currentYearProp ?? clientYear;
-  const { sections, undated } = useMemo(
-    () => splitPhotos(filterByMember(data.photos, memberId), currentYear),
-    [data.photos, memberId, currentYear],
-  );
+  const { sections, undated } = splitPhotos(filterByMember(data.photos, memberId), currentYear);
   const isEmpty = sections.length === 0 && undated.length === 0;
   const hasPhotos = data.photos.length > 0;
 

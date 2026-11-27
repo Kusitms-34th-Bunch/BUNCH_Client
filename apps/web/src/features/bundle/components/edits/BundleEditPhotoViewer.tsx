@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { type ComponentProps, useCallback, useEffect } from 'react';
+import { type ComponentProps, useEffect } from 'react';
 import {
   LATE_OVERLAY_MS,
   PAGE_LOADING_LABEL,
@@ -42,10 +42,8 @@ export function BundleEditPhotoViewer({
   const editPath = BUNDLE_PATHS.edit(bunchId, bundleId);
   const kind = state.kind;
   const ready = state.kind === 'ready';
-  const toPath = useCallback(
-    (id: string, nextPhotoId: string) => BUNDLE_PATHS.editPhotoViewer(bunchId, id, nextPhotoId),
-    [bunchId],
-  );
+  const toPath = (id: string, nextPhotoId: string) =>
+    BUNDLE_PATHS.editPhotoViewer(bunchId, id, nextPhotoId);
   const { initialPhotoId, sync } = usePhotoAddress(
     photoId,
     bundleId,

@@ -16,7 +16,7 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { memo, useEffect, useMemo } from 'react';
+import { memo, useEffect } from 'react';
 import { useScreenOverlay } from '@/shared/hooks/overlay/useScreenOverlay';
 import type { PhotoSection } from '../../lib/photoDate';
 import type { PhotoBoxActions, PhotoBoxPhoto, PhotoBoxViewer } from '../../lib/types';
@@ -100,46 +100,32 @@ export const PhotoDragArea = memo(function PhotoDragArea({
   const openOverlay = useScreenOverlay();
   const { onToggle } = usePhotoSelectionActions();
 
-  const photoById = useMemo(
-    () =>
-      new Map([...undated, ...sections.flatMap((section) => section.photos)].map((p) => [p.id, p])),
-    [sections, undated],
+  const photoById = new Map(
+    [...undated, ...sections.flatMap((section) => section.photos)].map((p) => [p.id, p]),
   );
-  const draggableIds = useMemo(
-    () =>
-      new Set(
-        [...photoById.values()].filter((p) => canDragPhoto(p, viewer)).map((photo) => photo.id),
-      ),
-    [photoById, viewer],
+  const draggableIds = new Set(
+    [...photoById.values()].filter((p) => canDragPhoto(p, viewer)).map((photo) => photo.id),
   );
 
   // 끄는 중에는 미리보기 순서대로 사진을 다시 늘어놓음
-  const shownSections = useMemo(
-    () =>
-      preview
-        ? sections.map((section) => ({
-            ...section,
-            photos: (preview[section.dateKey] ?? [])
-              .map((id) => photoById.get(id))
-              .filter((photo) => photo !== undefined),
-          }))
-        : sections,
-    [sections, preview, photoById],
-  );
+  const shownSections = preview
+    ? sections.map((section) => ({
+        ...section,
+        photos: (preview[section.dateKey] ?? [])
+          .map((id) => photoById.get(id))
+          .filter((photo) => photo !== undefined),
+      }))
+    : sections;
 
   // 끌기 미리보기의 처음 모양(날짜 섹션 + 날짜 미확인 영역)
   const initialItems = () => toDragItems(sections, undated);
 
   // 끄는 중에는 날짜 미확인 영역도 미리보기 순서대로 늘어놓음(원래 영역이 비어도 끌기가 끝날 때까지 남겨 끄는 사진이 사라지지 않게 함)
-  const shownUndated = useMemo(
-    () =>
-      preview
-        ? (preview[UNDATED_SECTION_KEY] ?? [])
-            .map((id) => photoById.get(id))
-            .filter((photo) => photo !== undefined)
-        : undated,
-    [undated, preview, photoById],
-  );
+  const shownUndated = preview
+    ? (preview[UNDATED_SECTION_KEY] ?? [])
+        .map((id) => photoById.get(id))
+        .filter((photo) => photo !== undefined)
+    : undated;
 
   // 선택 모드가 끝나거나 저장·삭제가 시작되어 끌 수 없게 되면 끌던 상태를 걷음
   if (!enabled && dragMove.state.phase !== 'idle' && !moving) reset();

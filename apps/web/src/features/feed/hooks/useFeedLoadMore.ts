@@ -1,5 +1,5 @@
 import { isApiError } from '@app/api-core';
-import { useCallback, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRestartFeed } from '../queries/feed';
 
 /** 커서로 이어 받을 수 없는 실패(문맥이 바뀜 FEED_001, 커서 오류 400). size는 고정이라 400은 커서 쪽 */
@@ -25,13 +25,13 @@ export function useFeedLoadMore(feed: FeedNextPage, viewerId: string | null | un
   const [restartUsed, setRestartUsed] = useState(false);
   // loadMore는 감지 요소가 붙는 순간(commit 중) 지난 렌더의 함수로 불릴 수 있어 가드는 ref로 읽음
   const restartUsedRef = useRef(false);
-  const markRestartUsed = useCallback((used: boolean) => {
+  const markRestartUsed = (used: boolean) => {
     restartUsedRef.current = used;
     setRestartUsed(used);
-  }, []);
+  };
   const staleCursor = feed.isFetchNextPageError && cannotContinue(feed.error);
   const restarting = staleCursor && !restartUsed;
-  const loadMore = useCallback(async () => {
+  const loadMore = async () => {
     const result = await fetchNextPage();
     const stale = cannotContinue(result.error);
     if (!result.isFetchNextPageError) markRestartUsed(false);
@@ -39,7 +39,7 @@ export function useFeedLoadMore(feed: FeedNextPage, viewerId: string | null | un
       markRestartUsed(true);
       await restart();
     }
-  }, [fetchNextPage, restart, markRestartUsed]);
+  };
 
   return { loadMore, restart, staleCursor, restarting };
 }

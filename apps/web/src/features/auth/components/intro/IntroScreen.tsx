@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { preload } from 'react-dom';
 import { LOGIN_BACKGROUND_POSTER } from '../../constants/loginBackground';
 import { LOGIN_PATH } from '../../constants/paths';
@@ -19,7 +19,7 @@ export function IntroScreen() {
   const router = useRouter();
   const [stage, setStage] = useState<'motion' | 'guide'>('motion');
   // IntroMotion이 애니메이션을 불러오는 effect에 쓰므로 렌더마다 바뀌지 않게
-  const showGuide = useCallback(() => setStage('guide'), []);
+  const showGuide = () => setStage('guide');
 
   const finish = () => {
     markIntroSeen();

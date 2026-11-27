@@ -1,7 +1,7 @@
 'use client';
 
 import { Button, ConfirmDialog, Header, toast } from '@app/design-system';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { usePreservedCallback } from 'react-simplikit';
 import { countSelectedByMember, toggleSelection } from '@/features/photo-box/lib/selection';
 import { ALL_MEMBERS, type PhotoBoxData } from '@/features/photo-box/lib/types';
@@ -53,7 +53,7 @@ export function DraftPhotoAdd({
   onBack,
   onApplied,
 }: DraftPhotoAddProps) {
-  const initial = useMemo(() => getInitialSelection(draft.photos), [draft.photos]);
+  const initial = getInitialSelection(draft.photos);
   const [selection, setSelection] = useState<readonly string[]>(initial);
   const [memberId, setMemberId] = useState<string>(ALL_MEMBERS);
   const openOverlay = useScreenOverlay();
@@ -63,10 +63,7 @@ export function DraftPhotoAdd({
   // 번들에는 사진이 1장 이상 있어야 해서 모두 풀면 적용할 수 없음(기능 spec 4.3.7)
   const applicable = changed && selection.length + countUnlinked(draft.photos) > 0;
   const removed = getRemovedPhotos(draft.photos, selection);
-  const selectedCounts = useMemo(
-    () => (selection.length > 0 ? countSelectedByMember(selection, data.photos) : {}),
-    [selection, data.photos],
-  );
+  const selectedCounts = selection.length > 0 ? countSelectedByMember(selection, data.photos) : {};
 
   const toggle = (photoId: string) => {
     const result = toggleSelection(selection, photoId, max);

@@ -7,7 +7,7 @@ import {
   type MultiAnimation,
 } from '@ssgoi/react';
 import { axis, drill, fade, hero, sheet, slide, zoom } from '@ssgoi/react/view-transitions';
-import { type ReactNode, useMemo } from 'react';
+import { type ReactNode } from 'react';
 import {
   INTRO_PATH,
   LOGIN_PATH,
@@ -576,10 +576,7 @@ export function AppTransitions({ children }: { children: ReactNode }) {
   const reducedMotion = useReducedMotion();
   // iOS 쉘 스와이프 뒤로 가기: 전환은 SSGOI 패치가 건너뛰고, 돌아간 화면을 그린 뒤 쉘이 덮개를 걷게 알림(#587)
   useSwipeBackSettled();
-  const config = useMemo<SsgoiConfig>(
-    () => ({ transitions: reducedMotion ? [] : rules }),
-    [reducedMotion],
-  );
+  const config: SsgoiConfig = { transitions: reducedMotion ? [] : rules };
   return (
     <Ssgoi config={config}>
       {/* 전환 중 화면 뒤를 흰색으로 받침. 인트로 브랜드 장면은 바깥 AppFrame이 Safe Area까지 한 번에 칠하므로 보이는 동안·사라지는 동안 비움

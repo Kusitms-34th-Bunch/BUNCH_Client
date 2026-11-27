@@ -3,7 +3,7 @@
 
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { apiErrorCode } from '@/shared/api/client/errorStatus';
 import { prohibitedFieldsOf } from '@/shared/api/prohibitedWord';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
@@ -122,13 +122,10 @@ export function useBundleEdit(
   const memberId = profile.data?.memberId;
   const me = bunchMembers?.find((member) => member.id === memberId);
 
-  const base = useMemo(
-    () =>
-      detail && bunchMembers
-        ? toDraft({ detail, bunchMembers, locations: detail.locations })
-        : undefined,
-    [detail, bunchMembers],
-  );
+  const base =
+    detail && bunchMembers
+      ? toDraft({ detail, bunchMembers, locations: detail.locations })
+      : undefined;
 
   const values: EditValues | undefined = base && {
     title: overrides.title ?? base.title,

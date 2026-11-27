@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { TERMS_ITEMS, type TermsId } from '../constants/terms';
 import { TermsAgreementContext } from './termsAgreementContext';
 
@@ -24,13 +24,13 @@ export function TermsAgreementProvider({
     ...initial,
   });
 
-  const setAgreed = useCallback((id: TermsId, value: boolean) => {
+  const setAgreed = (id: TermsId, value: boolean) => {
     setAgreedState((previous) => ({ ...previous, [id]: value }));
-  }, []);
+  };
 
-  const setAllAgreed = useCallback((value: boolean) => {
+  const setAllAgreed = (value: boolean) => {
     setAgreedState(withAll(value));
-  }, []);
+  };
 
   const allAgreed = TERMS_ITEMS.every(({ id }) => agreed[id]);
   const requiredAgreed = TERMS_ITEMS.every(({ id, required }) => !required || agreed[id]);

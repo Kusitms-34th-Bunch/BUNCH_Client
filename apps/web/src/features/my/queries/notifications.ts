@@ -1,5 +1,4 @@
 import { queryOptions, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
 import { getPushPreferences, updatePushPreferences } from '../api/notifications';
 import { MY_MESSAGES } from '../constants/messages';
 import {
@@ -20,15 +19,12 @@ export const notificationSettingsQueryOptions = () =>
 /** MY 메뉴를 그린 뒤 알림 설정을 미리 받음(들어가면 받아 둔 값으로 바로 그리고 다시 받아 맞춤). 실패는 들어가서 다시 받음 */
 export const usePrefetchNotificationSettings = () => {
   const queryClient = useQueryClient();
-  return useCallback(
-    () =>
-      void queryClient.prefetchQuery({
-        ...notificationSettingsQueryOptions(),
-        // 미리 받은 값을 다시 미리 받지 않는 시간(다른 하위 화면 미리 받기와 같은 값)
-        staleTime: 30_000,
-      }),
-    [queryClient],
-  );
+  return () =>
+    void queryClient.prefetchQuery({
+      ...notificationSettingsQueryOptions(),
+      // 미리 받은 값을 다시 미리 받지 않는 시간(다른 하위 화면 미리 받기와 같은 값)
+      staleTime: 30_000,
+    });
 };
 
 // 같은 scope의 요청은 TanStack Query가 순서대로 하나씩 보냄(연타해도 서버에 마지막 누른 값이 남음)

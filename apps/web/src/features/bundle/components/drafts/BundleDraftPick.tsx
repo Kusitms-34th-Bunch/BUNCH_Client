@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from '@app/design-system';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import {
   LATE_OVERLAY_MS,
   PAGE_LOADING_LABEL,
@@ -42,21 +42,14 @@ export function BundleDraftPick() {
   const [dismissed, setDismissed] = useState<readonly string[]>([]);
 
   const shown = frozen ?? (draft ? { photos: draft.photos, picks: draft.picks } : undefined);
-  const photos = useMemo(
-    () => shown?.photos.filter((photo) => !dismissed.includes(photo.id)) ?? [],
-    [shown?.photos, dismissed],
-  );
+  const photos = shown?.photos.filter((photo) => !dismissed.includes(photo.id)) ?? [];
   // 들어온 뒤 번들에서 빠졌지만 아직 보이는 사진
-  const removedIds = useMemo(
-    () =>
-      new Set(
-        frozen && draft
-          ? frozen.photos
-              .filter((photo) => !draft.photos.some((current) => current.id === photo.id))
-              .map((photo) => photo.id)
-          : [],
-      ),
-    [frozen, draft],
+  const removedIds = new Set(
+    frozen && draft
+      ? frozen.photos
+          .filter((photo) => !draft.photos.some((current) => current.id === photo.id))
+          .map((photo) => photo.id)
+      : [],
   );
 
   if (!draft || !viewer || !shown)

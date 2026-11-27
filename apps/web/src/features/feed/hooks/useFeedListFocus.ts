@@ -1,4 +1,4 @@
-import { useCallback, useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 
 /** 목록의 index번째 카드 첫 버튼으로 초점(없으면 이어 받기 자리나 끝 안내) */
 const focusListItem = (
@@ -55,14 +55,14 @@ export function useFeedListFocus({ retrying, fetching, onRetry }: FeedListFocusO
     ]);
   });
   // 초점이 있던 카드가 없어지면 다음 카드로 옮김(없으면 이어 받기 자리나 끝 안내)
-  const focusNextOfFocused = useCallback(() => {
+  const focusNextOfFocused = () => {
     const items = [...(topRef.current?.querySelectorAll(':scope > ul > li') ?? [])];
     const at = items.findIndex((item) => item.contains(document.activeElement));
     focusListItem(topRef.current, at < 0 ? items.length : at + 1, [
       moreRef.current,
       endRef.current,
     ]);
-  }, []);
+  };
 
   return { topRef, endRef, moreRef, titleRef, retryButtonRef, retry, focusNextOfFocused };
 }

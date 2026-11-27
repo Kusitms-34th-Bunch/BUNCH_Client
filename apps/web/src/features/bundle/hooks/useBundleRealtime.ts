@@ -215,28 +215,21 @@ export function useBundleRealtime(
     };
   }, [enabled, bunchId, bundleId, resync, setStatus, setSync]);
 
-  const isDown = useCallback(
-    () => statusRef.current === 'reconnecting' || syncRef.current !== 'idle',
-    [],
-  );
+  const isDown = () => statusRef.current === 'reconnecting' || syncRef.current !== 'idle';
 
   // 최신 상세를 받지 못했으면 상세를 다시 받고, 끊겨 있으면 기다리지 않고 다시 연결
-  const retry = useCallback(() => {
+  const retry = () => {
     if (syncRef.current === 'failed') resync(true);
     // 이미 연결돼 있으면 아무것도 하지 않음
     connectionRef.current?.retryNow();
-  }, [resync]);
+  };
 
-  const sendPresence = useCallback(
-    (body: Record<string, unknown>) => {
-      if (bunchId === undefined || bundleId === undefined) return false;
-      return (
-        connectionRef.current?.publish(bundleDestinations(bunchId, bundleId).presence, body) ??
-        false
-      );
-    },
-    [bunchId, bundleId],
-  );
+  const sendPresence = (body: Record<string, unknown>) => {
+    if (bunchId === undefined || bundleId === undefined) return false;
+    return (
+      connectionRef.current?.publish(bundleDestinations(bunchId, bundleId).presence, body) ?? false
+    );
+  };
 
   if (!enabled) return DISABLED;
   return {

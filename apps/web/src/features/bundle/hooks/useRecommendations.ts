@@ -1,7 +1,6 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useCallback } from 'react';
 import { apiErrorCode } from '@/shared/api/client/errorStatus';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { Recommendation, RecommendationDetail } from '../model/recommendation';
@@ -25,29 +24,26 @@ export function useRecommendationLoader() {
   const bunchId = profile?.bunch?.id;
   const { fetchList, fetchDetail } = useRecommendationFetchers(bunchId);
 
-  const loadList = useCallback(async (): Promise<RecommendationLoad<readonly Recommendation[]>> => {
+  const loadList = async (): Promise<RecommendationLoad<readonly Recommendation[]>> => {
     if (!bunchId) return { kind: 'failed' };
     try {
       return { kind: 'ready', data: await fetchList() };
     } catch {
       return { kind: 'failed' };
     }
-  }, [bunchId, fetchList]);
+  };
 
-  const loadDetail = useCallback(
-    async (id: string): Promise<RecommendationLoad<RecommendationDetail>> => {
-      if (!bunchId) return { kind: 'failed' };
-      try {
-        return {
-          kind: 'ready',
-          data: await fetchDetail(id),
-        };
-      } catch (error) {
-        return { kind: isDeleted(error) ? 'deleted' : 'failed' };
-      }
-    },
-    [bunchId, fetchDetail],
-  );
+  const loadDetail = async (id: string): Promise<RecommendationLoad<RecommendationDetail>> => {
+    if (!bunchId) return { kind: 'failed' };
+    try {
+      return {
+        kind: 'ready',
+        data: await fetchDetail(id),
+      };
+    } catch (error) {
+      return { kind: isDeleted(error) ? 'deleted' : 'failed' };
+    }
+  };
 
   return { loadList, loadDetail };
 }

@@ -1,5 +1,4 @@
 import { queryOptions, skipToken, useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
 import { getMemberSocialProfile } from '../api/memberProfile';
 import { toFeedMemberProfile } from '../model/memberProfile';
 import { feedKeys } from './keys';
@@ -18,24 +17,18 @@ export const memberProfileQueryOptions = (memberId: string, viewerId: string | n
 /** 멤버 프로필로 가기 전(누르기 시작·초점) 미리 받음. 들어가면 받아 둔 값으로 그리고 다시 받아 맞춤. 실패는 들어가서 다시 받음 */
 export const usePrefetchMemberProfile = () => {
   const queryClient = useQueryClient();
-  return useCallback(
-    (memberId: string, viewerId: string | null | undefined) => {
-      if (viewerId === undefined) return;
-      void queryClient.prefetchQuery({
-        ...memberProfileQueryOptions(memberId, viewerId),
-        // 누르는 동안 같은 프로필을 거듭 받지 않는 시간(들어가면 staleTime 0이라 다시 받음)
-        staleTime: 10_000,
-      });
-    },
-    [queryClient],
-  );
+  return (memberId: string, viewerId: string | null | undefined) => {
+    if (viewerId === undefined) return;
+    void queryClient.prefetchQuery({
+      ...memberProfileQueryOptions(memberId, viewerId),
+      // 누르는 동안 같은 프로필을 거듭 받지 않는 시간(들어가면 staleTime 0이라 다시 받음)
+      staleTime: 10_000,
+    });
+  };
 };
 
 /** 이 화면에서 팔로우를 바꾼 뒤 멤버 프로필을 다시 받음(팔로우 요청은 번치 쪽 기능이 보내므로 화면이 부름) */
 export const useRefreshMemberProfile = (memberId: string) => {
   const queryClient = useQueryClient();
-  return useCallback(
-    () => queryClient.invalidateQueries({ queryKey: feedKeys.memberAll(memberId) }),
-    [queryClient, memberId],
-  );
+  return () => queryClient.invalidateQueries({ queryKey: feedKeys.memberAll(memberId) });
 };

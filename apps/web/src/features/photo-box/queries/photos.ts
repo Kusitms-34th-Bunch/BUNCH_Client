@@ -1,5 +1,4 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
 import { sharedKeys } from '@/shared/query/keys';
 import { changePhotoDates, removePhotos } from '../api/photos';
 import { MissingPhotosError } from '../lib/missingPhotos';
@@ -104,10 +103,7 @@ export const useChangePhotoDatesMutation = (bunchId: string | undefined) => {
 export const useInvalidatePhotos = (bunchId: string | undefined) => {
   const queryClient = useQueryClient();
   // 효과의 의존성으로 쓰이므로 번치가 같으면 같은 함수를 돌려줌
-  return useCallback(
-    () => queryClient.invalidateQueries({ queryKey: photoBoxKeys.photos(bunchId) }),
-    [queryClient, bunchId],
-  );
+  return () => queryClient.invalidateQueries({ queryKey: photoBoxKeys.photos(bunchId) });
 };
 
 /**
@@ -116,8 +112,6 @@ export const useInvalidatePhotos = (bunchId: string | undefined) => {
  */
 export const useInvalidatePhotosOf = () => {
   const queryClient = useQueryClient();
-  return useCallback(
-    (bunchId: string) => queryClient.invalidateQueries({ queryKey: photoBoxKeys.photos(bunchId) }),
-    [queryClient],
-  );
+  return (bunchId: string) =>
+    queryClient.invalidateQueries({ queryKey: photoBoxKeys.photos(bunchId) });
 };

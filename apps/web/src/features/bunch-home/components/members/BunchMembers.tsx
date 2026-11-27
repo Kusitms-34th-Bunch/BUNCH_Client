@@ -3,7 +3,7 @@
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useBackOr } from '@/shared/hooks/useBackOr';
 import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import { loadFailed } from '@/shared/query/loadFailed';
@@ -60,11 +60,8 @@ export function BunchMembers() {
   const [recovering, setRecovering] = useState(false);
   // 실패 뒤 다시 받기도 실패하면 목록·버전이 오래돼 관리하지 않고 다시 받기를 권함
   const [refreshFailed, setRefreshFailed] = useState(false);
-  const managed = useMemo(
-    () => (memberships.data ? toManagedMemberships(memberships.data) : undefined),
-    [memberships.data],
-  );
-  const members = useMemo(() => managed && sortMembers(managed.members), [managed]);
+  const managed = memberships.data ? toManagedMemberships(memberships.data) : undefined;
+  const members = managed && sortMembers(managed.members);
   // 번치가 없으면(모두 나감) 번치 탭으로
   const hasNoBunch = me.isSuccess && bunchId === undefined;
   useEffect(() => {

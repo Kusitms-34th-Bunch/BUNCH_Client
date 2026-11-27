@@ -5,6 +5,7 @@ import {
   type ComponentProps,
   type KeyboardEvent,
   useEffect,
+  useEffectEvent,
   useRef,
 } from 'react';
 import { cn } from '../../../utils';
@@ -40,25 +41,22 @@ export const Menu = ({
   ...props
 }: MenuProps) => {
   const exitedRef = useRef(false);
-  const onExitedRef = useRef(onExited);
-
-  useEffect(() => {
-    onExitedRef.current = onExited;
-  });
 
   // 닫힘마다 onExited는 한 번만 부름(모션 끝과 안전장치 중 먼저 온 쪽)
   const notifyExited = () => {
     if (exitedRef.current) return;
     exitedRef.current = true;
-    onExitedRef.current?.();
+    onExited?.();
   };
+  // 안전장치 타이머는 effect 안이라 최신 onExited를 읽되 의존성에서 뺌(바뀌어도 타이머를 다시 걸지 않음)
+  const notifyExitedLater = useEffectEvent(notifyExited);
 
   useEffect(() => {
     if (open) {
       exitedRef.current = false;
       return undefined;
     }
-    const timer = window.setTimeout(notifyExited, EXIT_FALLBACK_MS);
+    const timer = window.setTimeout(notifyExitedLater, EXIT_FALLBACK_MS);
     return () => window.clearTimeout(timer);
   }, [open]);
 

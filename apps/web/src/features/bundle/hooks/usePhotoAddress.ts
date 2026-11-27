@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { readHistoryEntry } from '@/shared/lib/navigation/historyEntry';
 import { replaceUrl } from '@/shared/lib/navigation/replaceUrl';
 import { parsePhotoId } from '../lib/draftId';
@@ -38,14 +38,11 @@ export function usePhotoAddress(
   });
   const [currentPhotoId, setCurrentPhotoId] = useState(initialPhotoId);
 
-  const sync = useCallback(
-    (photoId: string) => {
-      setCurrentPhotoId(photoId);
-      if (draftId === undefined) return;
-      replaceUrl(toPath(draftId, photoId), { [PHOTO_ID_KEY]: photoId });
-    },
-    [draftId, toPath],
-  );
+  const sync = (photoId: string) => {
+    setCurrentPhotoId(photoId);
+    if (draftId === undefined) return;
+    replaceUrl(toPath(draftId, photoId), { [PHOTO_ID_KEY]: photoId });
+  };
 
   return { initialPhotoId, currentPhotoId, sync };
 }

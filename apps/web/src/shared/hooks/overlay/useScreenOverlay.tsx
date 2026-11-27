@@ -1,7 +1,7 @@
 'use client';
 
 import { overlay } from 'overlay-kit';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { LiveOverlay } from '@/shared/components/overlay/LiveOverlay';
 import { createListeners } from '@/shared/lib/listeners';
 
@@ -51,39 +51,37 @@ export function useScreenOverlay() {
     [opened],
   );
 
-  return useMemo(() => {
-    const open = (
-      render: RenderOverlay,
-      onClosed?: () => void,
-      { live = false }: { live?: boolean } = {},
-    ) => {
-      const id = overlay.open(({ overlayId, isOpen, close, unmount }) => (
-        <LiveOverlay
-          store={store}
-          live={live}
-          render={() =>
-            render(
-              {
-                open: isOpen,
-                onOpenChange: (next) => {
-                  if (!next) close();
-                },
-                onOpenChangeComplete: (next) => {
-                  if (next) return;
-                  unmount();
-                  opened.delete(overlayId);
-                  onClosed?.();
-                },
+  const open = (
+    render: RenderOverlay,
+    onClosed?: () => void,
+    { live = false }: { live?: boolean } = {},
+  ) => {
+    const id = overlay.open(({ overlayId, isOpen, close, unmount }) => (
+      <LiveOverlay
+        store={store}
+        live={live}
+        render={() =>
+          render(
+            {
+              open: isOpen,
+              onOpenChange: (next) => {
+                if (!next) close();
               },
-              close,
-            )
-          }
-        />
-      ));
-      opened.add(id);
-      return id;
-    };
-    const closeAll = () => opened.forEach((id) => overlay.close(id));
-    return Object.assign(open, { closeAll });
-  }, [opened, store]);
+              onOpenChangeComplete: (next) => {
+                if (next) return;
+                unmount();
+                opened.delete(overlayId);
+                onClosed?.();
+              },
+            },
+            close,
+          )
+        }
+      />
+    ));
+    opened.add(id);
+    return id;
+  };
+  const closeAll = () => opened.forEach((id) => overlay.close(id));
+  return Object.assign(open, { closeAll });
 }
