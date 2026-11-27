@@ -3,7 +3,7 @@
 
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { isWireId } from '@/shared/api/client/ids';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
@@ -117,14 +117,14 @@ export function useDraft(draftId: string | undefined): {
 
   // 저장·사진 대기열·발행이 함께 기준으로 삼는 최신 상세(렌더 밖 이벤트·타이머에서만 읽고 씀)
   const detailRef = useRef<BundleDetail | undefined>(undefined);
-  const readDetail = useCallback(() => detailRef.current, []);
-  const writeDetail = useCallback((next: BundleDetail) => {
+  const readDetail = () => detailRef.current;
+  const writeDetail = (next: BundleDetail) => {
     detailRef.current = next;
-  }, []);
+  };
   // 보내기 직전에 지금 연결이 끊겼는지 바로 확인(실시간 연결·브라우저 오프라인·보류 이벤트 재조회 실패)
   // 끊김을 아는 상태는 렌더 뒤 effect에서 반영돼, 그 사이에 대기열의 다음 요청이 나가지 않게 함
   const offlineNowRef = useRef<() => boolean>(() => false);
-  const isOfflineNow = useCallback(() => offlineNowRef.current(), []);
+  const isOfflineNow = () => offlineNowRef.current();
   const myIdRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
@@ -171,20 +171,17 @@ export function useDraft(draftId: string | undefined): {
   });
   const { publishPhase } = draftPublish;
 
-  const members = useMemo(
-    () =>
-      detail && bunchMembers ? bunchMembers.map((m) => toDraftMember(m, detail.createdBy)) : [],
-    [detail, bunchMembers],
-  );
+  const members =
+    detail && bunchMembers ? bunchMembers.map((m) => toDraftMember(m, detail.createdBy)) : [];
   const myId = profile?.memberId;
-  const viewer = useMemo<DraftViewer | undefined>(() => {
+  const viewer: DraftViewer | undefined = (() => {
     const me = bunchMembers?.find((member) => member.id === myId);
     if (!myId || !me) return undefined;
     return { memberId: myId, bunchRole: members.find((m) => m.id === myId)?.bunchRole ?? 'member' };
-  }, [bunchMembers, members, myId]);
+  })();
 
   const { localPhotos, frozenPhotos } = photoQueue;
-  const draft = useMemo<Draft | undefined>(() => {
+  const draft: Draft | undefined = (() => {
     if (!detail || !bunchMembers || !myId) return undefined;
     const base = toDraft({ detail, bunchMembers, locations });
     const photos = localPhotos ?? frozenPhotos ?? base.photos;
@@ -200,18 +197,7 @@ export function useDraft(draftId: string | undefined): {
       photos,
       comments: withPendingComment(base.comments, myId, pending.comment),
     };
-  }, [
-    detail,
-    bunchMembers,
-    locations,
-    myId,
-    pending,
-    localPhotos,
-    frozenPhotos,
-    titleCrdt.text,
-    presenceState.presence,
-    visibilityChoice,
-  ]);
+  })();
 
   const isParticipant = draft?.members.some((member) => member.id === myId) ?? false;
   // presence 명령은 연결된 동안 이 초안을 보는 중일 때만 보냄(비참여 멤버는 VIEW만)
@@ -333,7 +319,7 @@ export function useDraft(draftId: string | undefined): {
   useEffect(() => {
     downRef.current = offline;
   });
-  const isDown = useCallback(() => downRef.current, []);
+  const isDown = () => downRef.current;
   const actions = useGuardedDraftActions(rawActions, isDown);
 
   const { missing, failed } = draftAvailability({

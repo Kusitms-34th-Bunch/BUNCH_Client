@@ -21,7 +21,6 @@
 
 - 약관 버전 관리. 원문은 앱이 가진 정적 문서이고(2026-11-18 범위 결정, #440), 바뀌면 문서 파일을 고쳐 배포한다. 동의 저장에 쓰는 버전 문자열은 서버(`GET /auth/terms`)가 따로 준다.
 - 서버에서 최신 적용 버전을 받는 동작(`docs/specs/login-signup.md` 1.3.2는 항상 최신 버전을 보여주라고 한다).
-- 접근 제어와 화면 전환 규칙(`AppTransitions`).
 
 ## Route와 접근
 
@@ -60,7 +59,7 @@
 ## 검증
 
 - [ ] direct URL·새로고침·뒤로 가기: `next build`에서 두 경로가 정적으로 생성됨. 잘못된 `termId`의 404와 새로고침·뒤로 가기는 확인하지 못함(미검증)
-- [ ] 권한·redirect: guard가 없어 확인할 수 없음
+- [ ] 권한·redirect: `AuthGate`(`lib/accessPolicy.ts`) 기준 화면 확인(미검증, 규칙은 `accessPolicy.test.ts`가 확인)
 - [x] 상태별 UI: 네 문서의 제목, 시행일자·버전, 조항 제목 전체, 번호 목록, 하위 목록, 머리말, 소제목, 링크 속성을 테스트로 확인. MY `privacy` 주소가 처리방침을 여는 것과 `privacyPolicy` 주소의 404는 `my/terms/[termId]/page.test.tsx`로 확인
 - [x] 관련 test: `TermsDocument.test.tsx`, 체크 유지는 `TermsAgreement.test.tsx`
 - [x] 실행 command와 결과: `yarn workspace @app/web test`·lint·typecheck·build 통과

@@ -3,7 +3,7 @@
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { type RefObject, useMemo, useRef } from 'react';
+import { type RefObject, useRef } from 'react';
 import { myBunchesQueryOptions } from '@/shared/query/myBunches';
 import type { BunchSummary } from '../lib/types';
 import { BUNCH_HOME_MESSAGES } from '../constants/messages';
@@ -37,7 +37,7 @@ export function useBunchSwitcher(
   const currentName = current?.name;
   const currentImage = current?.imageSrc;
   // 전환 목록은 화면을 막지 않음: 못 받았거나 낡았어도 지금 번치는 보임
-  const bunches = useMemo<readonly BunchSummary[]>(() => {
+  const bunches: readonly BunchSummary[] = (() => {
     if (currentId === undefined || currentName === undefined) return [];
     return toBunchSummaries(myBunches.data, {
       id: currentId,
@@ -46,7 +46,7 @@ export function useBunchSwitcher(
       alertCount: 0,
       access: 'active',
     });
-  }, [currentId, currentName, currentImage, myBunches.data]);
+  })();
   const atBunchLimit = myBunches.data
     ? myBunches.data.activeCount >= myBunches.data.maxActiveCount
     : false;

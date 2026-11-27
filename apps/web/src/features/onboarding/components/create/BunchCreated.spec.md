@@ -28,7 +28,7 @@
 - 진입: 폭죽 조각이 솟아올랐다가 팔랑이며 떨어지고 사라진다. 끝나면 조각은 DOM에서 치운다. 화면이 먼저 사라지면 재생을 취소한다.
 - 움직임 줄이기(`prefers-reduced-motion: reduce`): 폭죽을 그리지 않는다. 문구·버튼은 그대로다.
 - `Element.animate`를 지원하지 않는 환경: 폭죽을 그리지 않는다.
-- 「멤버 초대하기」: `/onboarding/create/invite`로 `router.push`한다(`features/bunch-invite/components/BunchInvite.spec.md`). 「내 번치로 이동하기」: 번치 탭(`/bunch`, 만든 번치가 기본 번치)으로 `router.replace`한다(기능명세 2.3.4). 카메라: 네이티브 갤러리를 바로 열고 선택 후 현재 화면의 대표 사진을 교체한다. 일반 브라우저에서는 개발용 파일 선택창을 연다.
+- 「멤버 초대하기」: `/onboarding/create/invite`로 `router.push`한다(`features/bunch-invite/components/BunchInvite.spec.md`). 「내 번치로 이동하기」: 번치 탭(`/bunch`, 만든 번치가 기본 번치)으로 `router.replace`한다(기능명세 2.3.4). 카메라: 「프로필 사진 설정」 선택지를 먼저 열고, 앨범에서 고른 사진으로 현재 화면의 대표 사진을 교체한다(아래 「사진 선택」).
 
 ## 데이터 의존성
 
@@ -58,7 +58,7 @@
 ## 검증
 
 - [ ] direct URL·새로고침·뒤로 가기: `next build`에서 정적 페이지로 생성되고 `next start`에서 직접 URL 렌더·재생·종료 후 조각 제거를 확인함. 새로고침·뒤로 가기는 미검증
-- [ ] 권한·redirect: guard가 없어 확인할 수 없음(미검증)
+- [ ] 권한·redirect: `AuthGate`(`features/auth/lib/accessPolicy.ts`) 기준 화면 확인(미검증, 규칙은 `accessPolicy.test.ts`가 확인)
 - [x] 관련 test: `BunchCreated.test.tsx`(제목, 이름 없음, 버튼), `BunchConfetti.test.tsx`·`confettiKeyframes.test.ts`(조각당 5개 재생과 4.2초 길이, 종료 후 제거, 취소, 움직임 줄이기)
 - [x] 실행 command와 결과: `yarn workspace @app/web test`(103개)·lint·typecheck·build 통과
 - [x] (이전 연출 기준, 새 연출은 앱 화면 재검증 필요) 헤드리스 Chromium(375×812): 아바타 154×158, 구름 이미지 로드, 카드와 버튼 위치, 250ms 시점 폭죽 위치, 종료 후 조각 0개, 가로 넘침 없음. Figma 정지 화면과 픽셀 비교, 실기기 프레임은 하지 못함

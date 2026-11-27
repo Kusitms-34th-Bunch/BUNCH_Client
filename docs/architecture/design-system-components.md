@@ -58,7 +58,7 @@
 틀 컴포넌트에 딸린 렌더러(예: `BottomSheet`를 조합한 `PhotoUploadSheet`)는 틀 폴더의 `renderers/`에 둔다(`web/bottomSheet/renderers/`). 렌더러 하나는 `<이름>.tsx`·`.test.tsx`·`.stories.tsx`·`.spec.md` 파일로 이루어지고 폴더는 따로 만들지 않는다. generator는 구역 바로 아래에만 폴더를 만들므로 렌더러는 기존 렌더러 파일을 복사해서 시작한다. `yarn workspace @app/design-system gen:index`가 `renderers/index.ts`를 만들어 틀 barrel로 공개하므로 import 경로는 다른 컴포넌트와 같다. 구조 검사는 렌더러마다 test·story가 있는지 확인한다. 렌더러가 하나뿐이고 짧으면 `Dialog`의 `ConfirmDialog`처럼 틀 파일 안에 둔다. `src/icons/generated/`의 아이콘은 SVG asset 파이프라인으로 생성하며 `docs/architecture/design-system-icons.md`를 따른다.
 
 ```text
-packages/design-system/src/components/{core|web}/{component-name}/
+packages/design-system/src/components/{core|web|admin}/{component-name}/
   ComponentName.tsx
   ComponentName.test.tsx
   ComponentName.stories.tsx

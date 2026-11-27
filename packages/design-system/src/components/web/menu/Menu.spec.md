@@ -26,11 +26,11 @@
 
 ## 상태와 동작
 
-| Figma 상태 | 코드                                                   |
-| ---------- | ------------------------------------------------------ |
-| Default    | 글자·아이콘 `text-secondary`(#25282D)                  |
-| Warning    | 글자·아이콘 `system-fail-text`(#F04D29)                |
-| Pressed    | `:active` 동안 `overlay-hover` 오버레이(75ms ease-out) |
+| Figma 상태 | 코드                                                                                          |
+| ---------- | --------------------------------------------------------------------------------------------- |
+| Default    | 글자·아이콘 `text-secondary`(#25282D)                                                         |
+| Warning    | 글자·아이콘 `system-fail-text`(#F04D29)                                                       |
+| Pressed    | `:active` 동안 `overlay-hover` 오버레이(150ms `cubic-bezier(0, 0, 0.15, 1)`, `press-overlay`) |
 
 ### 모션(Figma 더보기 메뉴 애니메이션 `7548:97687`, 2026-11-20 변경. 이전은 공통 모션의 팝오버 메뉴 모션 38px 이동·400ms)
 

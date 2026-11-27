@@ -74,7 +74,7 @@ export const bunchNameMessages = ({
   taken: boolean;
   availability: NicknameAvailability;
 }) => ({
-  errorMessage: invalid
+  error: invalid
     ? BUNCH_NAME_INVALID_MESSAGE
     : prohibited
       ? BUNCH_NAME_PROHIBITED_MESSAGE

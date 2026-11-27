@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useEffect, useLayoutEffect, useRef } from 'react';
 
 const REFRESH_MS = 5_000;
 
@@ -54,7 +54,7 @@ export function usePresenceSender({
   // 같은 target(예: 사진)을 여러 곳(시트·화면·확인 창)이 쓰므로 모두 끝났을 때만 END를 보냄(열린 화면과 진행 작업의 합집합)
   const running = useRef(new Map<string, number>());
 
-  const begin = useCallback((target: string) => {
+  const begin = (target: string) => {
     if (!participantRef.current) return;
     const count = running.current.get(target) ?? 0;
     running.current.set(target, count + 1);
@@ -62,9 +62,9 @@ export function usePresenceSender({
     if (count === 0 && liveRef.current && document.visibilityState !== 'hidden') {
       sendRef.current({ action: 'BEGIN', target });
     }
-  }, []);
+  };
 
-  const end = useCallback((target: string) => {
+  const end = (target: string) => {
     const count = running.current.get(target);
     if (count === undefined) return;
     if (count > 1) {
@@ -73,17 +73,17 @@ export function usePresenceSender({
     }
     running.current.delete(target);
     if (connectedRef.current) sendRef.current({ action: 'END', target });
-  }, []);
+  };
 
-  const type = useCallback((target: 'TITLE' | 'COMMENT', text: string) => {
+  const type = (target: 'TITLE' | 'COMMENT', text: string) => {
     if (!participantRef.current || !liveRef.current) return;
     sendRef.current({ action: 'TYPE', target, text });
-  }, []);
+  };
 
-  const blur = useCallback((target: 'TITLE' | 'COMMENT') => {
+  const blur = (target: 'TITLE' | 'COMMENT') => {
     if (!participantRef.current || !liveRef.current) return;
     sendRef.current({ action: 'BLUR', target });
-  }, []);
+  };
 
   // 입장: 연결되면 VIEW를 바로 보내고, 5초마다 VIEW와 진행 중인 작업의 BEGIN을 다시 보냄. 재연결은 새 연결이라 진행 중이던 작업도 새로 알림
   // 실제 앱 이탈: 탭·앱이 보이지 않게 되면 BACKGROUND, 다시 보이면 입장을 다시 알림(사진함·갤러리 진입에 따른 단순 포커스 이동과 구분)
@@ -128,6 +128,6 @@ export function usePresenceSender({
     running.current.clear();
   }, [viewing]);
 
-  // 늘 같은 값(사용하는 쪽 effect가 연결 변화마다 다시 돌지 않음, 재연결 때 진행 작업은 위 입장 effect가 알림)
-  return useMemo(() => ({ type, blur, begin, end }), [type, blur, begin, end]);
+  // React Compiler가 렌더 사이 같은 값으로 유지(사용하는 쪽 effect가 연결 변화마다 다시 돌지 않음, 재연결 때 진행 작업은 위 입장 effect가 알림)
+  return { type, blur, begin, end };
 }

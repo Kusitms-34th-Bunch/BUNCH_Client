@@ -2,7 +2,7 @@
 
 ## 메타데이터
 
-- Route: `/onboarding/create/mood`(`apps/web/src/app/(app)/onboarding/create/mood/page.tsx`)
+- Route: `/onboarding/create/mood`(`apps/web/src/app/(app)/onboarding/create/(steps)/mood/page.tsx`)
 - Status: UI와 선택 동작 구현됨. 성격 카드 4종 반영(Chromium 측정으로 Figma 값과 대조). 「번치 만들기」가 `POST /bunches`로 번치를 만들고 성공하면 완료 화면으로 이동함(이슈 #306). 실서버 검증 전, 실기기 검증 전
 - 디자인 출처: Figma 성격 선택 화면(node `4746:62416`), 카드(node `4746:64657`, 01~04 × Default·Pressed·Selected), 중단 확인 모달(node `791:11665`). 화면설계서(node `791:10735`)를 함께 참고했다. 기능명세서는 1110판(2026-11-10) 2.2.9·2.2.10 기준이며, 명세의 「번치 분위기」가 이 문서의 「성격」이다.
 
@@ -16,7 +16,6 @@
 
 ### 범위 외
 
-- 번치 생성 요청(`useCreateBunchMutation`), 요청 중 중복 탭 방지, 실패 안내.
 - 피드 화면, 화면 전환 애니메이션(`BunchStartSelect.spec.md`의 확인할 항목). 진행 표시줄 전환은 구현했다.
 
 ## Route와 접근
@@ -35,7 +34,6 @@
 - 「나가기」: 이름·공개 범위·소개·성격을 모두 비우고 피드로 이동한다(`replace`). 「계속 만들기」와 ESC는 모달만 닫고 화면과 입력값은 그대로다. 바깥 터치는 무시된다.
 - 나간 뒤 브라우저 기록의 2·3단계로 뒤로 가면 provider가 새로 만들어져 입력이 비어 있어서 `useCreateBunchGuard`가 1단계로 `router.replace`한다(코드로만 확인, 브라우저 실행은 미검증).
 - 완료 화면에서 뒤로 가면 2단계가 1단계로 바뀌어 기록에 1단계가 두 번 남을 수 있다(`[시작, 1단계, 1단계]`). 뒤로 가기를 두 번 눌러야 시작 화면에 간다. 허용 범위로 보고 사용성 테스트에서 확인한다.
-- 「번치 만들기」: 누르면 생성 요청 없이 완료 화면(`/onboarding/create/complete`, `BunchCreated.spec.md`)으로 `router.replace`한다. 뒤로 가기로 이 단계에 돌아와 다시 만들지 못하게 하려는 것이다(아래 확인할 항목).
 
 ## 데이터 의존성
 
@@ -65,9 +63,9 @@
 ## 검증
 
 - [ ] direct URL·새로고침·뒤로 가기: `next build`에서 정적 페이지로 생성되고 `next start`에서 렌더·카드 선택·모달 열기를 확인함. 새로고침, 1→2→3 이동 흐름 전체는 확인하지 못함(미검증)
-- [ ] 권한·redirect: guard가 없어 확인할 수 없음(미검증)
+- [ ] 권한·redirect: `AuthGate`(`features/auth/lib/accessPolicy.ts`) 기준 화면 확인(미검증, 규칙은 `accessPolicy.test.ts`가 확인)
 - [x] 상태별 UI: 미선택, 선택, 모달 열림
-- [x] Chromium(dev 서버)에서 카드 192 높이·radius 8·이미지 크기·글자 13/18 600·카드 색·선택 테두리 `#FFBD4D`를 측정해 Figma 값과 대조함
+- [x] Chromium(dev 서버)에서 카드 192 높이·radius 8·이미지 크기·글자 13/18 600·카드 색·선택 테두리 `#FFBD4D`를 측정해 Figma 값과 대조함(당시 값, 지금 선택 테두리는 `border-primary` #BCBEC2)
 - [x] 관련 test: `BunchMood.test.tsx`(진행 표시, 단일 선택, 활성 조건, 이전, 모달 열기·계속 만들기·ESC·나가기 시 입력 초기화), 1·2단계 test의 뒤로 가기 모달
 - [x] 실행 command와 결과: `yarn workspace @app/web test`(95개)·typecheck·build 통과
 - [x] 헤드리스 Chromium(375×812)에서 제목·카드·버튼 위치와 크기를 Figma 구조와 대조(상태 바 44px 제외, 세로 가운데 정렬 식 동일). 실기기와 픽셀 비교는 하지 못함
@@ -87,4 +85,3 @@
 - 분위기 값 이름 (1110판, 확인 필요): 1110판 2.2.9는 값을 `UNIQUE`·`ENERGETIC`·`ROMANTIC`·`CALM`으로 적었다. 구현과 서버 필드는 `characterType`의 `TYPE_1`~`TYPE_4`다. 서버 enum이 바뀌는지 백엔드에 확인하고, 바뀌면 생성 요청·기본 이미지·배경색 매핑을 함께 고친다.
 - 카드 글자 (명세와 다름, Figma 우선): 1110판은 카드마다 영문 이름(「Unique」 등)과 설명(「개성 넘치는 모임」 등)을 둔다. 지금 카드는 Figma(`4746:64657`)대로 설명 한 줄만 보인다. 보이는 모양이라 Figma를 따르고, 영문 이름을 넣을지 디자인에 확인한다.
 - 생성 실패 문구 (1110판): 2.2.10의 네트워크·서버 오류 토스트는 「일시적인 오류가 발생했어요. 다시 시도해 주세요」다(이전 판 「번치를 만들지 못했어요…」). #306에서 생성 요청을 연결하며 이 문구를 쓴다.
-- 시작 화면의 닫기(X) (미정): 같은 모달을 쓰도록 설계서에 있으나 이번 범위에서 연결하지 않았다(`BunchStartSelect.spec.md`).

@@ -126,7 +126,7 @@ export function BunchDeleteScreen({
                 }}
               >
                 <LabeledTextField
-                  title="확인 문구 입력"
+                  label="확인 문구 입력"
                   placeholder={BUNCH_HOME_MESSAGES.deleteConfirmPhrase}
                   value={phrase}
                   onChange={(event) => setPhrase(event.target.value)}

@@ -48,7 +48,7 @@
 ## 확인할 항목
 
 - 글자색: Figma Active·Pressed 글자는 변수가 아니라 순수 검정(`#000`)이라 가장 가까운 `text-primary`(`#121212`)를 썼다. 디자이너 확인 항목이다.
-- Pressed의 배경은 Figma에서 흰 바탕 위의 검정 오버레이로 그려져 있어 repo의 `overlay-hover`로 옮겼고, 같은 오버레이로 그려진 `IconButton`의 Pressed를 픽셀로 재 보니 10%(`#E5E5E5`)였다. 다른 버튼과 같은 75ms ease-out 전환(동작 줄이기에서는 끔)을 적용했다.
+- Pressed의 배경은 Figma에서 흰 바탕 위의 검정 오버레이로 그려져 있어 repo의 `overlay-hover`로 옮겼고, 같은 오버레이로 그려진 `IconButton`의 Pressed를 픽셀로 재 보니 10%(`#E5E5E5`)였다. 덮개는 공통 `press-overlay`로 150ms `cubic-bezier(0, 0, 0.15, 1)` 전환하고, 누르는 동안 `press-scale-small`(기본 0.95)로 줄어든다(동작 줄이기에서는 둘 다 끔).
 
 ## 검증
 

@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from '@app/design-system';
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { PHOTO_BOX_PATHS } from '@/features/photo-box/constants/paths';
 import { usePhotoBox } from '@/features/photo-box/hooks/usePhotoBox';
 import {
@@ -67,31 +67,26 @@ export function BundleSelectProvider({
   const [scrollTarget, setScrollTarget] = useState<BundleSelectValue['scrollTarget']>(undefined);
   const nonce = useRef(0);
 
-  const selectedCounts = useMemo(
-    () => (photos && selection.length > 0 ? countSelectedByMember(selection, photos) : {}),
-    [photos, selection],
-  );
+  const selectedCounts =
+    photos && selection.length > 0 ? countSelectedByMember(selection, photos) : {};
   // 시트 열고 닫기는 effect에서도 부르므로 참조를 고정
   const openSheet = useCallback(() => setSheetOpen(true), []);
   const closeSheet = useCallback(() => setSheetOpen(false), []);
-  const clearScrollTarget = useCallback(() => setScrollTarget(undefined), []);
+  const clearScrollTarget = () => setScrollTarget(undefined);
 
-  const toggle = useCallback(
-    (photoId: string) => {
-      const result = toggleSelection(selection, photoId, MAX_SELECT_PHOTOS);
-      if (result.rejected) notify(BUNDLE_SELECT_MESSAGES.maxPhotos);
-      else setSelection(result.selection);
-    },
-    [selection],
-  );
+  const toggle = (photoId: string) => {
+    const result = toggleSelection(selection, photoId, MAX_SELECT_PHOTOS);
+    if (result.rejected) notify(BUNDLE_SELECT_MESSAGES.maxPhotos);
+    else setSelection(result.selection);
+  };
 
   // 멤버를 추가·해제. 멤버 칩 필터로 보던 멤버를 해제하면 「전체」로 되돌림
-  const toggleMember = useCallback((id: string) => {
+  const toggleMember = (id: string) => {
     setMemberIds((current) =>
       current.includes(id) ? current.filter((value) => value !== id) : [...current, id],
     );
     setMemberId((current) => (current === id ? ALL_MEMBERS : current));
-  }, []);
+  };
 
   // 추천 사진 전부를 추천 순서대로 선택하고 그 날짜 섹션으로 스크롤, 토스트로 장수를 알림
   const commit = (detail: RecommendationDetail) => {

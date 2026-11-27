@@ -1,5 +1,4 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
 import { followListQueryOptions, followRequestsQueryOptions } from './follows';
 import { bunchNotificationsQueryOptions } from './notifications';
 import { otherBunchMembersQueryOptions } from './otherBunch';
@@ -13,50 +12,44 @@ const PREFETCH_FRESH_MS = 30_000;
  */
 export const usePrefetchMyBunchLists = () => {
   const queryClient = useQueryClient();
-  return useCallback(
-    (bunchId: string) => {
-      for (const kind of ['followers', 'following'] as const) {
-        void queryClient.prefetchInfiniteQuery({
-          ...followListQueryOptions(bunchId, bunchId, kind, true),
-          staleTime: PREFETCH_FRESH_MS,
-        });
-      }
-      void queryClient.prefetchQuery({
-        ...followRequestsQueryOptions(bunchId),
-        staleTime: PREFETCH_FRESH_MS,
-      });
+  return (bunchId: string) => {
+    for (const kind of ['followers', 'following'] as const) {
       void queryClient.prefetchInfiniteQuery({
-        ...bunchNotificationsQueryOptions(bunchId),
+        ...followListQueryOptions(bunchId, bunchId, kind, true),
         staleTime: PREFETCH_FRESH_MS,
       });
-    },
-    [queryClient],
-  );
+    }
+    void queryClient.prefetchQuery({
+      ...followRequestsQueryOptions(bunchId),
+      staleTime: PREFETCH_FRESH_MS,
+    });
+    void queryClient.prefetchInfiniteQuery({
+      ...bunchNotificationsQueryOptions(bunchId),
+      staleTime: PREFETCH_FRESH_MS,
+    });
+  };
 };
 
 /** 다른 번치 화면을 그린 뒤 볼 수 있는 하위 목록(멤버·팔로워·팔로잉)을 미리 받음 */
 export const usePrefetchOtherBunchLists = () => {
   const queryClient = useQueryClient();
-  return useCallback(
-    (
-      bunchId: string,
-      viewerId: string | null,
-      { members, relations }: { members: boolean; relations: boolean },
-    ) => {
-      if (members) {
-        void queryClient.prefetchQuery({
-          ...otherBunchMembersQueryOptions(bunchId, viewerId, true),
-          staleTime: PREFETCH_FRESH_MS,
-        });
-      }
-      if (!relations) return;
-      for (const kind of ['followers', 'following'] as const) {
-        void queryClient.prefetchInfiniteQuery({
-          ...followListQueryOptions(bunchId, viewerId, kind, true),
-          staleTime: PREFETCH_FRESH_MS,
-        });
-      }
-    },
-    [queryClient],
-  );
+  return (
+    bunchId: string,
+    viewerId: string | null,
+    { members, relations }: { members: boolean; relations: boolean },
+  ) => {
+    if (members) {
+      void queryClient.prefetchQuery({
+        ...otherBunchMembersQueryOptions(bunchId, viewerId, true),
+        staleTime: PREFETCH_FRESH_MS,
+      });
+    }
+    if (!relations) return;
+    for (const kind of ['followers', 'following'] as const) {
+      void queryClient.prefetchInfiniteQuery({
+        ...followListQueryOptions(bunchId, viewerId, kind, true),
+        staleTime: PREFETCH_FRESH_MS,
+      });
+    }
+  };
 };

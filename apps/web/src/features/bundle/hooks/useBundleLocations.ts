@@ -1,7 +1,7 @@
 'use client';
 
 import { toast } from '@app/design-system';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { reportApiError } from '@/shared/lib/reportApiError';
 import type { DraftLocation } from '../lib/types';
 import { applyBundleLocationIntent, readLocationRejection } from '../api/locations';
@@ -68,7 +68,7 @@ export function useBundleLocations({
   const blockedRef = useRef(blocked);
   const isOfflineRef = useRef(isOffline);
 
-  const locations = useMemo(() => applyLocationOps(serverLocations, ops), [serverLocations, ops]);
+  const locations = applyLocationOps(serverLocations, ops);
   const locationsRef = useRef(locations);
   useEffect(() => {
     blockedRef.current = blocked;
@@ -82,89 +82,86 @@ export function useBundleLocations({
     };
   }, []);
 
-  const enqueue = useCallback(
-    (op: LocationOp) => {
-      if (!bunchId || !bundleId) return;
-      setOps((current) => [...current, op]);
-      const enqueuedAt = generation.current;
+  const enqueue = (op: LocationOp) => {
+    if (!bunchId || !bundleId) return;
+    setOps((current) => [...current, op]);
+    const enqueuedAt = generation.current;
 
-      queue.current = queue.current.then(async () => {
-        // 연결이 끊겨 버린 변경은 보내지 않음(화면의 낙관적 표시는 discard가 이미 걷음)
-        if (enqueuedAt !== generation.current) return;
-        // 끊김을 화면이 알아채 discard가 실행되기 전에 이 차례가 온 경우를 막으려고 보내기 직전에 브라우저 연결 상태를 직접 확인함
-        // 끊겨 있으면 이 변경과 뒤에 대기 중인 변경을 모두 버림(재연결 때 최신 상세로 맞춰짐)
-        // 브라우저 연결이 끊겼거나(navigator) 실시간 연결이 끊겼으면(isOffline) 보내지 않음
-        if (
-          (typeof navigator !== 'undefined' && !navigator.onLine) ||
-          isOfflineRef.current?.() === true
-        ) {
-          generation.current += 1;
-          setOps([]);
-          return;
+    queue.current = queue.current.then(async () => {
+      // 연결이 끊겨 버린 변경은 보내지 않음(화면의 낙관적 표시는 discard가 이미 걷음)
+      if (enqueuedAt !== generation.current) return;
+      // 끊김을 화면이 알아채 discard가 실행되기 전에 이 차례가 온 경우를 막으려고 보내기 직전에 브라우저 연결 상태를 직접 확인함
+      // 끊겨 있으면 이 변경과 뒤에 대기 중인 변경을 모두 버림(재연결 때 최신 상세로 맞춰짐)
+      // 브라우저 연결이 끊겼거나(navigator) 실시간 연결이 끊겼으면(isOffline) 보내지 않음
+      if (
+        (typeof navigator !== 'undefined' && !navigator.onLine) ||
+        isOfflineRef.current?.() === true
+      ) {
+        generation.current += 1;
+        setOps([]);
+        return;
+      }
+      setSending((count) => count + 1);
+      try {
+        // 앞선 변경이 끝난 서버 목록으로 보낼 줄 id를 정함(내가 막 추가한 줄도 이때는 서버 id가 있음)
+        const serverList = cache.readDetail()?.locations ?? [];
+        // 이웃은 서버 id가 있으면 그 id로, 아직 없던 줄(내가 막 추가한 줄)은 장소 키로 서버 목록에서 찾음
+        const idOf = (neighbor: LocationNeighbor | null) =>
+          neighbor === null
+            ? null
+            : (neighbor.id ??
+              serverList.find((location) => locationKey(location) === neighbor.key)?.id ??
+              null);
+        const result = await applyBundleLocationIntent(
+          bunchId,
+          bundleId,
+          op.kind === 'add'
+            ? { intent: 'ADD', place: op.place }
+            : op.kind === 'replace'
+              ? { intent: 'REPLACE', targetLocationId: op.targetId, place: op.place }
+              : op.kind === 'remove'
+                ? { intent: 'REMOVE', targetLocationId: op.targetId }
+                : {
+                    intent: 'MOVE',
+                    targetLocationId: op.targetId,
+                    previousLocationId: idOf(op.previous),
+                    nextLocationId: idOf(op.next),
+                  },
+        );
+        cache.writeLocations(result.locations, result.locationVersion);
+        sentCount.current += 1;
+      } catch (error) {
+        failedCount.current += 1;
+        // mutation을 거치지 않는 요청이라 직접 보고(업무 거절·네트워크는 보고 기준에서 빠짐)
+        reportApiError(error);
+        const rejection = readLocationRejection(error);
+        if (rejection) {
+          toast(REJECTION_MESSAGE[rejection]);
+        } else {
+          toast(BUNDLE_MESSAGES.locationSaveFailed);
         }
-        setSending((count) => count + 1);
-        try {
-          // 앞선 변경이 끝난 서버 목록으로 보낼 줄 id를 정함(내가 막 추가한 줄도 이때는 서버 id가 있음)
-          const serverList = cache.readDetail()?.locations ?? [];
-          // 이웃은 서버 id가 있으면 그 id로, 아직 없던 줄(내가 막 추가한 줄)은 장소 키로 서버 목록에서 찾음
-          const idOf = (neighbor: LocationNeighbor | null) =>
-            neighbor === null
-              ? null
-              : (neighbor.id ??
-                serverList.find((location) => locationKey(location) === neighbor.key)?.id ??
-                null);
-          const result = await applyBundleLocationIntent(
-            bunchId,
-            bundleId,
-            op.kind === 'add'
-              ? { intent: 'ADD', place: op.place }
-              : op.kind === 'replace'
-                ? { intent: 'REPLACE', targetLocationId: op.targetId, place: op.place }
-                : op.kind === 'remove'
-                  ? { intent: 'REMOVE', targetLocationId: op.targetId }
-                  : {
-                      intent: 'MOVE',
-                      targetLocationId: op.targetId,
-                      previousLocationId: idOf(op.previous),
-                      nextLocationId: idOf(op.next),
-                    },
-          );
-          cache.writeLocations(result.locations, result.locationVersion);
-          sentCount.current += 1;
-        } catch (error) {
-          failedCount.current += 1;
-          // mutation을 거치지 않는 요청이라 직접 보고(업무 거절·네트워크는 보고 기준에서 빠짐)
-          reportApiError(error);
-          const rejection = readLocationRejection(error);
-          if (rejection) {
-            toast(REJECTION_MESSAGE[rejection]);
-          } else {
-            toast(BUNDLE_MESSAGES.locationSaveFailed);
-          }
-          // 거절·실패한 변경은 걷고 서버의 최신 목록으로 맞춤
-          void cache.refetch();
-        } finally {
-          setSending((count) => count - 1);
-          // 응답이 캐시에 반영돼 화면에 그려진 뒤에 내 변경을 걷어 줄이 한 프레임 사라지지 않게 함
-          setTimeout(() => {
-            if (alive.current) setOps((current) => current.filter((item) => item.no !== op.no));
-          }, 0);
-        }
-      });
-    },
-    [bunchId, bundleId, cache],
-  );
+        // 거절·실패한 변경은 걷고 서버의 최신 목록으로 맞춤
+        void cache.refetch();
+      } finally {
+        setSending((count) => count - 1);
+        // 응답이 캐시에 반영돼 화면에 그려진 뒤에 내 변경을 걷어 줄이 한 프레임 사라지지 않게 함
+        setTimeout(() => {
+          if (alive.current) setOps((current) => current.filter((item) => item.no !== op.no));
+        }, 0);
+      }
+    });
+  };
 
   const newNo = () => nextNo.current++;
 
-  const discard = useCallback(() => {
+  const discard = () => {
     generation.current += 1;
     setOps([]);
-  }, []);
+  };
 
   // 지금까지 들어온 변경이 모두 끝나길 기다림(기다리는 사이 새로 들어온 변경까지)
   // 기다리는 동안 서버에 반영된 요청이 있었는지(`sent`)와 실패한 요청이 있었는지(`failed`)를 돌려줌
-  const settled = useCallback(async () => {
+  const settled = async () => {
     const sentBefore = sentCount.current;
     const failedBefore = failedCount.current;
     let waited: Promise<void>;
@@ -176,75 +173,63 @@ export function useBundleLocations({
       sent: sentCount.current !== sentBefore,
       failed: failedCount.current !== failedBefore,
     };
-  }, []);
+  };
 
-  const add = useCallback(
-    (place: LocationInput) => {
-      if (blockedRef.current) return;
-      const current = locationsRef.current;
-      // 같은 장소가 이미 있거나 3개가 찼으면 서버에 보내지 않고 명세 문구로 알림
-      if (current.some((location) => locationKey(location) === locationKey(place))) {
-        toast(BUNDLE_MESSAGES.locationDuplicate);
-        return;
-      }
-      if (current.length >= MAX_LOCATIONS) {
-        toast(BUNDLE_MESSAGES.locationMax);
-        return;
-      }
-      enqueue({ no: newNo(), kind: 'add', place });
-    },
-    [enqueue],
-  );
+  const add = (place: LocationInput) => {
+    if (blockedRef.current) return;
+    const current = locationsRef.current;
+    // 같은 장소가 이미 있거나 3개가 찼으면 서버에 보내지 않고 명세 문구로 알림
+    if (current.some((location) => locationKey(location) === locationKey(place))) {
+      toast(BUNDLE_MESSAGES.locationDuplicate);
+      return;
+    }
+    if (current.length >= MAX_LOCATIONS) {
+      toast(BUNDLE_MESSAGES.locationMax);
+      return;
+    }
+    enqueue({ no: newNo(), kind: 'add', place });
+  };
 
-  const replace = useCallback(
-    (targetId: string, place: LocationInput) => {
-      if (blockedRef.current) return;
-      const current = locationsRef.current;
-      const target = current.find((location) => location.id === targetId);
-      // 서버 id가 아직 없는 줄은 바꾸지 않음
-      if (target && isPendingLocation(target)) return;
-      if (
-        current.some(
-          (location) => location.id !== targetId && locationKey(location) === locationKey(place),
-        )
-      ) {
-        toast(BUNDLE_MESSAGES.locationDuplicate);
-        return;
-      }
-      // 같은 장소로 바꾸면 달라질 게 없음
-      if (target && locationKey(target) === locationKey(place)) return;
-      enqueue({ no: newNo(), kind: 'replace', targetId, place });
-    },
-    [enqueue],
-  );
+  const replace = (targetId: string, place: LocationInput) => {
+    if (blockedRef.current) return;
+    const current = locationsRef.current;
+    const target = current.find((location) => location.id === targetId);
+    // 서버 id가 아직 없는 줄은 바꾸지 않음
+    if (target && isPendingLocation(target)) return;
+    if (
+      current.some(
+        (location) => location.id !== targetId && locationKey(location) === locationKey(place),
+      )
+    ) {
+      toast(BUNDLE_MESSAGES.locationDuplicate);
+      return;
+    }
+    // 같은 장소로 바꾸면 달라질 게 없음
+    if (target && locationKey(target) === locationKey(place)) return;
+    enqueue({ no: newNo(), kind: 'replace', targetId, place });
+  };
 
-  const remove = useCallback(
-    (targetId: string) => {
-      if (blockedRef.current) return;
-      const target = locationsRef.current.find((location) => location.id === targetId);
-      if (!target || isPendingLocation(target)) return;
-      enqueue({ no: newNo(), kind: 'remove', targetId });
-    },
-    [enqueue],
-  );
+  const remove = (targetId: string) => {
+    if (blockedRef.current) return;
+    const target = locationsRef.current.find((location) => location.id === targetId);
+    if (!target || isPendingLocation(target)) return;
+    enqueue({ no: newNo(), kind: 'remove', targetId });
+  };
 
-  const move = useCallback(
-    (targetId: string, toIndex: number) => {
-      if (blockedRef.current) return;
-      const current = locationsRef.current;
-      const target = current.find((location) => location.id === targetId);
-      // 끌던 줄을 그사이 다른 멤버가 지웠으면 손을 뗄 때 알림(기능 spec 4.3.10 로직 8)
-      if (!target) {
-        // 끄는 사이 내가 막 추가한 줄이 서버 id로 바뀐 경우는 지워진 게 아니므로 알리지 않음
-        if (!isPendingLocation({ id: targetId })) toast(BUNDLE_MESSAGES.locationRemoved);
-        return;
-      }
-      if (isPendingLocation(target)) return;
-      const { previous, next } = neighborsAfterMove(current, targetId, toIndex);
-      enqueue({ no: newNo(), kind: 'move', targetId, toIndex, previous, next });
-    },
-    [enqueue],
-  );
+  const move = (targetId: string, toIndex: number) => {
+    if (blockedRef.current) return;
+    const current = locationsRef.current;
+    const target = current.find((location) => location.id === targetId);
+    // 끌던 줄을 그사이 다른 멤버가 지웠으면 손을 뗄 때 알림(기능 spec 4.3.10 로직 8)
+    if (!target) {
+      // 끄는 사이 내가 막 추가한 줄이 서버 id로 바뀐 경우는 지워진 게 아니므로 알리지 않음
+      if (!isPendingLocation({ id: targetId })) toast(BUNDLE_MESSAGES.locationRemoved);
+      return;
+    }
+    if (isPendingLocation(target)) return;
+    const { previous, next } = neighborsAfterMove(current, targetId, toIndex);
+    enqueue({ no: newNo(), kind: 'move', targetId, toIndex, previous, next });
+  };
 
   return {
     locations,

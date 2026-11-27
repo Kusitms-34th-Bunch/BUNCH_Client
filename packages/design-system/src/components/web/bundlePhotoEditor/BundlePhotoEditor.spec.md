@@ -22,7 +22,7 @@
 
 ## Public API
 
-- Props: `src`(필수), `alt`(필수, 장식이면 빈 문자열), `size`(`s` 300px·`m` 330px, 기본 `m`), `uploader`(`{ name, src? }`, 주면 아바타), `uploaderLabel`(아바타를 읽어 주는 글자, 기본 "{이름}님이 올린 사진"), `page`(`{ current, total }`, 주면 왼쪽 아래에 페이지 표시), `pageLabel`(기본 "{현재} / {전체}"), `onDelete`(주면 삭제 버튼), `deleteLabel`(기본 "사진 삭제"), 그리고 native `<div>`의 속성(`className`은 사진 틀에 적용).
+- Props: `src`(필수), `alt`(필수, 장식이면 빈 문자열), `size`(`xs` 130px·`s` 300px·`m` 330px, 기본 `m`), `uploader`(`{ name, src? }`, 주면 아바타), `uploaderLabel`(아바타를 읽어 주는 글자, 기본 "{이름}님이 올린 사진"), `page`(`{ current, total }`, 주면 왼쪽 아래에 페이지 표시), `pageLabel`(기본 "{현재} / {전체}"), `onDelete`(주면 삭제 버튼), `deleteLabel`(기본 "사진 삭제"), 그리고 native `<div>`의 속성(`className`은 사진 틀에 적용).
 - 폭은 `size`가 정하고 높이는 정사각(`aspect-square`)이다. 다른 폭이 필요하면 `className`(예: `w-full`)으로 덮어쓴다. 높이(`h-*`·`size-*`)를 `className`으로 정하면 정사각이 깨지므로 폭만 바꾼다. `<img>`의 `loading="lazy"` 같은 속성은 내보내지 않는다(props가 틀 `<div>`용).
 - 호출자 소유 책임: 사진 주소·설명·이름·삭제 버튼 이름의 i18n, 삭제 확인과 목록 갱신, 사진 배치(그리드).
 

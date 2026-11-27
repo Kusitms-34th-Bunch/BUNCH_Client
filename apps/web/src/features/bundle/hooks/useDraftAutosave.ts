@@ -2,7 +2,7 @@
 
 import type { QueryObserverResult } from '@tanstack/react-query';
 import { toast } from '@app/design-system';
-import { type RefObject, useCallback, useEffect, useRef, useState } from 'react';
+import { type RefObject, useEffect, useRef, useState } from 'react';
 import { apiErrorCode, apiErrorStatus } from '@/shared/api/client/errorStatus';
 import type { BundleDetail } from '../model/bundle';
 import { BUNDLE_MESSAGES } from '../constants/messages';
@@ -95,26 +95,23 @@ export function useDraftAutosave({
     };
   }, []);
 
-  const change = useCallback((update: (_current: Pending) => Pending) => {
+  const change = (update: (_current: Pending) => Pending) => {
     pendingRef.current = update(pendingRef.current);
     setPending(pendingRef.current);
-  }, []);
+  };
 
   // 저장에 성공한 값이 그 사이 더 바뀌지 않았을 때만 입력 보관을 비움
-  const clearField = useCallback(
-    (key: keyof Pending, value: unknown) => {
-      change((current) => {
-        if (current[key] !== value) return current;
-        const { [key]: _saved, ...rest } = current;
-        return rest;
-      });
-    },
-    [change],
-  );
+  const clearField = (key: keyof Pending, value: unknown) => {
+    change((current) => {
+      if (current[key] !== value) return current;
+      const { [key]: _saved, ...rest } = current;
+      return rest;
+    });
+  };
 
   // 보관 중인 입력을 필드별로 저장하고 끝난 뒤 입력이 모두 비었는지 돌려줌
   // 어느 실패도 입력은 지우지 않고 한 번만 안내
-  const runFlush = useCallback(async (): Promise<boolean> => {
+  const runFlush = async (): Promise<boolean> => {
     setFlushing(true);
     let retryAfter: number | undefined;
     let stop = false;
@@ -217,20 +214,10 @@ export function useDraftAutosave({
       timer.current = setTimeout(() => void flushRef.current(), 0);
     }
     return settled;
-  }, [
-    clearField,
-    isOffline,
-    myIdRef,
-    readDetail,
-    refetchDetail,
-    saveComment,
-    saveDate,
-    saveTitle,
-    writeDetail,
-  ]);
+  };
 
   // 저장은 한 번에 하나만: 진행 중이면 그 결과를 함께 기다리고 끝난 뒤 한 번 더 확인하도록 표시
-  const flush = useCallback((): Promise<boolean> => {
+  const flush = (): Promise<boolean> => {
     if (inflight.current) {
       again.current = true;
       return inflight.current;
@@ -240,20 +227,20 @@ export function useDraftAutosave({
     });
     inflight.current = promise;
     return promise;
-  }, [runFlush]);
+  };
 
   useEffect(() => {
     flushRef.current = flush;
-  }, [flush]);
+  });
 
-  const schedule = useCallback((delay: number) => {
+  const schedule = (delay: number) => {
     // 입력이 새로 바뀌면 이전 실패와 안내를 잊고 처음부터 다시 시도
     failures.current = 0;
     notified.current = false;
     setStalled(false);
     clearTimeout(timer.current);
     timer.current = setTimeout(() => void flushRef.current(), delay);
-  }, []);
+  };
 
   return {
     pending,

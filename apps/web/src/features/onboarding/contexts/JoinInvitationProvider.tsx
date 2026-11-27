@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState, type ReactNode } from 'react';
+import { useRef, useState, type ReactNode } from 'react';
 import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import type { CreatedBunch } from '../api/bunches';
 import { JoinInvitationContext, type VerifiedJoin } from './joinInvitationContext';
@@ -20,23 +20,23 @@ export function JoinInvitationProvider({
   // 마지막으로 확인한 초대 입력(다른 초대로 바뀌었는지 state updater 밖에서 비교)
   const verifiedInvitation = useRef(initial?.verified?.invitation);
 
-  const setVerified = useCallback((next: VerifiedJoin) => {
+  const setVerified = (next: VerifiedJoin) => {
     // 다른 초대를 확인했으면 이전 초대의 참여 결과는 버림
     if (verifiedInvitation.current !== next.invitation) setJoinedBunch(null);
     verifiedInvitation.current = next.invitation;
     setVerifiedState(next);
-  }, []);
+  };
 
-  const idempotencyKeyFor = useCallback((invitation: string) => {
+  const idempotencyKeyFor = (invitation: string) => {
     if (attempt.current?.invitation !== invitation) {
       attempt.current = { invitation, key: createIdempotencyKey() };
     }
     return attempt.current.key;
-  }, []);
+  };
 
-  const discardIdempotencyKey = useCallback(() => {
+  const discardIdempotencyKey = () => {
     attempt.current = undefined;
-  }, []);
+  };
 
   return (
     <JoinInvitationContext

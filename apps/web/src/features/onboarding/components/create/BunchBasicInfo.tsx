@@ -77,7 +77,7 @@ export function BunchBasicInfo({ checkName = checkBunchNameAvailability }: Bunch
       />
       <div className="pt-s15 px-padding-p8">
         <LabeledTextField
-          title="번치 이름"
+          label="번치 이름"
           option="required"
           placeholder="번치 이름을 입력해주세요"
           value={name}

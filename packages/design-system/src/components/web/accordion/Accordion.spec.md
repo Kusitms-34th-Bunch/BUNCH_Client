@@ -48,7 +48,7 @@
 - 제목 수준은 `headingLevel`로 맞춘다. 기본 3은 페이지에 h2가 없으면 수준을 건너뛰므로 사용 지점에서 확인한다. `aria-expanded`와 `hidden`은 항상 같이 바뀐다.
 - Keyboard·focus: Tab으로 헤더에 들어가고 Enter·Space로 토글한다(native `<button>`). 포커스 윤곽선은 항목 안쪽 2px `border-brand`다.
 - 터치 영역: 항목 전체(높이 56~81px)가 눌린다. `touch-manipulation`을 적용했다.
-- 움직임: 눌림 오버레이만 75ms Ease Out(동작 줄이기에서는 전환을 끈다).
+- 움직임: 눌림 오버레이만 공통 `press-overlay`의 150ms `cubic-bezier(0, 0, 0.15, 1)`(동작 줄이기에서는 전환을 끈다).
 - 색만으로 전달하지 않는다: 열림은 쉐브론 방향과 `aria-expanded`로 전달한다.
 
 ## Styling과 의존성

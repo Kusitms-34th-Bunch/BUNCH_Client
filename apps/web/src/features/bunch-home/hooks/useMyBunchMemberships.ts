@@ -2,7 +2,7 @@ import { isApiError } from '@app/api-core';
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import { loadFailed } from '@/shared/query/loadFailed';
@@ -34,10 +34,7 @@ export function useMyBunchMemberships() {
   const bunchId = pinnedId ?? me.data?.bunch?.id;
   const home = useQuery(bunchHomeQueryOptions(bunchId));
   const memberships = useQuery(membershipsQueryOptions(bunchId));
-  const managed = useMemo(
-    () => (memberships.data ? toManagedMemberships(memberships.data) : undefined),
-    [memberships.data],
-  );
+  const managed = memberships.data ? toManagedMemberships(memberships.data) : undefined;
   const mutation = useDepartBunchMutation(bunchId);
   // 확인 뒤 다시 제출(Enter 반복·연타)해도 한 번만 보냄. 성공하면 화면이 빠지므로 풀지 않음
   const departing = useRef(false);

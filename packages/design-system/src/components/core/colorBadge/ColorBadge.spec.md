@@ -42,7 +42,7 @@
 
 ## Styling과 의존성
 
-- 색은 위 "상태와 동작"의 semantic token(surface·text·chip)을 쓴다. 반경은 `r3`·`r4`, 패딩은 `p4`·`p2`다. 선언은 `tv` + `compoundVariants`.
+- 색은 위 "상태와 동작"의 semantic token(surface·text·chip)을 쓴다. 반경은 `r3`·`r4`, 패딩은 `lg`·`md`가 `p4`·`p2`, `sm`이 `p3`·`p1`이다. 선언은 `tv` + `compoundVariants`.
 - 새 token: `chip-orange-bg`(`#fff6e6`), `chip-orange-fg`(`#ff9100`), `surface-inversed-lighter`(`#535a61`, gray-600)와 이를 받는 `orange-50`·`orange-500` primitive를 `tokens.json`에 추가했다. 기존 token 값은 바꾸지 않았다.
 - 허용되는 dependency: `tailwind-variants`.
 - Figma 이름 대응: `Weak/Fill`→`weak/fill`, `Gray/Brand/Pink/Green/Orange`→`color`, `L/M/S`→`lg/md/sm`, `text`→`children`.

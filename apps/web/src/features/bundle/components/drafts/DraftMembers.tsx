@@ -67,7 +67,7 @@ export function DraftMembers({
             <li key={member.id} className="shrink-0">
               <MemberCard
                 name={member.name}
-                src={member.avatarSrc}
+                imageSrc={member.avatarSrc}
                 memberRole={badge}
                 roleLabel={badge ? BUNDLE_MESSAGES.roleLabel[badge] : undefined}
                 editing={viewingIds.has(member.id)}

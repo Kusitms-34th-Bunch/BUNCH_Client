@@ -36,7 +36,7 @@ GitHub 공식 action은 런타임이 Node 24인 메이저를 쓴다(2026-11-24, 
 
 `Frontend CI`는 PR에 단계별 결과 표를 댓글로 남긴다. 같은 PR에서는 새 댓글을 만들지 않고 기존 댓글을 갱신한다. 검사 job이 하나 실패해도 나머지는 끝까지 실행해서(`fail-fast: false`) 한 번에 모두 보여 준다. 각 job은 `변조 가드`(workflow 단계)와 `의존성 설치`(`.github/actions/setup`)를 먼저 실행하고, 하나라도 실패하면 그 job은 검사를 실행하지 않고 실패한다. 설치는 코드를 실행할 수 있는 단계라서 가드가 실패하면 하지 않는다.
 
-- `ci.yml`은 `package.json`의 `verify`와 같은 검사에 PR 전용 커밋 메시지 검사(`yarn exec commitlint --from origin/<base> --to HEAD`)를 더해 실행한다. job 구성은 다음과 같다.
+- `ci.yml`은 `package.json`의 `verify`와 같은 검사에 PR 전용 커밋 메시지 검사(`yarn exec commitlint --from <base> --to <PR head SHA>`)를 더해 실행한다. job 구성은 다음과 같다.
   - `Lint & Typecheck`: 생성물·catalog·agent docs·boundary·커밋 메시지·format 검사를 먼저 실행한 뒤 `yarn lint`, `yarn typecheck`. 커밋 메시지는 PR에서만 base부터 head까지의 커밋을 `commitlint`로 다시 검사한다. 로컬 `commit-msg` hook을 건너뛴 커밋(GitHub 웹 편집, hook 설치 전, `--no-verify`)도 잡기 위해서다. PR은 merge commit으로 머지해 PR 안 커밋이 그대로 남고, 머지 커밋은 commitlint가 제외한다. 범위의 시작은 Test와 같은 `origin/<base>`다.
   - `Test 1/4`~`Test 4/4`: `yarn test -- --shard=<n>/4 --passWithNoTests`. 가장 무거워 CI 전체 시간을 정하는 검사라, 패키지마다 테스트 파일을 4등분해 러너 4개에서 나눠 실행한다(2026-11-02 측정: 한 러너일 때 Test job 183초 중 테스트 155초, 2026-11-13 3등분 때 러너별 테스트 76~106초). 파일이 적은 패키지는 몫이 비어도 통과한다. PR에서는 `--changed=origin/<base>`를 더해 base 대비 바뀐 파일과 import로 이어진 테스트만 돌린다(아래).
   - `Build`: `yarn build`(`NEXT_SKIP_TYPECHECK`로 next build 안의 타입 검사는 건너뜀). 타입 검사(`yarn typecheck`, Next 생성 파일은 스크립트가 직접 만듦)는 `Lint & Typecheck` job에서 한다. 가장 오래 걸리던 build job(PR #350: 104~108초, 그중 TypeScript 20초)에서 타입 검사를 빼 CI 전체 시간을 줄이려는 배치다.
@@ -75,12 +75,12 @@ GitHub 공식 action은 런타임이 Node 24인 메이저를 쓴다(2026-11-24, 
 - `lighthouse-production.yml`은 `Web Deploy` 실행이 성공으로 끝난 뒤(`workflow_run`) 운영 주소(`https://app.bunch.kr`)를 잰다. 대상은 `/invite/<토큰>`이고(앱 설치 안내는 위와 같은 이유로 뺌) 페이지당 3번 잰 뒤 성능 중앙값 실행 하나로 보고한다. 실제 CDN·이미지 최적화·캐시 헤더·백엔드 응답이 들어간 점수다.
 - 배포 workflow와 실행을 나눴다. lockfile 밖 도구(`yarn dlx`로 받는 Lighthouse)가 배포 실행의 `main` 범위 캐시나 배포 묶음 artifact에 닿지 않게 하려는 것이다. 측정이 배포 동시 실행 그룹(`web-deploy`)을 점유해 다음 배포를 기다리게 하지도 않는다. `workflow_run`은 기본 브랜치(develop)의 workflow 파일로, develop 범위에서 실행된다.
 - Vercel 토큰과 environment가 없고, 저장소는 `package.json`·`.yarnrc.yml`·보고 스크립트만 받아 설치·빌드하지 않는다. 측정·보고 실패는 배포 결과에 영향이 없고, 배포가 실패한 실행은 재지 않는다.
-- 2026-11-15 기준 `/invite`는 아직 `main`에 없어 404다. 다음 릴리스 전까지 「측정하지 못한 페이지」로 나온다. 운영 기준선은 3번 다 잰 페이지만 갱신하고, 열리지 않거나 일부만 잰 페이지는 이전 값을 유지한다(보고에 「일부만 측정한 페이지」로 표시).
+- 운영 기준선은 3번 다 잰 페이지만 갱신하고, 열리지 않거나 일부만 잰 페이지는 이전 값을 유지한다(보고에 「일부만 측정한 페이지」로 표시).
 - 배포가 연달아 일어나면 앞 배포의 측정·댓글은 취소되고 마지막 배포만 잰다(`cancel-in-progress`).
 - 기준선은 직전 운영 측정이다(캐시 `lighthouse-<OS>-production-<run id>-<시도>`, 배포마다 갱신). 같은 배포를 다시 실행하면 그 배포의 앞선 측정과 비교된다.
 - 결과는 실행 요약과 develop → main 릴리스 PR의 댓글 하나로 남긴다. 릴리스 PR은 배포한 커밋(`workflow_run.head_sha`)을 머지 커밋으로 가진 `main` 대상 PR로 찾는다. 머지 커밋은 develop에 없어서 커밋으로 PR을 찾는 API는 머지된 PR을 돌려주지 않는다. 댓글은 checkout하지 않는 `comment` job(`pull-requests: write`)이 쓰고, 수동 배포(`workflow_dispatch`)는 실행 요약만 남긴다.
 - 로그인 전 방문이라 제품 분석에는 들어가지 않는다(약관에 동의한 회원만 수집, ADR 018).
-- 운영 서버의 로그인 뒤 화면은 재지 않는다. 브라우저 로그인이 없고 개발용 로그인은 운영에서 막혀 있다. 측정 방식은 `docs/decisions/records/023-production-signed-in-lighthouse.md`(proposed)에서 백엔드와 정한다.
+- 운영 서버의 로그인 뒤 화면은 재지 않는다. 브라우저 로그인이 없고 개발용 로그인은 운영에서 막혀 있다. 측정 방식은 `docs/decisions/records/023-production-signed-in-lighthouse.md`(accepted)대로 운영은 실제 사용자 web vitals 수집으로 본다.
 
 ## 빌드 캐시
 

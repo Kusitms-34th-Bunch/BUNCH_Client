@@ -2,7 +2,7 @@
 
 ## 메타데이터
 
-- Route: `/onboarding/create`(`apps/web/src/app/(app)/onboarding/create/page.tsx`)
+- Route: `/onboarding/create`(`apps/web/src/app/(app)/onboarding/create/(steps)/page.tsx`)
 - Status: UI와 입력 규칙 구현됨(`next build` 렌더를 Figma 값과 측정으로 대조함). 「다음」은 2단계(`BunchDescription.spec.md`)로 이동하고 헤더 뒤로 가기는 중단 확인 모달(`ExitFlowDialog`)을 연다. 실기기 검증 전
 - 디자인 출처: Figma `Bunch/Create/BasicInfo`(node `791:2868` 빈 입력, `791:2892`·`874:5460` 입력됨, `875:5539` 오류). 화면설계서(node `791:8338`)를 함께 참고했다.
 
@@ -71,7 +71,7 @@
 ## 검증
 
 - [ ] direct URL·새로고침·뒤로 가기: `next build`에서 `/onboarding/create`가 정적 페이지로 생성되고 `next start`로 렌더를 확인함. 새로고침·뒤로 가기는 확인하지 못함(미검증)
-- [ ] 권한·redirect: guard가 없어 확인할 수 없음(미검증, 확인할 항목)
+- [ ] 권한·redirect: `AuthGate`(`features/auth/lib/accessPolicy.ts`) 기준 화면 확인(미검증, 규칙은 `accessPolicy.test.ts`가 확인)
 - [x] 상태별 UI: 빈 입력, 입력됨, 오류, 다음 활성·비활성
 - [x] 관련 test: `BunchBasicInfo.test.tsx`(제목·진행 표시, 글자 수, 길이 제한, 다음 활성 조건, 이동 경로, 오류와 해제, 공개 범위 그룹)
 - [x] 실행 command와 결과: `yarn workspace @app/web test`·lint·typecheck·build 통과
@@ -79,7 +79,7 @@
 
 ## 확인할 항목
 
-- 노출 전 선행 조건 (확정 필요): 2단계 이후(3단계 `/onboarding/create/mood`)는 UI와 완료 화면 이동은 있고 「번치 만들기」의 생성 요청은 연결되지 않았다. 시작 화면의 「새 번치 만들기」가 이 흐름을 가리키므로 UT·배포에 노출하기 전에 `BunchMood.spec.md`의 연결 항목을 끝낸다.
+- 노출 전 선행 조건 (해소): 3단계 「번치 만들기」가 `POST /bunches`로 번치를 만든 뒤 완료 화면으로 간다(`BunchMood.spec.md`).
 - 공개 범위 기본 선택 (확정 필요): Figma의 「입력됨」 화면은 공개 범위가 선택되지 않은 채 「다음」이 활성이다. 화면설계서에는 "이름과 공개 범위 조건을 충족하면 활성"이라 둘 다 필요로 구현했다. 기본 선택값이 있는 건지 확인.
 - 허용 문자 (확정): 영문·한글·숫자(사용자 확인). Figma 오류 문구는 숫자를 언급하지 않아 문구와 어긋난다(`docs/specs/login-signup.md` 확인 항목 9와 같은 건). 공백은 기능명세 2.2.2 상세 3대로 허용한다(#453). 앞뒤 공백은 확인·생성 때 지우고, 공백만 입력하면 0자로 보아 「다음」을 끈다.
 - 최대 길이 (확정): 12자. Figma 빈 상태의 `0/8`은 오기로 본다(사용자 확인).

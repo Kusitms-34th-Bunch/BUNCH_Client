@@ -3,7 +3,7 @@
 
 import { isApiError } from '@app/api-core';
 import { toast } from '@app/design-system';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { reportApiError } from '@/shared/lib/reportApiError';
 import type { DraftPhoto } from '../lib/types';
@@ -77,9 +77,9 @@ export function useDraftPhotoQueue({
   const alive = useRef(true);
   // 화면에 보이는 사진 목록(서버 값 또는 보내는 중인 화면 값), 연속 조작이 렌더를 기다리지 않고 이어지게 ref로 둠
   const shownPhotosRef = useRef<readonly DraftPhoto[]>([]);
-  const syncShown = useCallback((photos: readonly DraftPhoto[]) => {
+  const syncShown = (photos: readonly DraftPhoto[]) => {
     shownPhotosRef.current = photos;
-  }, []);
+  };
 
   useEffect(() => {
     alive.current = true;
@@ -174,7 +174,7 @@ export function useDraftPhotoQueue({
   };
 
   // 보류했던 이벤트 대신 받은 상세로 끌던 사진이 지워졌는지 확인
-  const onResynced = useCallback((detail: BundleDetail | undefined) => {
+  const onResynced = (detail: BundleDetail | undefined) => {
     // 끌던 사진을 다른 멤버가 지웠는데 자리를 바꾸지 않고 놓은 경우에도 놓은 뒤 안내(이동 요청을 보냈다면 그 응답 경로가 안내함)
     const dropped = draggedPhotoId.current;
     draggedPhotoId.current = undefined;
@@ -186,7 +186,7 @@ export function useDraftPhotoQueue({
     ) {
       toast(BUNDLE_MESSAGES.photoRemovedByOther);
     }
-  }, []);
+  };
 
   const actions = {
     removePhoto: (photoId: string) => {

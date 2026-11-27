@@ -3,7 +3,7 @@
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { toastAfterNavigation } from '@/shared/lib/navigation/toastAfterNavigation';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { Draft } from '../lib/types';
@@ -21,22 +21,19 @@ export function useLeaveDraft(draftId: string | undefined) {
   const { mutateAsync } = useLeaveBundleMutation(profile?.bunch?.id);
   // 확인 창은 서버 응답 동안 열려 있어 「나가기」를 연달아 눌러도 한 번만 보냄
   const leaving = useRef(false);
-  return useCallback(
-    async (creator: boolean) => {
-      if (draftId === undefined || leaving.current) return;
-      leaving.current = true;
-      try {
-        await mutateAsync(draftId);
-      } catch {
-        leaving.current = false;
-        toast(BUNDLE_MESSAGES.leaveFailed);
-        return;
-      }
-      if (creator) toastAfterNavigation(BUNDLE_MESSAGES.draftDeleted);
-      router.replace(BUNDLE_PATHS.bunchHome);
-    },
-    [draftId, mutateAsync, router],
-  );
+  return async (creator: boolean) => {
+    if (draftId === undefined || leaving.current) return;
+    leaving.current = true;
+    try {
+      await mutateAsync(draftId);
+    } catch {
+      leaving.current = false;
+      toast(BUNDLE_MESSAGES.leaveFailed);
+      return;
+    }
+    if (creator) toastAfterNavigation(BUNDLE_MESSAGES.draftDeleted);
+    router.replace(BUNDLE_PATHS.bunchHome);
+  };
 }
 
 /**

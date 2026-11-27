@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useLayoutEffect, useRef } from 'react';
+import { useLayoutEffect, useRef } from 'react';
 
 // Figma 설계서 「멤버카드 목록 이동 인터랙션」: Smart Animation, Gentle, 400ms
 // Gentle(스프링 100·15·1)을 400ms 구간 곡선으로 근사한 값은 docs/architecture/motion.md의 팝오버 메뉴와 같음
@@ -27,15 +27,12 @@ export function useMoveAnimation({
   const elements = useRef(new Map<string, HTMLElement>());
   const before = useRef<Map<string, DOMRect> | undefined>(undefined);
 
-  const register = useCallback(
-    (id: string) => (element: HTMLElement | null) => {
-      if (element) elements.current.set(id, element);
-      else elements.current.delete(id);
-    },
-    [],
-  );
+  const register = (id: string) => (element: HTMLElement | null) => {
+    if (element) elements.current.set(id, element);
+    else elements.current.delete(id);
+  };
 
-  const capture = useCallback(() => {
+  const capture = () => {
     // 이동 중인 카드를 끝 위치로 마무리해야 위치가 어긋나지 않음
     for (const element of elements.current.values()) {
       element.getAnimations?.().forEach((animation) => animation.finish());
@@ -43,7 +40,7 @@ export function useMoveAnimation({
     before.current = new Map(
       [...elements.current].map(([id, element]) => [id, element.getBoundingClientRect()]),
     );
-  }, []);
+  };
 
   // 렌더마다 확인: 기억해 둔 위치가 있을 때만 움직임
   useLayoutEffect(() => {

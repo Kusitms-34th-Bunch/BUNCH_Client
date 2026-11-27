@@ -1,5 +1,4 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMemo } from 'react';
 import { getMemberships, transferOwner } from '@/shared/api/bunchMemberships';
 import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { toDomainId } from '@/shared/api/client/ids';
@@ -60,10 +59,7 @@ export const ownedBunchesQueryOptions = () =>
  */
 export const useOwnedBunchImage = () => {
   const { data } = useQuery({ ...myBunchesQueryOptions(), retry: false });
-  const byId = useMemo(
-    () => new Map(data?.activeBunches.map(({ bunch }) => [toDomainId(bunch.id), bunch])),
-    [data],
-  );
+  const byId = new Map(data?.activeBunches.map(({ bunch }) => [toDomainId(bunch.id), bunch]));
   return (bunch: OwnedBunch) => {
     const profile = byId.get(bunch.id);
     return (

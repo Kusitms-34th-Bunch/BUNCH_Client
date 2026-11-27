@@ -23,8 +23,8 @@
 
 - Props: `leading`, `title`, `trailing`, 그리고 native `<header>`의 속성(`className`, `aria-*`, `ref` 등). `children`은 받지 않는다.
 - 이벤트·controlled: 없음.
-- 아이콘 영역: `trailing`이 아이콘 영역이다(간격 16px, 세로 가운데). 어떤 아이콘을 넣을지와 동작은 호출하는 쪽이 정한다. 동작이 붙는 아이콘은 native `button` + `aria-label`로 감싸고, 동작 없는 아이콘은 `aria-hidden`을 준다. 별도 IconButton은 감싸는 코드가 여러 화면에서 반복될 때 승격한다.
-- 호출자 소유 책임: slot 요소의 동작·접근성 이름, 제목 문구(i18n), 아이콘 버튼의 터치 영역(`design-system-icons.md` 기준 24px 아이콘 → 48px).
+- 아이콘 영역: `trailing`이 아이콘 영역이다(간격 16px, 세로 가운데). 어떤 아이콘을 넣을지와 동작은 호출하는 쪽이 정한다. 동작이 붙는 아이콘은 native `button` + `aria-label`로 감싸고, 동작 없는 아이콘은 `aria-hidden`을 준다. 단독 아이콘 버튼은 `IconButton`의 `plain` 변형을 쓴다(`IconButton.spec.md`).
+- 호출자 소유 책임: slot 요소의 동작·접근성 이름, 제목 문구(i18n), 아이콘 버튼의 터치 영역(`design-system-icons.md` 기준 24px 아이콘 → 40px).
 
 ## 상태와 동작
 
@@ -47,7 +47,7 @@
 
 - 배경 토큰 (제안): Figma `background/normal`에 대응하는 토큰이 없어 `surface-primary`(gray-000)를 썼다. 값이 같은지 디자이너 확인.
 - 세로 padding (제안): Figma는 variant마다 12/8px을 쓰지만 높이가 모두 48px라서 높이 고정+가운데 정렬로 합쳤다.
-- 아이콘 간격과 터치 영역 (미정): 아이콘 간격 16px에 터치 영역 48px(24px 아이콘)이면 인접 터치 영역이 겹친다. 디자인 값 그대로 두었으며 디자이너 확인 필요.
+- 아이콘 간격과 터치 영역 (미정): 아이콘 간격 16px에 터치 영역 40px(24px 아이콘)이면 인접 터치 영역이 겹치지 않고 맞닿는다. Large 40px은 디자이너 확인 전 값이다(`design-system-icons.md`).
 - `BundleCreate` (미정): 2026-10-22 Figma에 제목 14px variant가 생겼다. 제목 크기를 prop으로 받을지는 쓰는 화면이 생길 때 정한다.
 - 로고 (미정): `LogoHeader`의 로고는 회색 placeholder(73×24)뿐이라 구현하지 않았다.
 

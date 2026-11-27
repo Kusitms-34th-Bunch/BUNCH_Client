@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import type { PhotoBoxPreview } from '@/features/photo-box/lib/preview';
 import type { PhotoBoxActions, PhotoBoxPhoto, PhotoBoxState } from '@/features/photo-box/lib/types';
 import { photoBoxFixture } from '@/features/photo-box/fixtures/photoBox.fixture';
@@ -18,7 +18,7 @@ type UsePhotoBoxResult = {
 export function usePhotoBoxFixture(preview?: PhotoBoxPreview): UsePhotoBoxResult {
   const [photos, setPhotos] = useState<readonly PhotoBoxPhoto[]>(photoBoxFixture.photos);
 
-  const state = useMemo<PhotoBoxState>(() => {
+  const state: PhotoBoxState = (() => {
     if (preview === 'loading') return { kind: 'loading' };
     if (preview === 'error') return { kind: 'error' };
     if (preview === 'no-bunch') return { kind: 'no-bunch' };
@@ -26,7 +26,7 @@ export function usePhotoBoxFixture(preview?: PhotoBoxPreview): UsePhotoBoxResult
       return { kind: 'ready', data: { ...photoBoxFixture, photos: [] } };
     }
     return { kind: 'ready', data: { ...photoBoxFixture, photos } };
-  }, [preview, photos]);
+  })();
 
   const actions: PhotoBoxActions = {
     savePhotos: async (ids) => {

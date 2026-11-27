@@ -54,7 +54,7 @@
 
 - 타이포 이름: Figma `Body-3-Regular`(14/21)와 이름·값이 같은 `body-3-regular`를 쓴다(2026-10-31 토큰 이름을 Figma와 맞춤).
 - 64%는 토큰에 없어 `bg-surface-primary/64`로 투명도만 지정했다(가장 가까운 토큰은 `white-alpha-60`).
-- dependency 추가 없음. `ProfileImage`는 90px 고정에 루트가 `<div>`라 `<span>` 안에 둘 수 없어 쓰지 않고 이 컴포넌트 안에서 26px 원을 직접 그렸다.
+- dependency 추가 없음. `ProfileImage`는 루트가 `<div>`라 `<span>` 안에 둘 수 없어 쓰지 않고 이 컴포넌트 안에서 26px 원을 직접 그렸다.
 - Storybook state matrix: `Default`(사진 있음), `WithoutAvatar`(사진 없음), 긴 이름 `LongName`, 사진 위에 얹은 `OnPhoto`.
 
 ## 확인할 항목

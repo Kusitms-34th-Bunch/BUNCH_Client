@@ -24,14 +24,14 @@
 - `imageSrc?`: 프로필 이미지 주소(없으면 기본 배경색 원). 이미지는 장식이다.
 - `memberRole?`·`roleLabel?`: 역할 배지(`RoleBadge` sm). `roleLabel`은 스크린 리더가 읽는 역할 이름이다(예: `번치장`).
 - `onMore?`·`moreLabel?`: 더보기 버튼. `moreLabel` 기본값은 `` `${name} 더보기` ``다.
-- `action?`: 오른쪽 동작 노드. `onMore`와 함께 주면 `action`만 보인다.
+- `action?`: 오른쪽 동작 노드. `onMore`·`moreLabel`과 함께 줄 수 없다(타입으로 막음, #601. 전에는 함께 주면 `action`만 보이고 더보기는 조용히 무시됐다).
 - `disabled?`: 행을 흐리게(40%) 하고, 더보기 버튼을 비활성으로 하고, `action` 슬롯을 `inert`로 감싸 누르거나 초점을 받지 못하게 한다.
 - native `div` 속성과 `className`(행에 적용).
 
 ## 상태와 동작
 
 - Default: 흰 바탕, 회색 테두리.
-- Pressed(더보기 버튼): `IconButton plain`의 아이콘 버튼 눌림(아이콘 0.95와 뒤 `overlay-hover` 배경 36×36·모서리 8, Figma `8311:57033`, 2026-11-26 #583). 이전에는 20px 원형 `overlay-pressed`(20%)였다. 줄 전체가 비활성으로 흐려지면 버튼은 한 번 더 흐리지 않는다.
+- Pressed(더보기 버튼): `IconButton plain`의 아이콘 버튼 눌림(아이콘 0.917과 뒤 `overlay-hover` 배경 36×36·모서리 8, Figma `8311:57033`, 2026-11-26 #583). 이전에는 20px 원형 `overlay-pressed`(20%)였다. 줄 전체가 비활성으로 흐려지면 버튼은 한 번 더 흐리지 않는다.
 - Disabled: 행 전체 `opacity-disabled`(40%).
 - 긴 이름은 말줄임, `suffix`·배지·동작은 줄어들지 않는다. 말줄임된 이름은 `title`로 전체를 보여 준다(터치 기기는 호출자가 상세 화면으로 연결).
 
@@ -54,7 +54,7 @@
 | 역할 배지 16, 이미지와 12 겹침                                                                            | `RoleBadge` sm + `-ml-3`                                                            |
 | 이름 Body-1-Medium, `text-primary`                                                                        | `typography-body-1-medium text-text-primary`                                        |
 | 점 아이콘 20, `#BCBEC2`                                                                                   | `LineDotsIcon` md + `text-icon-quaternary`                                          |
-| 눌림 원 20, black 20%                                                                                     | `before:bg-overlay-pressed`                                                         |
+| 눌림: 아이콘 0.917, 뒤 `overlay-hover` 36×36·모서리 8                                                     | `IconButton` `variant="plain"`(`press-icon-overlay`)                                |
 | (호출자 예시, Story) 「차단해제」 SolidButton 32, 바탕 `surface-tertiary`, 글자 `text-tertiary` Label-S   | `Button` `variant="secondarySubtle" size="sm"`                                      |
 | 흐림 `opacity-disabled`(40)                                                                               | `opacity-(--semantic-opacity-disabled)`                                             |
 

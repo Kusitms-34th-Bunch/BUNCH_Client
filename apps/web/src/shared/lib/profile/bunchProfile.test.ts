@@ -57,14 +57,14 @@ describe('bunchNameMessages', () => {
   const none = { invalid: false, prohibited: false, taken: false, availability: 'idle' } as const;
 
   it('오류는 문자 규칙, 금칙어, 사용 중 순으로 하나만 고른다', () => {
-    expect(
-      bunchNameMessages({ ...none, invalid: true, prohibited: true, taken: true }).errorMessage,
-    ).toBe(BUNCH_NAME_INVALID_MESSAGE);
-    expect(bunchNameMessages({ ...none, prohibited: true, taken: true }).errorMessage).toBe(
+    expect(bunchNameMessages({ ...none, invalid: true, prohibited: true, taken: true }).error).toBe(
+      BUNCH_NAME_INVALID_MESSAGE,
+    );
+    expect(bunchNameMessages({ ...none, prohibited: true, taken: true }).error).toBe(
       BUNCH_NAME_PROHIBITED_MESSAGE,
     );
-    expect(bunchNameMessages({ ...none, taken: true }).errorMessage).toBe(BUNCH_NAME_TAKEN_MESSAGE);
-    expect(bunchNameMessages(none).errorMessage).toBeUndefined();
+    expect(bunchNameMessages({ ...none, taken: true }).error).toBe(BUNCH_NAME_TAKEN_MESSAGE);
+    expect(bunchNameMessages(none).error).toBeUndefined();
   });
 
   it('확인 중과 사용 가능일 때만 안내 문구를 낸다', () => {

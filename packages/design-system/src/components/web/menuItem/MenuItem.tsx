@@ -14,7 +14,7 @@ export type MenuItemProps = Omit<ComponentProps<'button'>, 'disabled' | 'type' |
 
 /**
  * 메뉴 한 줄(Figma `Menu Item`): `Menu` 안에서 쓰는 `role="menuitem"` 버튼
- * 누르는 동안 overlay-hover(10%) 오버레이, 75ms ease-out. tabIndex는 -1이고 포커스 이동은 `Menu`가 담당
+ * 누르는 동안 overlay-hover(10%) 오버레이, press-overlay 150ms. tabIndex는 -1이고 포커스 이동은 `Menu`가 담당
  */
 export const MenuItem = ({
   className,
