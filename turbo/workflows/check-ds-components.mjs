@@ -3,8 +3,8 @@ import { join } from 'node:path';
 
 // 디자인 시스템 컴포넌트는 `yarn gen:ds-component <Name>`이 만드는 구조(4개 파일) 필수.
 // generator를 건너뛰고 손으로 만든 폴더를 CI에서 검출.
-// 구역: core(모든 앱), web(apps/web 전용). 구역 폴더가 늘면 아래 목록에도 추가.
-const ZONES = ['core', 'web'].map((zone) =>
+// 구역: core(모든 앱), web(apps/web 전용), admin(apps/admin 전용). 구역 폴더가 늘면 아래 목록에도 추가.
+const ZONES = ['core', 'web', 'admin'].map((zone) =>
   join('packages', 'design-system', 'src', 'components', zone),
 );
 
