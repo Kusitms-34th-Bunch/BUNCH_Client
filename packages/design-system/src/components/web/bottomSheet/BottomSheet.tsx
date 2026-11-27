@@ -97,7 +97,8 @@ const Content = ({
           'translate-y-[max(0px,var(--drawer-swipe-movement-y,0px))]',
           `transition-[translate,opacity] duration-340 ${ease} data-ending-style:duration-240`,
           'data-starting-style:translate-y-full data-starting-style:opacity-40',
-          'data-ending-style:translate-y-full data-ending-style:opacity-40',
+          // 닫힘은 투명도 0까지(Figma 40%면 감속 곡선의 느린 끝이 탭 바 자리에 흐리게 남아 튐, #596)
+          'data-ending-style:translate-y-full data-ending-style:opacity-0',
           // 끄는 동안 Base UI가 넣는 transform(위로도 고무줄처럼 따라옴)을 끄고 위 translate 값(아래 방향만)으로만 움직임
           'data-swiping:transform-none! data-swiping:duration-0 data-swiping:select-none',
           swipeDismiss,
