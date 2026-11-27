@@ -1,12 +1,14 @@
 import { setupWorker } from 'msw/browser';
 import { mockDb } from './db';
 import { handlers } from './handlers';
+import { failOverrideHandler } from './lib/failOverride';
 
 let starting: Promise<void> | undefined;
 
 async function start() {
   await mockDb.hydrate();
-  const worker = setupWorker(...handlers);
+  // E2E가 일부러 실패시킨 요청이 먼저(lib/failOverride)
+  const worker = setupWorker(failOverrideHandler, ...handlers);
   await worker.start({
     onUnhandledFrame: 'bypass',
     quiet: process.env.NODE_ENV === 'production',
