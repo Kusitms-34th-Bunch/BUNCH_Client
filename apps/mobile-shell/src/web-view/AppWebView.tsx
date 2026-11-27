@@ -18,6 +18,7 @@ import { tabsStore } from '../tabs/tabs-store';
 import { blocksBackNavigation, isAppWebUrl } from '../web-url';
 import { WEB_URL, toAppWebUrl } from './app-web-url';
 import { WebView } from './app-bridge';
+import { attachSwipeBack } from './swipe-back';
 import { shellUserAgentName } from './user-agent';
 import { floatingButtons, isVisibleWebView } from './visible-web-view';
 
@@ -85,6 +86,15 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
   }, [tabId]);
   useEffect(() => incomingLinkStore.subscribe(deliverIncomingLink), [deliverIncomingLink]);
 
+  // 처음 불러올 때 화면 밖이던 탭 WebView는 그때 찾지 못하므로 탭이 바뀔 때도 붙임(이미 붙은 것은 건너뜀)
+  useEffect(() => {
+    // 인스턴스마다 새 함수로 구독(같은 함수면 store Set에 하나만 남아 한 화면의 정리가 다른 화면 구독까지 지움)
+    const unsubscribe = tabsStore.subscribe(() => attachSwipeBack());
+    return () => {
+      unsubscribe();
+    };
+  }, []);
+
   return (
     <WebView
       key={webViewKey}
@@ -124,7 +134,11 @@ export function AppWebView({ uri, tabId, onLoadStart, transparent = false }: App
         if (tabId && tabsStore.get()?.selectedId === tabId) markTabWebViewLoading();
         onLoadStart?.();
       }}
-      onLoadEnd={deliverIncomingLink}
+      // 스와이프 뒤로 가기를 웹 전환과 맞추는 네이티브 제스처를 붙임(iOS, 이미 붙은 WebView는 건너뜀)
+      onLoadEnd={() => {
+        attachSwipeBack();
+        deliverIncomingLink();
+      }}
       onError={forceWebReady}
       onHttpError={forceWebReady}
       // 오래 백그라운드에 있으면 OS가 웹 프로세스를 끝내 화면이 하얗게 남으므로 다시 불러옴

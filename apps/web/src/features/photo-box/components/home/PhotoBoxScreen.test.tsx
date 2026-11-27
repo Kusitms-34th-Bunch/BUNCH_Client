@@ -95,7 +95,8 @@ describe('PhotoBoxScreen 목록', () => {
 
     // 사진은 장식이고 이름은 덮은 상세 링크가 가짐
     expect(screen.getByRole('link', { name: '깨진 사진' })).toBeTruthy();
-    const image = document.querySelector('img[src="/missing.jpg"]');
+    // 칸 뒤에 숨겨 둔 hero용 같은 사진(aria-hidden)이 아닌 썸네일
+    const image = document.querySelector('img[src="/missing.jpg"]:not([aria-hidden])');
     if (!image) throw new Error('사진 없음');
     fireEvent.error(image);
 

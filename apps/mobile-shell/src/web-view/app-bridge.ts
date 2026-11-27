@@ -28,6 +28,7 @@ import { isTabId } from '../tabs/tabs';
 import { tabsStore } from '../tabs/tabs-store';
 import { hapticBridge } from './bridge-haptics';
 import { tabBridge } from './bridge-tabs';
+import { settleSwipeBack } from './swipe-back';
 import { isVisibleWebView } from './visible-web-view';
 
 // 기능별 처리 표끼리 메서드 이름이 겹치면 펼칠 때 뒤 값이 조용히 덮어써서 컴파일 오류로 막음
@@ -80,6 +81,8 @@ const appBridge = bridge({
     postMessage('nativeTabEvent', parsed, { broadcast: true });
     return Promise.resolve(true);
   },
+  // 스와이프로 돌아간 화면을 웹이 그림: 이동 순간 덮은 화면을 걷음(덮은 게 없으면 아무것도 안 함)
+  swipeBackSettled: async () => settleSwipeBack(),
   // 웹이 도착 화면을 그리면 스플래시 마무리(여러 WebView가 보내도 한 번만)
   appReady: async () => markWebReady(),
   // 로그인 배경 영상은 iOS 첫 화면에서만 네이티브로(탭 화면 WebView·안드로이드는 false로 웹 영상 사용). 걷기는 항상 받음

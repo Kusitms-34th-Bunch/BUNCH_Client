@@ -13,6 +13,7 @@ import { ONBOARDING_PATHS } from '@/features/onboarding/constants/paths';
 import { AppFrame } from '@/shared/components/layout/AppFrame';
 import { KeyboardViewport } from '@/shared/components/layout/KeyboardViewport';
 import { QueryProvider } from '@/shared/providers/QueryProvider';
+import { SignedImageRecovery } from '@/shared/query/SignedImageRecovery';
 import { pretendardFontStyle } from '../fonts/pretendard';
 import { AppTransitions } from './AppTransitions';
 import { PendingToast } from './PendingToast';
@@ -28,6 +29,7 @@ import { RouteFocus } from './RouteFocus';
 // NativeTabSync: iOS 쉘 탭 WebView 사이에서 내 정보(지금 번치·프로필) 변화를 알리고 받아 다시 받음(Query 안이어야 함)
 // PushOpenNavigator: iOS 쉘에서 푸시를 눌러 앱을 열면 알림 목록과 같은 화면으로(Query 안이어야 함)
 // KeyboardViewport: 키보드가 떠 있는 동안 앱 틀을 보이는 높이로 줄이고 iOS가 올린 문서를 되돌림(헤더가 상태 바 뒤로 밀리지 않게)
+// SignedImageRecovery: 만료된 서명 사진 주소로 이미지를 못 불러오면 그 주소를 가진 query를 다시 받음(Query 안이어야 함)
 // RouteFocus: 다른 화면으로 이동하면 새 화면의 h1으로 초점(모든 화면 공통이라 여기 배치)
 // AppUpdateDialog: 앱 쉘이 최소 버전보다 낮으면 닫을 수 없는 업데이트 모달(로그인 전 화면도 막아야 해 여기 배치)
 // PendingToast: 화면 이동과 함께 예약한 토스트를 도착 화면의 전환·로딩이 끝난 뒤 띄움(모든 화면 공통이라 여기 배치)
@@ -56,6 +58,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
         <NativeTabSync />
         <PushOpenNavigator />
         <KeyboardViewport />
+        <SignedImageRecovery />
         <RouteFocus />
         <PendingToast />
         <AppUpdateDialog />
