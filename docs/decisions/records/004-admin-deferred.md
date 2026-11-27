@@ -1,6 +1,6 @@
 # 004: apps/admin은 scaffold로 유지하고 기능 개발은 보류한다
 
-- 상태: accepted
+- 상태: superseded (2026-11-27, [031](./031-admin-resumed.md)로 대체)
 - 기록일: 2026-10-14
 
 ## 배경
