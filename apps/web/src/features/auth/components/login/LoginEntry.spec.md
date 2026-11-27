@@ -25,8 +25,8 @@
 ## Route와 접근
 
 - Path·params·search: `/login`. params와 search는 없다.
-- 접근 권한·guard: `(app)` layout의 `AuthGate`가 서버의 가입 상태(`GET /members/me/onboarding`)로 판단한다(`lib/accessPolicy.ts`). 비로그인은 `/login`만 볼 수 있고, 가입 완료 사용자가 `/login`·`/signup/*`에 들어오면 보관된 초대가 있을 때 초대 참여로, 없으면 번치 홈이나 번치 시작 선택으로 보낸다. 가입 중 사용자의 `/login`은 막지 않는다(기획 1.3.5). 약관의 뒤로가기는 로그아웃한 뒤 로그인 화면을 새로 연다(`useLeaveSignupMutation`, 2026-11-16 확인). 상태를 확인하는 동안에는 `PageLoading`만 보이고, 실패하면 안내와 다시 시도가 나온다.
-- Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 이동과 redirect는 없다. 화면 전환 규칙(`AppTransitions`)에도 등록하지 않아 page 래퍼에 `data-ssgoi-transition`을 붙이지 않았다(`/signup/terms` 등으로 가는 전환 규칙을 넣을 때 함께 붙인다). 인증 전 화면이 `(app)`의 `OverlayProvider`·`Toaster`를 공유하는 것은 실패 토스트에 필요해서이고, 인증 전용 group 분리는 접근 제어를 만들 때 함께 판단한다.
+- 접근 권한·guard: `(app)` layout의 `AuthGate`가 서버의 가입 상태(`GET /members/me/onboarding`)로 판단한다(`lib/accessPolicy.ts`). 비로그인은 `/login`만 볼 수 있고(인트로를 본 적 없으면 `/intro`만), 가입 완료 사용자가 `/login`·`/signup/*`에 들어오면 보관된 초대가 있을 때 초대 참여로, 없으면 번치 홈이나 번치 시작 선택으로 보낸다. 가입 중 사용자의 `/login`은 막지 않는다(기획 1.3.5). 약관의 뒤로가기는 로그아웃한 뒤 로그인 화면을 새로 연다(`useLeaveSignupMutation`, 2026-11-16 확인). 상태를 확인하는 동안에는 `PageLoading`만 보이고, 실패하면 안내와 다시 시도가 나온다.
+- Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다. 이동과 redirect는 없다. 화면 전환 규칙(`AppTransitions`)은 인트로 → 로그인 디졸브(500ms)와 약관 → 로그인 디졸브이고, page 래퍼에 `data-ssgoi-transition`이 있다. 인증 전 화면이 `(app)`의 `OverlayProvider`·`Toaster`를 공유하는 것은 실패 토스트에 필요해서이고, 인증 전용 group 분리는 접근 제어를 만들 때 함께 판단한다.
 
 ## 상태와 흐름
 
@@ -42,7 +42,7 @@
 ## 데이터 의존성
 
 - Query와 enabled 조건: 없음.
-- Mutation·cache 영향: 로그인 호출과 가입 상태 조회는 TanStack Query를 거치지 않고 함수로 직접 호출한다(캐시 없음). `auth.session` 같은 session query는 세션 확인·guard를 만들 때 함께 정하고, 그때 로그인 성공 뒤 invalidate를 붙인다.
+- Mutation·cache 영향: 로그인 호출은 TanStack Query를 거치지 않고 함수로 직접 호출한다. 가입 상태는 session query(`sharedKeys.session()`, `queries/session.ts`)이고 `AuthGate`가 같은 key를 본다. 로그인 뒤에는 가입 상태를 새로 읽어 `setQueryData`로 채운다.
 - API: `GET /api/v1/members/me/onboarding`(`features/auth/api/onboarding.ts`, 응답 `signupStatus`·`termsAccepted`·`defaultBunchId?`를 스키마로 검사).
 - API 계약 확인 항목: 소셜 로그인 요청의 method·path·필드, 쿠키 설정 주체(`docs/specs/login-signup.md` 확인할 항목 백엔드 1~3).
 - 연결 지점: `LoginEntry`의 `signIn` prop(기본값 `signInWithSocial`, 테스트에서 대체)과 `useSocialLogin`이 받는 `SignIn` 함수 타입(`(provider) => Promise<'success' | 'cancelled'>`). 서버 컴포넌트인 page에서 함수를 prop으로 넘길 수 없어 `LoginEntry`가 `features/auth/lib/socialSignIn.ts`를 직접 가져온다.
@@ -65,7 +65,7 @@
 ## 검증
 
 - [ ] direct URL·새로고침·뒤로 가기: `next build`에서 `/login`이 정적 페이지로 생성되고 `next start`로 직접 URL 200 응답을 확인함. 새로고침·뒤로 가기는 확인하지 못함(미검증)
-- [ ] 권한·redirect: guard가 없어 확인할 수 없음(미검증, 확인할 항목)
+- [ ] 권한·redirect: `AuthGate`(`lib/accessPolicy.ts`) 기준 화면 확인(미검증, 규칙은 `accessPolicy.test.ts`가 확인)
 - [x] 상태별 UI: 기본·진행 중(누른 버튼 / 나머지 비활성)·실패·취소·성공 잠금을 테스트로 확인. 진행 중 버튼의 실제 모양은 눈으로 확인하지 못함
 - [x] 관련 test: `LoginEntry.test.tsx`(제목·main, 배경 영상 자동 재생 조건(`muted`·`playsInline`·`loop`)과 낭독 제외, 화면 안 이동(로그아웃 뒤)에도 소리를 끈 다음 직접 재생, 재생 중이 아닐 때 첫 프레임 덮개로 영상(iOS 재생 버튼)을 가림, 동작 줄이기를 끄면 다시 재생하고 덮개부터 보임, 로그인 중이 아닐 때 앱에 돌아오면 멈춘 영상을 다시 재생, 쉘이 배경을 맡으면 웹 영상·첫 프레임·바탕을 걷고 겹침만, 쉘 답을 기다리는 동안 첫 프레임만, 동작 줄이기 시 영상 없음, 로그인 중 백그라운드에서 영상 멈춤·실패 뒤 다시 재생, 버튼 순서, 소셜별 호출, 진행 중 상태, 연타 방지, 실패·취소·성공, 재시도, 앱 밖에서 누르면 실패 토스트, 진행 중 상태 안내), `useNativeLoginBackground.test.tsx`(쉘 응답별 native·web·pending, 1초 무응답, 떠날 때·동작 줄이기 때 걷기, 브라우저는 묻지 않음)와 `socialSignIn.test.ts`(토큰·nonce 전달, Google nonce 생략, 취소, 쉘 밖·미지원, SDK 오류, 계약 위반·provider 불일치, BFF 실패. bridge와 `bffApi`는 가짜로 대체)
 - [x] 실행 command와 결과: `yarn workspace @app/web test`·lint·typecheck·build 통과
@@ -90,6 +90,6 @@
 - 접근 조건 (구현됨): 위 「접근 권한·guard」. 가드는 화면 이동만 맞추고 데이터는 백엔드 API가 막는다(토큰 없음 401, 가입 중 403 `AUTH_015`). 사용 중 세션이 끝난 401은 `onUnauthorized`가 연결되지 않아 다음 상태 확인 때 로그인으로 간다(한계).
 - 로그인 화면 history: 가입 완료 사용자는 로그인 뒤 `replace`로 이동해 뒤로 가도 로그인 화면이 보이지 않고, 주소로 `/login`에 닿아도 `AuthGate`가 도착 화면으로 `replace`한다(실기기 확인 전). 가입 중 사용자의 약관에서 뒤로 가면 Entry로 돌아오는 것은 기획(1.3.5)과 같다.
 - 가입 상태 조합: 가입 완료인데 약관 미동의인 응답은 서버 불변식상 없다고 보고 `signupStatus`만으로 분기한다. `GET /members/me/onboarding`은 가입 중·가입 완료 모두 허용(API 명세서)이라 신규 사용자도 조회할 수 있다. 새 `signupStatus` 값이 생기면 계약 위반으로 실패한다.
-- `/` 진입 (결정 보류): 기획은 `/`를 가입 상태로 도착 화면을 정하는 진입점으로 두지만, 지금 `/`는 개발용 임시 화면이라 가입 완료 사용자는 그대로 머문다(비로그인·가입 중은 가드가 로그인·가입 화면으로 보냄). 로그인 SDK를 연결해 실제로 앱을 열어 보는 단계에서 가입 완료 사용자의 `/`를 도착 화면으로 보내도록 바꾼다. 쉘이 앱 실행 때 여는 주소가 `/`인지도 확인하지 못했다.
+- `/` 진입 (구현됨): `/`는 화면이 없어 `AuthGate`가 누구든 지금 상태의 진입 화면으로 보낸다. 가입 완료 사용자는 로그인 직후와 같은 도착 화면으로 간다(`lib/accessPolicy.ts`). 쉘이 앱 실행 때 여는 주소가 `/`인지도 확인하지 못했다.
 - 조회 실패의 원인 구분 (한계): 가입 상태 조회가 계약 위반이나 새 enum 값 같은 영구 실패여도 일시 오류 문구로만 보인다. 원인은 기록하지 않는다(오류 수집 연결 때 정한다).
 - 노출 전 선행 조건: Apple 버튼은 쉘 연동까지 끝났지만 서버 로그인이 아직 성공하지 못했다(#439). UT·배포에 노출하기 전에 Apple 서버 로그인·가입·재로그인을 실기기에서 확인한다. 정적 페이지로 생성되어 색인될 수 있으므로 metadata·색인 방지(`docs/workflows/seo.md`)도 이 노출 정책에 포함해 정한다.

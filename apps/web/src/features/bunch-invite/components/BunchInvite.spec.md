@@ -4,7 +4,7 @@
 
 - Route: `/onboarding/create/invite`(`apps/web/src/app/(app)/onboarding/create/invite/page.tsx`), `/bunch/members/invite`(`.../bunch/members/invite/page.tsx`, #175)
 - 소유: `features/bunch-invite`. 번치 만들기 완료와 번치 관리(멤버 관리 헤더 「+ 멤버 초대」, 더보기 메뉴 「멤버 초대」) 두 곳에서 같은 화면을 쓴다. 진입 맥락(닫을 때 갈 곳·전환)은 route가 정한다.
-- Status: UI와 복사·공유 동작 구현됨(브라우저 렌더 대조 결과는 검증 항목). 번치 만들기 직후 route(`/onboarding/create/invite`)는 `POST /bunches/{id}/invitations`로 링크를 받아 보이고, 멤버 관리 route(`/bunch/members/invite`)는 아직 임시 값이다(이슈 #306). 실기기 검증 전
+- Status: UI와 복사·공유 동작 구현됨(브라우저 렌더 대조 결과는 검증 항목). 번치 만들기 직후 route(`/onboarding/create/invite`)는 `POST /bunches/{id}/invitations`로 링크를 받아 보이고, 멤버 관리 route(`/bunch/members/invite`)는 지금 번치(`members/me` 기본 번치)의 같은 링크를 받아 보인다(`useMyBunchInvitation`, #306). 실기기 검증 전
 - 디자인 출처: Figma `Bunch/Invite/Default`(node `791:3364`), `Bunch/Invite/LinkCopied`(node `791:3390`). 화면설계서(node `791:8962`, 진입점 `791:8727`)를 함께 참고했다.
 
 ## 목적과 범위

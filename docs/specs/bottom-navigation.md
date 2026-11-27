@@ -1,6 +1,6 @@
 # 기능: 하단 내비게이션
 
-> Status: Draft(탭 조합·iOS 시스템 탭 바 구현됨, 탭 화면은 임시)
+> Status: Draft(탭 조합·iOS 시스템 탭 바·탭 화면 구현됨, 탭 route는 임시)
 > Date: 2026-10-18, 2026-10-22 갱신
 
 디자인 출처: Figma `BUNCH - 작업파일`의 `BottomNavigationItem`(node `118:973`)과 `BottomNavigation`(node `127:2213`). 값(색·간격·radius·타이포)은 구현 때 `get_design_context`로 확인했고 토큰 대응은 [컴포넌트 spec](../../packages/design-system/src/components/web/bottomNavigation/BottomNavigation.spec.md)에 있다.
@@ -30,7 +30,7 @@
 - 탭 4개, 막대 순서: 피드 · 사진함 · 번치 · MY(내부 기획 문서의 화면 구조, Figma 막대와 같은 순서).
 - 선택된 탭은 현재 route로 정해진다. 탭을 누르면 그 탭의 route로 이동한다.
 - 사진함 탭은 지금 보고 있는 Bunch의 사진함을 바로 연다(내부 기획 문서). 탭 안에서 Bunch를 바꾸지 않는다.
-- 탭 route는 임시로 `/feed`·`/photos`·`/bunch`·`/my`다(`features/main-navigation/constants/tabs.ts`). 탭 안 하위 경로(`/bunch/...`)도 그 탭이 선택된다. 같은 탭을 다시 누르면 그 탭 화면을 맨 위로 스크롤한다(하위 화면에는 탭 막대가 없음). 300ms 안에 두 번 다시 누르면 탭 화면에 두 번 누르기를 알린다(`shared/lib/navigation/mainTabGesture`, 지금은 번치 탭만 최근 번치로 전환, #518). 웹 막대에서 번치 탭 첫 화면의 번치 탭을 500ms 누르고 있으면 꾹 누르기를 알린다(번치 전환 시트).
+- 탭 route는 임시로 `/feed`·`/photos`·`/bunch`·`/my`다(`features/main-navigation/constants/tabs.ts`). 탭 안 하위 경로(`/bunch/...`)도 그 탭이 선택된다. 같은 탭을 다시 누르면 그 탭 화면을 맨 위로 스크롤한다(하위 화면에는 탭 막대가 없음). 300ms 안에 두 번 다시 누르면 탭 화면에 두 번 누르기를 알린다(`shared/lib/navigation/mainTabGesture`, 지금은 번치 탭만 최근 번치로 전환, #518). 웹 막대에서 번치 탭 첫 화면의 번치 탭을 500ms 누르고 있으면 꾹 누르기를 알린다(번치 전환 시트). iOS 시스템 탭 바에서는 쉘이 `nativeTabLongPress`로 같은 꾹 누르기를 알린다(#518, `docs/architecture/mobile-shell-native-ui.md`).
 - iOS 쉘은 시스템 탭 바가 탭을 그리고 탭마다 WebView가 탭 경로를 연다. 탭 이동은 웹 이동이 아니라 시스템이 화면을 바꾸는 것이다(`docs/decisions/records/012-ios-system-tab-bar.md`).
 
 ## 요구사항
@@ -111,7 +111,6 @@
 - 탭 라벨: 내부 기획 문서는 「MY」, Figma는 「마이페이지」다. 지금은 Figma(「마이페이지」)를 따랐다. 어느 쪽을 쓰는가?
 - 탭 route 경로와 같은 탭 재탭 동작, 탭 안 하위 화면에서 선택 유지 여부.
 - 어떤 화면에서 탭 막대를 숨기는가(번들 작업·작성 화면, 모달 위, 키보드가 올라올 때).
-- 피드와 MY는 아직 구현 전이라 지금은 임시 화면으로 연결했다. 출시 때 숨길지, 비활성으로 둘지 정한다.
 
 **디자인**
 

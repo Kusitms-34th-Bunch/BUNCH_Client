@@ -23,7 +23,7 @@ export type TextButtonUnderlineProps =
 
 /**
  * 밑줄 글자 버튼(Figma `Text_Button_Underline`): 목록 줄 안의 보조 동작(예: 「전문보기」)
- * 기본은 일반 버튼, `renderLink`를 주면 링크. 누르는 동안 overlay-hover(10%)를 75ms ease-out으로 덮음
+ * 기본은 일반 버튼, `renderLink`를 주면 링크. 누르는 동안 overlay-hover(10%)를 press-overlay 150ms로 덮음
  */
 export const TextButtonUnderline = (props: TextButtonUnderlineProps) => {
   const { children, className } = props;

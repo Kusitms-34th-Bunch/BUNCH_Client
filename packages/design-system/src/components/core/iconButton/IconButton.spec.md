@@ -31,7 +31,7 @@
 - Outline: Subtle에 1px `border-tertiary`(`#EAEAEA`) 테두리. 테두리는 40px 안에 포함된다.
 - Primary: 배경 `surface-inversed`(`#25282D`), 아이콘 `icon-inversed`(흰색).
 - `plain`: 배경·크기가 없어 아이콘 크기를 따른다. 색(`text-icon-*`)과 누르는 범위(`before:-inset-*`, 24px 아이콘이면 `before:-inset-2`로 40px)는 쓰는 곳이 `className`으로 정한다. 누르는 동안 아이콘이 가운데 기준 0.917(24px 기준 2px, `docs/architecture/motion.md`)로 줄고(150ms, `cubic-bezier(0, 0, 0.15, 1)`), `overlay`는 아이콘 뒤에 `overlay-hover` 배경 36×36·모서리 8(`::after`, 레이아웃 영향 없음)을, `fade`는 배경 없이 아이콘 불투명도 60%를 쓴다(`press-icon-overlay`·`press-icon-fade`, `styles/utilities.css`). 누른 채 스크롤·비활성이면 눌림이 없고, 동작 줄이기면 줄지 않고 배경·흐려짐만 바로 바뀐다. 비활성은 40%로 흐린다.
-- Pressed(`:active`, 배경 있는 세 변형): 버튼 안쪽 전체(아이콘 포함)에 `overlay-hover`(검정 10%)를 얹어 어둡게 한다. 75ms ease-out 전환(동작 줄이기에서는 끔). Outline의 테두리는 눌러도 그대로이고 Primary는 `#212428`이 된다.
+- Pressed(`:active`, 배경 있는 세 변형): 버튼 안쪽 전체(아이콘 포함)에 `overlay-hover`(검정 10%)를 얹어 어둡게 한다. 덮개는 공통 `press-overlay`로 150ms `cubic-bezier(0, 0, 0.15, 1)` 전환하고, 누르는 동안 `press-scale-small`(기본 0.95)로 줄어든다(동작 줄이기에서는 둘 다 끔). Outline의 테두리는 눌러도 그대로이고 Primary는 `#212428`이 된다.
 - 포커스: 버튼 바깥 2px `border-brand` 윤곽선.
 
 ## 접근성

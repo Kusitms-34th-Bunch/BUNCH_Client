@@ -2,16 +2,16 @@
 
 작은 검증부터 실행하고, 변경 범위에 맞게 확장한다.
 
-| 변경                        | 최소 검증                                             |
-| --------------------------- | ----------------------------------------------------- |
-| 문서·agent 설정             | 링크·경로 확인, `yarn format:check`                   |
-| 컴포넌트·hook               | 관련 테스트, `yarn lint`, `yarn typecheck`            |
-| API·공통 유틸리티           | 관련 테스트, `yarn lint`, `yarn typecheck`            |
-| 디자인 시스템 public export | 관련 테스트, `yarn check:generated`, `yarn typecheck` |
-| 앱 route·빌드 설정          | `yarn lint`, `yarn typecheck`, 대상 앱 build          |
-| 사용자 핵심 흐름            | 관련 Playwright E2E                                   |
-| 파일 이동·구조 재편         | `git diff -M`로 내용 변경 0 확인, `yarn build`        |
-| 포맷만 바꾸는 대량 변경     | 적용 전후 build 산출물 비교, `yarn test`·`typecheck`  |
+| 변경                        | 최소 검증                                                    |
+| --------------------------- | ------------------------------------------------------------ |
+| 문서·agent 설정             | 링크·경로 확인, `yarn check:agent-docs`, `yarn format:check` |
+| 컴포넌트·hook               | 관련 테스트, `yarn lint`, `yarn typecheck`                   |
+| API·공통 유틸리티           | 관련 테스트, `yarn lint`, `yarn typecheck`                   |
+| 디자인 시스템 public export | 관련 테스트, `yarn check:generated`, `yarn typecheck`        |
+| 앱 route·빌드 설정          | `yarn lint`, `yarn typecheck`, 대상 앱 build                 |
+| 사용자 핵심 흐름            | 관련 Playwright E2E                                          |
+| 파일 이동·구조 재편         | `git diff -M`로 내용 변경 0 확인, `yarn build`               |
+| 포맷만 바꾸는 대량 변경     | 적용 전후 build 산출물 비교, `yarn test`·`typecheck`         |
 
 전체 검증이 필요한 경우 `yarn verify`를 사용한다. 실행할 수 없는 검증은 이유와 함께 보고한다.
 

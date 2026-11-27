@@ -192,7 +192,7 @@
 - [ ] 누르면 공개 범위 설정으로 간다. 별도 업로드 확인 창은 없다. 다른 멤버의 편집 중 표시가 하나라도 있으면 먼저 「편집 중인 멤버가 있어요」 + 「지금 업로드하면 작성 중인 내용 일부가 반영되지 않을 수 있어요.」(「취소」·「계속하기」)를 띄운다. 어느 쪽인지는 누른 순간 기준이다.
 - [ ] 발행은 공개 범위 설정의 최종 「업로드」 시점에 서버에 저장된 내용으로 되고, 조건·권한도 그때 서버가 다시 본다. 같은 요청 키로 재시도해도 한 번만 발행된다(요청 키는 발행 API 연동 때).
 - [x] 성공하면 번치 메인 「번들」 탭 맨 위로 이동하고 「번들을 업로드했어요.」. 문구 맞춤(#440).
-- [ ] 권한 없는 참여 멤버가 누르면 「번치 관리자와 해당 번들 생성자만 업로드할 수 있어요.」, 참여 멤버가 아니면 「참여 멤버만 편집할 수 있어요.」, 권한은 있는데 조건 미충족이면 「필수 항목을 모두 입력해야 업로드 할 수 있어요.」.
+- [ ] 권한 없는 참여 멤버가 누르면 「번치 관리자와 해당 번들 생성자만 업로드할 수 있어요.」, 참여 멤버가 아니면 「참여 멤버만 편집할 수 있어요」, 권한은 있는데 조건 미충족이면 「필수 항목을 모두 입력해야 업로드 할 수 있어요.」.
 - [ ] 화면을 보는 사이 역할·참여 여부가 바뀌면 「업로드」 활성 여부를 바로 바꾼다.
 
 편집 중 표시 (4.3.13, DRAFT-10)
@@ -241,7 +241,7 @@
 
 - 번들 작성 화면 이동 (2026-11-02, 이슈 #173): 작성 화면 ↔ 참여 멤버 관리, 작성 화면 ↔ 크게 보기는 온보딩과 같은 `slide` 양방향 규칙이다(기획 확인, 시간은 [motion.md](../architecture/motion.md) 「화면 이동 시간」의 350ms). 동적 route라 고정 id(`BUNDLE_PATHS.transitionIds`의 draft·members·viewer)를 규칙과 각 page의 DOM에 함께 쓴다. 사진 캡션 화면은 제거되어 규칙도 없다(#354). Chrome(375px)에서 새 화면 341→0·이전 화면 0→-375, 뒤로 가기는 반대로 약 300ms에 움직이는 것을 네 방향 모두 확인했고(300ms 설정 때), 실기기와 동작 줄이기는 확인하지 않았다.
 - 번들 만들기 추천 상세 (2026-11-01, 이슈 #161): 사진 선택 `/bunch/bundles/new`와 추천 번들 상세 사이는 `slide`이고(기획은 200ms, 2026-11-25 #560부터 다른 화면 이동과 같은 350ms) 양방향 규칙 하나다. 상세는 동적 route라 약관 원문처럼 고정 id(`BUNDLE_SELECT_PATHS.transitionIds.recommendation`)를 규칙과 각 화면 DOM의 `data-ssgoi-transition`에 함께 쓴다. 곡선은 설계서의 Ease In 대신 처음에는 Ease Out(온보딩과 같은 합의)이었고, 지금은 화면 이동 공통 `cubic-bezier(0.4, 0, 0.2, 1)`이다. 상세 ↔ 뷰어 전환은 시안이 없어 등록하지 않았다. Chromium(headless 375px)에서 프레임을 재서 새 화면 324→0·이전 화면 0→-375, 약 185ms로 끝나는 것을 확인했고(200ms 설정 때), 실기기와 동작 줄이기는 아직 확인하지 않았다.
-- 번치 홈 「번들 만들기」 → 사진 선택(`sheet`)은 [bunch-home.md](./bunch-home.md)의 「모션」에 있다.
+- 번치 홈 「번들 만들기」 → 멤버 선택(`sheet`)은 [bunch-home.md](./bunch-home.md)의 「모션」에 있다. 멤버 선택 → 사진 선택은 `slide`다(`AppTransitions`).
 
 ## API 계약
 
@@ -268,7 +268,7 @@
 - 실시간 구독은 범용 프록시(요청·응답 1회 전달)로는 전달할 수 없다. SSE 스트리밍을 BFF로 넘길지, 짧은 수명의 전용 토큰을 BFF가 발급해 브라우저가 백엔드에 직접 연결할지(CORS 필요) 정해야 한다. 정해지면 결정 기록을 남긴다.
 - 장소 검색은 외부 API(예: 카카오 로컬 키워드 검색) 키가 필요하므로 BFF Route Handler나 백엔드가 대신 호출한다. 브라우저에 키를 노출하지 않는다.
 - 실패 시 오류 코드와 정확한 문구: 서버 코드를 확인한 뒤 채운다. 화면 문구는 위 요구사항의 문구를 쓴다.
-- Query key 후보: `bundleKeys.recommendations(bunchId)`, `bundleKeys.recommendation(id)`, `bundleKeys.draft(draftId)`, `bundleKeys.placeSearch(keyword)`. 초안은 실시간 이벤트로 `setQueryData`를 갱신하고, 재연결 뒤에는 `draft(draftId)`를 다시 불러온다. 초안 생성 뒤에는 `photoKeys.all`(추천 계산 영향)과 작성 중인 번들 목록을 invalidate한다.
+- Query key(`features/bundle/queries/keys.ts`): `bundleKeys.detail(bunchId, bundleId)`(초안·발행본 상세), `bundleKeys.detailsOf(bunchId)`, `bundleKeys.recommendations(bunchId)`, `bundleKeys.recommendation(bunchId, id)`. 장소 검색은 query key 없이 `api/places.ts`의 메모리 캐시를 쓴다. 초안은 실시간 이벤트로 `setQueryData`를 갱신하고, 다시 받아야 하면 `detail`을 invalidate한다. 초안 생성 뒤에는 응답으로 상세 캐시를 채우고 번치 홈 데이터(`sharedKeys.bunchHomeScope`)를 invalidate한다.
 
 ## 구현 단위와 이슈
 

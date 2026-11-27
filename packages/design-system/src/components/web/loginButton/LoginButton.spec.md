@@ -12,7 +12,7 @@
 ### 제공하는 동작
 
 - 소셜 로그인 버튼. 브랜드 3종(`apple`, `google`, `kakao`)마다 배경·글자색·로고가 정해져 있다.
-- 기본, 눌림(`:active`), 비활성(`disabled`) 상태. 누르는 동안 Pressed 스타일을 적용하고 전환은 디자이너 공통 지침 기준 Dissolve / Ease out / 75ms다(2026-10-22 디자이너 공통 지침 변경: 100ms → 75ms). overlay opacity만 75ms ease-out으로 바꾼다.
+- 기본, 눌림(`:active`), 비활성(`disabled`) 상태. 누르는 동안 Pressed 스타일을 적용하고 디자이너 공통 지침은 Dissolve / Ease out / 75ms다(2026-10-22 디자이너 공통 지침 변경: 100ms → 75ms). overlay opacity만 공통 `press-overlay`로 150ms `cubic-bezier(0, 0, 0.15, 1)` 전환한다(2026-11-27, `docs/architecture/motion.md`).
 - 폭은 컨테이너를 채우고(Figma 343px) 높이는 48px이다.
 
 ### 제공하지 않는 동작
@@ -29,7 +29,7 @@
 
 ## 상태와 동작
 
-- 눌림: 브랜드 색 위에 `overlay-login-pressed`(검정 8%) 오버레이. opacity를 75ms ease-out으로 바꾼다(2026-10-22 디자이너 공통 지침 변경: 100ms → 75ms). Apple은 검정이라 눈에 띄지 않는다(Figma와 같음).
+- 눌림: 브랜드 색 위에 `overlay-login-pressed`(검정 8%) 오버레이. opacity를 150ms `cubic-bezier(0, 0, 0.15, 1)`로 바꾼다(공통 `press-overlay`, 2026-11-27, 이전 75ms ease-out). Apple은 검정이라 눈에 띄지 않는다(Figma와 같음).
 - 비활성: 전체에 `opacity-disabled`(40%)를 적용하고 `cursor-not-allowed`.
 - 긴 글자: 한 줄로 잘린다(`truncate`).
 - 로고: Apple 24px, Kakao 20px, Google 20px 영역(안쪽 16×16.3). Apple·Kakao는 글자색을 따라가고(`currentColor`) Google은 색이 든 이미지다.

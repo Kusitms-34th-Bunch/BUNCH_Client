@@ -139,5 +139,5 @@ pnpm test
 | Hermes `BINARY`/`UTF-8` 오류   | 프로젝트 경로에 한글이 있으면 영문 경로로 옮긴 뒤 prebuild 재시도                                                                                        |
 
 현재 ESLint 의존성이 없어 `expo lint`는 실행되지 않는다.
-2026-10-18 확인 범위는 타입 검사·단위 테스트·iOS JS 번들·CocoaPods 설치다.
-`pnpm ios` 실행을 포함한 Xcode 컴파일·개발 앱 실행·실기기·EAS·Android 동작은 아직 검증하지 않았다.
+Xcode 빌드·실기기 실행·Archive 업로드는 확인했다(위 측정, `mobile-release-build.md`).
+EAS 빌드·Android 동작은 아직 검증하지 않았다.

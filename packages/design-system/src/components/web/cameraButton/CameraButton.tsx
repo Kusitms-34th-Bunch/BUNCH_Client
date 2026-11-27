@@ -8,8 +8,8 @@ export type CameraButtonProps = Omit<ComponentProps<'button'>, 'children' | 'ari
 };
 
 // 눌림 오버레이: 아이콘 위까지 덮는 pseudo 요소, overlay-pressed(20%). Figma 실측: 배경 #535a61→#42484e, 아이콘 흰색→#ccc
-// 누르는 동안 Pressed, 다른 버튼과 같은 75ms ease-out 전환(디자이너 공통 지침)
-// after: 보이는 28px보다 넓은 40px 터치 영역(design-system-icons.md의 Small 기준)
+// 누르는 동안 Pressed, 다른 버튼과 같은 press-overlay 150ms 전환
+// after: 보이는 28px보다 넓은 40px 터치 영역(design-system-icons.md의 Medium·Large 터치 영역과 같은 값)
 /**
  * 카메라 버튼(S): 28px 원형 아이콘 버튼
  * 촬영·선택·업로드는 호출하는 쪽이 처리하고, 처리 중에는 `disabled` 전달

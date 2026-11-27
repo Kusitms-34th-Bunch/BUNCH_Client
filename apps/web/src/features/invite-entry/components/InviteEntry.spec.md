@@ -28,7 +28,7 @@
 ## 상태와 흐름
 
 - 진입: 장식(로고 묶음, 픽셀 3개)이 아래에서 올라오며 나타난다(2.4초, 한 번). **CSS 키프레임만으로**(`inviteRise.module.css`, `animation-fill-mode: both`) 첫 페인트부터 재생해서 JS·hydration과 무관하고, 완성된 모양이 먼저 보였다가 다시 시작하는 깜빡임이 없다.
-- 「초대장 확인하기」(앱 안): `GET /invitations/{토큰}`(공개). 같은 틱의 중복 탭은 ref로 막고 요청 중과 확인 뒤 이동할 때까지 버튼을 잠그고 화면은 덮지 않는다(2026-11-20 기준: 짧은 저장·확인 뒤 화면 이동은 덮지 않음, `docs/architecture/motion.md` 「로딩 상태」).
+- 「초대장 확인하기」(앱 안): `GET /invitations/{토큰}`(공개). 같은 틱의 중복 탭은 ref로 막고 요청 중과 확인 뒤 이동할 때까지 버튼을 잠근다. 요청이 1초(`LATE_OVERLAY_MS`)를 넘기면 `PageLoading`으로 화면을 덮는다(`docs/architecture/motion.md` 「로딩 상태」).
   - 성공(앱 안): `savePendingInvitation(토큰)` 뒤 `router.replace(continueHref)`. 브라우저가 화면을 그대로 복원하면(bfcache, `pageshow`의 `persisted`) 로딩과 중복 탭 잠금을 푼다.
   - 앱 밖: 서버에 묻지 않고(iOS는 누른 그 순간의 이동만 앱을 열고 복사도 누른 동작 안에서만 허용) 형식만 확인한 뒤 넘긴다. 카카오톡 인앱 브라우저(iOS, User-Agent `KAKAOTALK`)는 `kakaotalk://web/openExternal?url={이 페이지 출처}/invite/{토큰}`, 그 밖의 iPhone·iPad는 `https://app.bunch.kr/invite/{토큰}`을 안내 없이 복사하고 `https://open.bunch.kr/invite/{토큰}`(앱이 있으면 앱, 없으면 서버가 App Store로), iOS가 아니면 토스트 「지금은 iOS 앱만 지원해요.」. 초대는 보관하지 않고 버튼은 잠그지 않는다. 이동은 `lib/externalLink.ts`의 `openExternalUrl`.
 - 카카오톡 인앱 브라우저(iOS): 열리자마자 한 번 위의 외부 열기를 요청한다(형식이 아닌 토큰은 보내지 않음). 막혀 남으면 「초대장 확인하기」가 같은 요청을 다시 한다. 앱 있으면 앱, 없으면 Safari로 열릴 것으로 예상하나 실기기 확인 전이다.

@@ -3,7 +3,7 @@ import type { VariantProps } from 'tailwind-variants';
 import { tv } from '../../../utils';
 
 // 눌림 오버레이: 글자 아래·배경 위의 -z-10 pseudo 요소(isolate로 쌓임 맥락 분리), overlay-login-pressed(8%). Figma 실측: Google 흰색→#ebebeb, Kakao #fee500→#ead300
-// 누르는 동안 Pressed 스타일, Dissolve / Ease out / 75ms(디자이너 공통 지침) → opacity만 75ms ease-out
+// 누르는 동안 Pressed 스타일, opacity만 press-overlay 150ms 전환(디자이너 공통 지침 75ms와 다름)
 // 브랜드 색(Kakao #fee500·글자 85% 검정, Google 테두리 #e2e2e2·글자 #1f1f1f, Apple 검정)은 각 사의 가이드 값이라 토큰 없음
 const loginButton = tv({
   base: [
