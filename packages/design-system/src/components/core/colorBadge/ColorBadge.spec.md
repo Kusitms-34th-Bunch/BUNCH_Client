@@ -2,7 +2,7 @@
 
 ## 메타데이터
 
-- 소유 경계: design-system (`web`)
+- 소유 경계: design-system (`core`). 2026-11-27 #590에서 `web`에서 옮겼다. 어드민 `SideMenu`의 건수 배지가 같은 모양(weak·pink·lg)을 쓴다.
 - Status: 구현됨(스크린 리더·실기기 검증 전)
 - 디자인 출처: Figma `BUNCH - 작업파일`의 `Badge`(node `1648:8846`). Figma 이름은 `Badge`지만 기존 `core/badge`의 `Badge`(node `637:3630`)와 값이 달라 별도 컴포넌트로 두고 `ColorBadge`로 이름을 붙였다.
 

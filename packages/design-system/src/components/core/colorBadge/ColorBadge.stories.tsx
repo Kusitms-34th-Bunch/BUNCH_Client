@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from '@storybook/react-vite';
 import { ColorBadge, type ColorBadgeColor } from './ColorBadge';
 
 const meta = {
-  title: 'Web/Profile/ColorBadge',
+  title: 'Components/ColorBadge',
   component: ColorBadge,
   args: { children: '뱃지' },
 } satisfies Meta<typeof ColorBadge>;

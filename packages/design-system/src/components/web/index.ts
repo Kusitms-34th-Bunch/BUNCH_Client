@@ -24,7 +24,6 @@ export * from './bundleTextInput';
 export * from './bundleTitle';
 export * from './cameraButton';
 export * from './chipButton';
-export * from './colorBadge';
 export * from './commentComposer';
 export * from './commentInput';
 export * from './commentItem';

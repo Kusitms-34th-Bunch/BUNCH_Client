@@ -1,8 +1,8 @@
 import { useId, type ComponentProps } from 'react';
 import { FillCircleCheckLargeIcon, FillMapPinSmallIcon, LineDotsMediumIcon } from '../../../icons';
 import { cn } from '../../../utils';
+import { ColorBadge } from '../../core/colorBadge';
 import { IconButton } from '../../core/iconButton';
-import { ColorBadge } from '../colorBadge';
 import { PlacePickButton } from '../placePickButton';
 import { ProfileImage } from '../profileImage';
 import hiddenMotion from './hiddenMotion.module.css';
