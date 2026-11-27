@@ -529,6 +529,41 @@ describe('BunchHome 서버 번치 전환', () => {
     await waitFor(() => expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.'));
   });
 
+  it('저장이 끝나기 전에는 새 번치 홈을 다시 받지 않는다(저장 전 응답은 소속 없음)', async () => {
+    // 실서버는 저장 전 새 번치 홈을 지금 번치가 아닌 번치(EXTERNAL)로 돌려줘 오류 화면이 잠깐 보였음
+    let finishSave = () => {};
+    const saving = new Promise<void>((resolve) => {
+      finishSave = resolve;
+    });
+    let saved = false;
+    let homeBeforeSave = 0;
+    let homeAfterSave = 0;
+    server.use(
+      http.get(`/api/bunches/${MOCK_SECOND_BUNCH_ID}/home`, () => {
+        if (saved) homeAfterSave += 1;
+        else homeBeforeSave += 1;
+      }),
+      http.put(`/api/bunches/${MOCK_SECOND_BUNCH_ID}/last-used`, async () => {
+        await saving;
+        saved = true;
+      }),
+    );
+    const user = userEvent.setup();
+    renderHome();
+
+    const sheet = await openSwitcher(user);
+    await user.click(await within(sheet).findByRole('button', { name: /퇴근런클럽/ }));
+    expect(await screen.findByRole('heading', { level: 1, name: /퇴근런클럽/ })).toBeTruthy();
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    expect(homeBeforeSave).toBe(1);
+
+    finishSave();
+    await waitFor(() => expect(toast).toHaveBeenCalledWith('퇴근런클럽 번치로 전환했어요.'));
+    // 저장 뒤에는 전환이 한 번만 다시 받음(멈춤이 풀리며 또 받지 않음)
+    await act(() => new Promise((resolve) => setTimeout(resolve, 50)));
+    expect(homeAfterSave).toBe(1);
+  });
+
   it('먼저 바꾼 뒤 저장이 실패하면 원래 번치로 되돌린다', async () => {
     // 바뀐 제목을 확인한 뒤에 저장 실패를 돌려줌(타이머에 맡기면 홈 렌더가 늦을 때 먼저 되돌아감)
     let failSave!: () => void;

@@ -1,6 +1,6 @@
 'use client';
 
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery, useIsMutating, useQuery } from '@tanstack/react-query';
 import { useMemo } from 'react';
 import { bunchMembersQueryOptions } from '@/shared/query/bunchMembers';
 import { myBunchesQueryOptions } from '@/shared/query/myBunches';
@@ -13,9 +13,11 @@ import {
   bunchHomeQueryOptions,
   draftBundlesQueryOptions,
   LIVE_REFRESH,
+  PAUSED_REFRESH,
   publishedBundlesQueryOptions,
   useRefetchListsOnCountChange,
 } from '../queries/bunchHome';
+import { bunchHomeKeys } from '../queries/keys';
 
 export type ServerBunchHome =
   | { kind: 'loading' }
@@ -50,7 +52,12 @@ export function useServerBunchHome(): ServerBunchHome {
   const profile = useQuery(myProfileQueryOptions());
   const bunchId = profile.data?.bunch?.id;
   // 홈 정보(요청 1건)만 들어올 때·앱 복귀 때·보이는 동안 20초마다 다시 받아 다른 멤버의 가입·번들 개수를 확인
-  const home = useQuery({ ...bunchHomeQueryOptions(bunchId), ...LIVE_REFRESH });
+  // 전환 중에는 멈춤(저장 전 응답은 소속 없음, PAUSED_REFRESH)
+  const switching = useIsMutating({ mutationKey: bunchHomeKeys.switchBunch() }) > 0;
+  const home = useQuery({
+    ...bunchHomeQueryOptions(bunchId),
+    ...(switching ? PAUSED_REFRESH : LIVE_REFRESH),
+  });
   const published = useInfiniteQuery(publishedBundlesQueryOptions(bunchId));
   const drafts = useQuery(draftBundlesQueryOptions(bunchId));
   const members = useQuery(bunchMembersQueryOptions(bunchId));
