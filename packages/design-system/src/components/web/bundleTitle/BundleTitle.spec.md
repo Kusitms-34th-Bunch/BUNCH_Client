@@ -52,7 +52,7 @@
 
 - 별표는 Figma에서 `Wanted Sans Variable` 16/22(자간 -0.17px)이지만 repo에 이 글꼴이 없어 Pretendard `typography-body-1-semi-bold`(16/24, 자간 -0.25px)로 그렸다. 디자이너 확인이 필요하다.
 - 8명을 넘는 멤버의 처리(축약 표시 여부)는 Figma에 없다.
-- 아바타 테두리 대비(위 접근성 항목)와, 사진이 없을 때의 배경색 원(`surface-brand-subtle-2`) 대비.
+- 아바타 테두리 대비(위 접근성 항목)와, 사진이 없을 때의 배경색 원(`surface-secondary`) 대비.
 - 이슈 #88의 `SelectionField`가 같은 제목 영역(핀·제목·별표)을 따로 그리고 있어, 이 컴포넌트가 머지되면 `BundleTitle`을 쓰도록 바꾼다.
 
 ## 검증

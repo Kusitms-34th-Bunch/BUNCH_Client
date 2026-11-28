@@ -35,7 +35,7 @@ export const ProfileImage = ({
 }: ProfileImageProps) => (
   <div
     className={cn(
-      'bg-surface-brand-subtle-2 relative shrink-0 overflow-hidden rounded-full',
+      'bg-surface-secondary relative shrink-0 overflow-hidden rounded-full',
       SIZES[size],
       className,
     )}

@@ -23,7 +23,7 @@ export const UploaderBadge = ({ name, avatarSrc, className, ...props }: Uploader
   >
     <span
       aria-hidden="true"
-      className="bg-surface-brand-subtle-2 size-6.5 shrink-0 overflow-hidden rounded-full"
+      className="bg-surface-secondary size-6.5 shrink-0 overflow-hidden rounded-full"
     >
       {avatarSrc ? <img src={avatarSrc} alt="" className="size-full object-cover" /> : null}
     </span>
