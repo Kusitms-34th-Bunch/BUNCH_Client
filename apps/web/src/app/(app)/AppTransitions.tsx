@@ -580,10 +580,10 @@ export function AppTransitions({ children }: { children: ReactNode }) {
   return (
     <Ssgoi config={config}>
       {/* 전환 중 화면 뒤를 흰색으로 받침. 인트로 브랜드 장면은 바깥 AppFrame이 Safe Area까지 한 번에 칠하므로 보이는 동안·사라지는 동안 비움
-          iOS 쉘의 로그인 화면(transparent)도 WebView 뒤 네이티브 배경 영상이 비치도록 비움 */}
+          iOS 쉘의 로그인 화면(login-video)도 WebView 뒤 네이티브 배경 영상이 비치도록 비움 */}
       {/* 접는 헤더 화면(피드)은 본문이 상태 표시줄 뒤까지 올라가므로 위로 상태 표시줄 높이만큼만 더 보이게 자름(가로 전환은 그대로 틀 안) */}
       {/* overflow-x:clip + overflow-y:visible은 WebKit이 세로 ±2^24px 클립 층으로 만들어 iOS에서 내용이 1pt 밀리고 맨 위에 흰 선이 생겨 유한한 clip-path를 씀 */}
-      <div className="bg-surface-primary relative isolate flex min-h-0 flex-1 flex-col overflow-hidden has-data-collapsible-header:overflow-visible has-data-collapsible-header:[clip-path:inset(calc(var(--safe-area-top)*-1)_0_0_0)] has-data-push-band:overflow-visible has-data-push-band:[clip-path:inset(calc(var(--safe-area-top)*-1)_0_0_0)] has-data-sheet-band:overflow-visible has-data-sheet-band:[clip-path:inset(calc(var(--safe-area-top)*-1)_0_calc(var(--safe-area-bottom)*-1)_0)] has-[[data-app-background=brand],[data-app-background=transparent],[data-brand-leaving]]:bg-transparent">
+      <div className="bg-surface-primary relative isolate flex min-h-0 flex-1 flex-col overflow-hidden has-data-collapsible-header:overflow-visible has-data-collapsible-header:[clip-path:inset(calc(var(--safe-area-top)*-1)_0_0_0)] has-data-push-band:overflow-visible has-data-push-band:[clip-path:inset(calc(var(--safe-area-top)*-1)_0_0_0)] has-data-sheet-band:overflow-visible has-data-sheet-band:[clip-path:inset(calc(var(--safe-area-top)*-1)_0_calc(var(--safe-area-bottom)*-1)_0)] has-[[data-app-background=brand],[data-app-background=login-video],[data-brand-leaving]]:bg-transparent">
         {children}
       </div>
     </Ssgoi>

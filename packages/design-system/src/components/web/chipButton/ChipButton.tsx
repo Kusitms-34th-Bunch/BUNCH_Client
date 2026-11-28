@@ -113,7 +113,7 @@ export const ChipButton = ({
       {variant === 'avatar' ? (
         <span
           aria-hidden="true"
-          className="border-border-tertiary bg-surface-brand-subtle-2 relative size-6 shrink-0 overflow-hidden rounded-full border"
+          className="border-border-tertiary bg-surface-secondary relative size-6 shrink-0 overflow-hidden rounded-full border"
         >
           {avatarSrc ? (
             <img src={avatarSrc} alt="" className="absolute inset-0 size-full object-cover" />

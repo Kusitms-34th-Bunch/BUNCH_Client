@@ -82,9 +82,9 @@ describe('LoginEntry', () => {
     expect(container.querySelector('video')).toBeNull();
     expect(layer.style.backgroundImage).toBe('');
     expect(layer.className).not.toContain('bg-primitive-gray-900');
-    expect(layer.querySelector('.bg-linear-to-b')).not.toBeNull();
-    // 바깥 틀(AppFrame)의 흰 바탕도 걷도록 표식
-    expect(container.querySelector('[data-app-background="transparent"]')).not.toBeNull();
+    // 겹침은 바깥 틀(AppFrame)이 Safe Area까지 그리도록 표식만 둠(화면 안 겹침은 전환 중 WebKit이 잘라 그림, #605)
+    expect(layer.querySelector('.bg-linear-to-b')).toBeNull();
+    expect(container.querySelector('[data-app-background="login-video"]')).not.toBeNull();
   });
 
   it('쉘에 물어보는 동안에는 웹 영상 없이 첫 프레임만 보이고 바탕은 그대로 둔다', () => {
@@ -97,7 +97,7 @@ describe('LoginEntry', () => {
     expect(screen.getByTestId('login-background').style.backgroundImage).toContain(
       '/videos/login-poster.jpg',
     );
-    expect(container.querySelector('[data-app-background="transparent"]')).toBeNull();
+    expect(container.querySelector('[data-app-background="login-video"]')).toBeNull();
   });
 
   it('워드마크를 제목으로, 본문 영역(main)을 가진다', () => {

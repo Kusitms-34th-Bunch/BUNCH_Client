@@ -67,7 +67,7 @@ export function LoginEntry({
     <>
       {/* 화면 전체(Safe Area 포함)를 덮는 배경. 동작 줄이기 설정이면 영상을 받지 않고 첫 프레임만 보임
           첫 프레임을 받기 전에도 흰 화면이 비치지 않게 어두운 바탕색
-          iOS 쉘이 영상을 맡으면(native) 바탕·첫 프레임을 빼서 WebView 뒤의 네이티브 영상이 비치게 하고, 겹침만 웹이 그림 */}
+          iOS 쉘이 영상을 맡으면(native) 바탕·첫 프레임을 빼서 WebView 뒤의 네이티브 영상이 비치게 하고, 겹침은 AppFrame이 그림 */}
       <div
         aria-hidden="true"
         data-testid="login-background"
@@ -79,13 +79,16 @@ export function LoginEntry({
         {backgroundSource === 'web' && !reducedMotion ? (
           <WebBackgroundVideo loggingIn={pendingProvider !== null} />
         ) : null}
-        {/* Figma 겹침: 위 절반 검정 30%, 61%부터 60%(30%는 토큰이 없어 가장 가까운 40%) */}
-        <div className="from-primitive-black-alpha-40 to-primitive-black-alpha-60 absolute inset-0 bg-linear-to-b from-50% to-61%" />
+        {/* Figma 겹침: 위 절반 검정 30%, 61%부터 60%(30%는 토큰이 없어 가장 가까운 40%)
+            쉘 영상이면 AppFrame이 같은 겹침을 그림(전환 중 흐려지는 화면 안의 고정 요소는 WebKit이 Safe Area에서 잘라 그림, #605), 값을 바꾸면 AppFrame도 */}
+        {nativeBackground ? null : (
+          <div className="from-primitive-black-alpha-40 to-primitive-black-alpha-60 absolute inset-0 bg-linear-to-b from-50% to-61%" />
+        )}
       </div>
       <PageShell
         className="relative bg-transparent"
-        // 네이티브 영상이 Safe Area까지 비치도록 바깥 틀(AppFrame)의 흰 바탕도 걷음
-        data-app-background={nativeBackground ? 'transparent' : undefined}
+        // 네이티브 영상이 Safe Area까지 비치도록 바깥 틀(AppFrame)의 흰 바탕을 걷고 겹침을 그림
+        data-app-background={nativeBackground ? 'login-video' : undefined}
         bottom={
           <div className="px-padding-p8 pb-padding-p7 gap-s4 flex flex-col">
             {PROVIDERS.map(({ provider, label }, index) => {

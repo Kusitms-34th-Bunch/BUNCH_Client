@@ -28,7 +28,7 @@
 ## 상태와 동작
 
 - 모양: `surface-primary`(흰색) 64%(`bg-surface-primary/64`)와 `backdrop-blur-[4.7px]`, radius full. 좌우 안쪽 여백 8px, 위아래 6px, 사진과 이름 사이 8px.
-- 사진: 26px 원, `object-cover`. `avatarSrc`가 없으면 사진 없이 배경색 원(`surface-brand-subtle-2`)만 보인다(`ProfileImage`와 같은 방식, Figma에 정의되지 않은 상태). 사용자별 대표 이미지가 들어갈 예정이라 별도 기본 이미지는 만들지 않았다.
+- 사진: 26px 원, `object-cover`. `avatarSrc`가 없으면 사진 없이 배경색 원(`surface-secondary`)만 보인다(`ProfileImage`와 같은 방식, Figma에 정의되지 않은 상태). 사용자별 대표 이미지가 들어갈 예정이라 별도 기본 이미지는 만들지 않았다.
 - 이름: 14px Regular, `text-primary`, 한 줄 말줄임. 알약 높이는 사진 26px + 위아래 6px로 38px다.
 - 폭은 내용에 맞고 부모를 넘지 않는다(`max-w-full`).
 

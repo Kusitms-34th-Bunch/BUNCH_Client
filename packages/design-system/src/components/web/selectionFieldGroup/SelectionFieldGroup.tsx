@@ -135,7 +135,7 @@ export const SelectionFieldGroup = ({
                 <span
                   key={`${member.name}-${index}`}
                   className={cn(
-                    'bg-surface-brand-subtle-2 border-border-tertiary relative size-6 shrink-0 overflow-hidden rounded-full border',
+                    'bg-surface-secondary border-border-tertiary relative size-6 shrink-0 overflow-hidden rounded-full border',
                     index > 0 && '-ml-2',
                   )}
                 >

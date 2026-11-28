@@ -13,7 +13,7 @@
 
 - 원형 이미지. 크기는 `size`로 고른다: `L` 90px(기본), `M` 64px, `S` 40px, `XS` 34px, `XXS` 24px(Figma `Size`). 프로필 작성 화면에서 "최초 진입 시 기본 프로필 이미지", "이미지 등록 후에는 선택한 이미지"로 바뀐다.
 - `BunchAvatar`와 같은 방식으로 이미지는 호출하는 쪽이 `src`로 넘긴다. 기본 이미지든 선택한 이미지든 이 컴포넌트는 `src`를 그릴 뿐이다.
-- `src`가 없으면 `surface-brand-subtle-2`(Figma `Default`의 배경색) 원만 보인다.
+- `src`가 없거나 사진을 받는 동안 `surface-secondary`(스켈레톤과 같은 회색) 원만 보인다. 이전 `surface-brand-subtle-2`(옛 메인 연보라)는 2026-11-24 색상 변경 뒤 맞지 않아 바꿨다(2026-11-28, Figma `Default` 재확인 전).
 
 ### 제공하지 않는 동작
 
@@ -41,7 +41,7 @@
 
 ## Styling과 의존성
 
-- 스타일: `bg-surface-brand-subtle-2`, `rounded-full`. 크기 `size-22.5`·`size-16`·`size-10`·`size-8.5`·`size-6`(90·64·40·34·24px)은 토큰에 없어 기본 scale을 쓴다(`BunchAvatar`와 같은 방식). 테두리가 필요한 곳은 `className`으로 준다. 31px(`BundlePhotoEditor`)처럼 Figma 크기 5종이 아닌 지름은 `className`으로 덮어쓴다. dependency 추가 없음.
+- 스타일: `bg-surface-secondary`, `rounded-full`. 크기 `size-22.5`·`size-16`·`size-10`·`size-8.5`·`size-6`(90·64·40·34·24px)은 토큰에 없어 기본 scale을 쓴다(`BunchAvatar`와 같은 방식). 테두리가 필요한 곳은 `className`으로 준다. 31px(`BundlePhotoEditor`)처럼 Figma 크기 5종이 아닌 지름은 `className`으로 덮어쓴다. dependency 추가 없음.
 - Storybook state matrix: `Default`, `Picked`, `NoImage`, `Sizes`(5종 × `Default`·`Output`), `WithCameraButton`.
 
 ## 확인할 항목

@@ -35,12 +35,21 @@ afterEach(() => {
 });
 
 describe('KeyboardViewport', () => {
-  it('키보드가 뜨면 표식을 바로 두고 높이는 키보드처럼 곡선으로 줄이며 iOS가 올린 문서를 되돌리고, 닫히면 늘린 뒤 지움', async () => {
+  it('키보드가 뜨면 표식을 바로 두고 아래 영역만 곡선으로 올린 뒤 높이를 한 번에 줄이며 iOS가 올린 문서를 되돌리고, 닫히면 높이를 먼저 되돌리고 아래 영역을 내림', async () => {
     vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
+    const frame = document.createElement('div');
+    frame.setAttribute('data-app-frame', '');
+    frame.innerHTML =
+      '<div data-page-shell><main></main><div data-toast-anchor="wrapper"></div></div><div data-safe-area-bottom></div>';
+    document.body.append(frame);
     try {
       const viewport = stubViewport(window.innerHeight);
       render(<KeyboardViewport />);
       const height = () => root.style.getPropertyValue('--keyboard-viewport-height');
+      const bar = frame.querySelector<HTMLElement>('[data-toast-anchor]')!;
+      const spacer = frame.querySelector<HTMLElement>('[data-safe-area-bottom]')!;
+      const offset = (element: HTMLElement) =>
+        Number(/translate3d\(0, (-?[\d.]+)px/.exec(element.style.transform)?.[1] ?? 0);
 
       viewport.height = window.innerHeight - 300;
       Object.defineProperty(window, 'scrollY', { value: 300, configurable: true });
@@ -48,20 +57,32 @@ describe('KeyboardViewport', () => {
       expect(root).toHaveAttribute('data-keyboard-open');
       expect(scrollTo).toHaveBeenCalledWith(0, 0);
 
-      // 중간에는 처음과 끝 사이, 300ms 뒤 보이는 높이
+      // 움직이는 동안 높이는 그대로, 아래 영역(하단 슬롯·여백)이 함께 올라감
       await act(() => vi.advanceTimersByTimeAsync(48));
-      const middle = Number.parseFloat(height());
-      expect(middle).toBeLessThan(window.innerHeight);
-      expect(middle).toBeGreaterThan(window.innerHeight - 300);
+      expect(height()).toBe('');
+      expect(offset(bar)).toBeLessThan(0);
+      expect(offset(bar)).toBeGreaterThan(-300);
+      expect(offset(spacer)).toBe(offset(bar));
+      // 끝나면 높이를 한 번에 줄이고 transform을 걷음
       await act(() => vi.advanceTimersByTimeAsync(320));
       expect(height()).toBe(`${window.innerHeight - 300}px`);
+      expect(bar.style.transform).toBe('');
 
+      // 닫힘: 높이를 먼저 되돌리면 아래 영역이 300px 내려가므로 그만큼 올린 자리에서 출발
+      vi.spyOn(spacer, 'getBoundingClientRect')
+        .mockReturnValueOnce({ top: 500 } as DOMRect)
+        .mockReturnValueOnce({ top: 800 } as DOMRect);
       viewport.height = window.innerHeight;
       act(() => void viewport.dispatchEvent(new Event('resize')));
       expect(root).not.toHaveAttribute('data-keyboard-open');
-      await act(() => vi.advanceTimersByTimeAsync(400));
       expect(height()).toBe('');
+      await act(() => vi.advanceTimersByTimeAsync(48));
+      expect(offset(bar)).toBeLessThan(0);
+      expect(offset(bar)).toBeGreaterThan(-300);
+      await act(() => vi.advanceTimersByTimeAsync(400));
+      expect(bar.style.transform).toBe('');
     } finally {
+      frame.remove();
       vi.useRealTimers();
     }
   });
@@ -112,7 +133,6 @@ describe('KeyboardViewport', () => {
 
       act(() => sendNativeKeyboard({ height: 300, duration: 250 }));
       expect(root).toHaveAttribute('data-keyboard-open');
-      expect(root.style.getPropertyValue('--keyboard-follow-ms')).toBe('250ms');
       // 보이는 높이가 아직 그대로여도 열림 유지
       act(() => void viewport.dispatchEvent(new Event('resize')));
       expect(root).toHaveAttribute('data-keyboard-open');
@@ -128,6 +148,40 @@ describe('KeyboardViewport', () => {
       await act(() => vi.advanceTimersByTimeAsync(270));
       expect(height()).toBe('');
     } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('키보드가 낮아져 앱 틀이 커질 때는 높이를 먼저 늘리고 아래 영역을 내림(본문 아래가 비지 않게)', async () => {
+    vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
+    const frame = document.createElement('div');
+    frame.setAttribute('data-app-frame', '');
+    frame.innerHTML =
+      '<div data-page-shell><main></main><div data-toast-anchor="wrapper"></div></div><div data-safe-area-bottom></div>';
+    document.body.append(frame);
+    try {
+      stubViewport(window.innerHeight);
+      render(<KeyboardViewport />);
+      const height = () => root.style.getPropertyValue('--keyboard-viewport-height');
+      const bar = frame.querySelector<HTMLElement>('[data-toast-anchor]')!;
+      const spacer = frame.querySelector<HTMLElement>('[data-safe-area-bottom]')!;
+      act(() => sendNativeKeyboard({ height: 400, duration: 250 }));
+      await act(() => vi.advanceTimersByTimeAsync(270));
+      expect(height()).toBe(`${window.innerHeight - 400}px`);
+
+      // 이모지 → 일반 키보드: 높이를 바로 늘리면 아래 영역이 100px 내려가므로 그만큼 올린 자리에서 출발
+      vi.spyOn(spacer, 'getBoundingClientRect')
+        .mockReturnValueOnce({ top: 400 } as DOMRect)
+        .mockReturnValueOnce({ top: 500 } as DOMRect);
+      act(() => sendNativeKeyboard({ height: 300, duration: 250 }));
+      expect(height()).toBe(`${window.innerHeight - 300}px`);
+      await act(() => vi.advanceTimersByTimeAsync(48));
+      expect(bar.style.transform).toMatch(/translate3d\(0, -\d/);
+      await act(() => vi.advanceTimersByTimeAsync(270));
+      expect(bar.style.transform).toBe('');
+      expect(height()).toBe(`${window.innerHeight - 300}px`);
+    } finally {
+      frame.remove();
       vi.useRealTimers();
     }
   });
@@ -220,7 +274,7 @@ describe('KeyboardViewport', () => {
     expect(root).not.toHaveAttribute('data-keyboard-open');
   });
 
-  it('키보드가 뜨면 본문 아래에 가린 초점 입력란이 보이게 본문만 스크롤', () => {
+  it('키보드가 뜨면 줄어들 본문 아래 경계에 맞춰 시작할 때 초점 입력란을 보이게 본문만 스크롤', () => {
     const viewport = stubViewport(window.innerHeight);
     const { container } = render(
       <main>
@@ -232,20 +286,87 @@ describe('KeyboardViewport', () => {
     const input = container.querySelector('textarea')!;
     input.focus();
     vi.spyOn(main, 'getBoundingClientRect').mockReturnValue({ top: 0, bottom: 400 } as DOMRect);
-    vi.spyOn(input, 'getBoundingClientRect').mockReturnValue({ top: 420, bottom: 480 } as DOMRect);
+    // 본문을 스크롤한 만큼 입력란이 위로 올라감
+    vi.spyOn(input, 'getBoundingClientRect').mockImplementation(
+      () => ({ top: 420 - main.scrollTop, bottom: 480 - main.scrollTop }) as DOMRect,
+    );
 
     viewport.height = window.innerHeight - 150;
     act(() => void viewport.dispatchEvent(new Event('resize')));
-    expect(main.scrollTop).toBe(96);
-
-    // 키보드가 더 올라와 본문이 줄면 다시 가린 만큼 한 번 더 내림
-    vi.spyOn(main, 'getBoundingClientRect').mockReturnValue({ top: 0, bottom: 300 } as DOMRect);
-    viewport.height = window.innerHeight - 300;
-    act(() => void viewport.dispatchEvent(new Event('resize')));
-    expect(main.scrollTop).toBe(96 + 196);
+    // 곧 150px 줄어들 본문(아래 경계 250) 위 16px에 입력란 아래 끝
+    expect(main.scrollTop).toBe(480 - 250 + 16);
   });
 
-  it('앱 틀이 다 줄어든 뒤에도 초점 입력란이 가리면 한 번 더 내림(줄어드는 중에는 다른 알림이 없어도)', async () => {
+  it('열리는 동안 본문이 아직 줄지 않아도 미리 스크롤할 수 있게 아래 여백을 줄어들 만큼 늘렸다가, 높이를 줄인 뒤 되돌림', async () => {
+    vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
+    try {
+      const viewport = stubViewport(window.innerHeight);
+      const { container } = render(
+        <main style={{ paddingBottom: '8px' }}>
+          <textarea aria-label="소개" />
+          <KeyboardViewport />
+        </main>,
+      );
+      const main = container.querySelector('main')!;
+      container.querySelector('textarea')!.focus();
+
+      viewport.height = window.innerHeight - 300;
+      act(() => void viewport.dispatchEvent(new Event('resize')));
+      expect(main.style.paddingBottom).toBe('308px');
+
+      await act(() => vi.advanceTimersByTimeAsync(320));
+      expect(main.style.paddingBottom).toBe('8px');
+
+      // 열리는 도중 입력란을 벗어나 닫혀도 늘린 여백을 되돌림
+      viewport.height = window.innerHeight;
+      act(() => void viewport.dispatchEvent(new Event('resize')));
+      await act(() => vi.advanceTimersByTimeAsync(320));
+      container.querySelector('textarea')!.focus();
+      viewport.height = window.innerHeight - 300;
+      act(() => void viewport.dispatchEvent(new Event('resize')));
+      expect(main.style.paddingBottom).toBe('308px');
+      act(() => container.querySelector('textarea')!.blur());
+      expect(main.style.paddingBottom).toBe('8px');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('키보드가 열린 채 다른 입력란으로 옮기면 그 입력란만큼만 스크롤함(rAF 시각을 축소량으로 받지 않음)', async () => {
+    vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
+    try {
+      const viewport = stubViewport(window.innerHeight);
+      const { container } = render(
+        <main>
+          <input aria-label="이름" />
+          <textarea aria-label="소개" />
+          <KeyboardViewport />
+        </main>,
+      );
+      const main = container.querySelector('main')!;
+      const [first, second] = [...container.querySelectorAll<HTMLElement>('input, textarea')];
+      first!.focus();
+      viewport.height = window.innerHeight - 300;
+      act(() => void viewport.dispatchEvent(new Event('resize')));
+      await act(() => vi.advanceTimersByTimeAsync(320));
+
+      // 다 열린 본문(아래 경계 400) 안에 이미 보이는 입력란
+      vi.spyOn(main, 'getBoundingClientRect').mockReturnValue({ top: 0, bottom: 400 } as DOMRect);
+      vi.spyOn(second!, 'getBoundingClientRect').mockReturnValue({
+        top: 300,
+        bottom: 360,
+      } as DOMRect);
+      main.scrollTop = 0;
+      act(() => second!.focus());
+      await act(() => vi.advanceTimersByTimeAsync(20));
+
+      expect(main.scrollTop).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('열림이 끝나 본문이 줄어도 시작할 때 이미 보이게 했으면 다시 스크롤하지 않음', async () => {
     vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
     try {
       const viewport = stubViewport(window.innerHeight);
@@ -261,19 +382,18 @@ describe('KeyboardViewport', () => {
       const mainRect = vi
         .spyOn(main, 'getBoundingClientRect')
         .mockReturnValue({ top: 0, bottom: 400 } as DOMRect);
-      vi.spyOn(input, 'getBoundingClientRect').mockReturnValue({
-        top: 320,
-        bottom: 380,
-      } as DOMRect);
+      vi.spyOn(input, 'getBoundingClientRect').mockImplementation(
+        () => ({ top: 320 - main.scrollTop, bottom: 380 - main.scrollTop }) as DOMRect,
+      );
 
       viewport.height = window.innerHeight - 300;
       act(() => void viewport.dispatchEvent(new Event('resize')));
-      expect(main.scrollTop).toBe(0);
+      expect(main.scrollTop).toBe(380 - 100 + 16);
 
-      // 줄어드는 동안 본문 아래 경계가 올라가 입력란을 가림
-      mainRect.mockReturnValue({ top: 0, bottom: 300 } as DOMRect);
+      // 끝에 높이를 줄여 본문 아래 경계가 100이 되어도 입력란은 이미 그 위
+      mainRect.mockReturnValue({ top: 0, bottom: 100 } as DOMRect);
       await act(() => vi.advanceTimersByTimeAsync(320));
-      expect(main.scrollTop).toBe(96);
+      expect(main.scrollTop).toBe(380 - 100 + 16);
     } finally {
       vi.useRealTimers();
     }
@@ -293,7 +413,6 @@ describe('KeyboardViewport', () => {
       // 이모지 키보드처럼 높이만 바뀜. 보이는 높이는 아직 이전 값인 채 스크롤 알림이 먼저 옴
       act(() => sendNativeKeyboard({ height: 400, duration: 250 }));
       act(() => void viewport.dispatchEvent(new Event('scroll')));
-      expect(root.style.getPropertyValue('--keyboard-follow-ms')).toBe('250ms');
       await act(() => vi.advanceTimersByTimeAsync(270));
       expect(height()).toBe(`${window.innerHeight - 400}px`);
     } finally {

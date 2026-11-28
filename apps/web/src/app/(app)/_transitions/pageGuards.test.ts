@@ -271,8 +271,8 @@ describe('guardPush', () => {
     expect(outgoing.dataset.pageLeaving).toBe('');
   });
 
-  it('투명 배경 화면(로그인 영상)에는 띠를 붙이지 않는다', () => {
-    const incoming = screen('in', 'transparent');
+  it('쉘 로그인 영상 화면에는 띠를 붙이지 않는다', () => {
+    const incoming = screen('in', 'login-video');
 
     guardPush(fakeAnimation({ in: { element: incoming }, out: { element: screen('out') } }));
 
