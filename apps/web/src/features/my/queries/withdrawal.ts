@@ -1,7 +1,7 @@
 import { queryOptions, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getMemberships, transferOwner } from '@/shared/api/bunchMemberships';
-import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { toDomainId } from '@/shared/api/client/ids';
+import { useIdempotencyKeys } from '@/shared/hooks/useIdempotencyKeys';
 import { isSafeImageUrl } from '@/shared/lib/image/safeImageUrl';
 import { DEFAULT_PROFILE_IMAGE, defaultBunchImage } from '@/shared/lib/profile/bunchProfile';
 import { sharedKeys } from '@/shared/query/keys';
@@ -80,6 +80,10 @@ export const useFetchOwnedBunches = () => {
  */
 export const useTransferOwnershipMutation = () => {
   const queryClient = useQueryClient();
+  const idempotency = useIdempotencyKeys();
+  // 번치마다 따로 넘김(넘긴 번치·새 관리자·버전이 같으면 같은 요청)
+  const signatureOf = (bunch: OwnedBunch, successor: string) =>
+    JSON.stringify([bunch.id, successor, bunch.myMembershipId, bunch.membershipVersion]);
   return useMutation({
     mutationFn: async ({
       bunches,
@@ -101,10 +105,15 @@ export const useTransferOwnershipMutation = () => {
               actorMembershipId: bunch.myMembershipId,
               expectedMembershipVersion: bunch.membershipVersion,
             },
-            createIdempotencyKey(),
+            idempotency.keyFor(signatureOf(bunch, selections[bunch.id] as string)),
           ),
         ),
       );
+      results.forEach((result, index) => {
+        const bunch = bunches[index]!;
+        const signature = signatureOf(bunch, selections[bunch.id] as string);
+        idempotency.settle(signature, result.status === 'rejected' ? result.reason : undefined);
+      });
       // 넘긴 번치를 먼저 뺌(다시 받기가 실패해도 이미 넘긴 번치를 다시 고르지 않게)
       const moved = new Set(
         bunches.filter((_bunch, index) => results[index]?.status === 'fulfilled').map((b) => b.id),
