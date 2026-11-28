@@ -16,7 +16,6 @@ import { PageLoading } from '@/shared/components/loading/PageLoading';
 import { bundleHeroKey } from '@/shared/lib/navigation/heroKeys';
 import type { FeedBundleDetail, FeedComment } from '../../lib/types';
 import { FEED_MESSAGES as text } from '../../constants/messages';
-import { useKeyboardOpen } from '../../hooks/useKeyboardOpen';
 import { usePhotoPinchZoom } from '../../hooks/usePhotoPinchZoom';
 import { hideLeftMemberImages } from '../../lib/deletedUserImage';
 import { BundleCommentList, type BundleCommentThread } from './BundleCommentList';
@@ -83,7 +82,6 @@ type BundleDetailScreenProps = { onBack: () => void } & (
  * 데이터와 동작은 `BundleDetail`이 넘기고, 그릴 수 없으면 `status` 안내
  */
 export function BundleDetailScreen(props: BundleDetailScreenProps) {
-  const keyboardOpen = useKeyboardOpen();
   const photosRef = usePhotoPinchZoom();
   if (props.status) {
     return (
@@ -126,7 +124,8 @@ export function BundleDetailScreen(props: BundleDetailScreenProps) {
       bottom={
         <div
           ref={composerRef}
-          data-keyboard-open={keyboardOpen ? '' : undefined}
+          // 키보드가 뜨면 아래 여백을 6px로(AppFrame, 문서의 키보드 표식과 같은 순간에 바뀜)
+          data-keyboard-dock=""
           // 닫기 버튼이 사라진 뒤 초점을 받는 자리(입력란에 주면 키보드가 올라옴), 초점이 오면 이름을 읽음
           tabIndex={-1}
           // 화면 아래에 따로 붙어 main 밖이라 영역(landmark)으로 둠(axe region)

@@ -46,7 +46,7 @@ type PageShellProps = {
     | 'pink-50'
     | 'green-50'
     // 뒤의 네이티브 화면이 비치게 바탕을 걷음(iOS 쉘의 로그인 배경 영상)
-    | 'transparent'
+    | 'login-video'
     | undefined;
   /** 아래 Safe Area만 다른 색일 때(위는 data-app-background, 아래 내용은 흰색인 화면) */
   'data-app-background-bottom'?: 'primary' | undefined;
@@ -183,7 +183,8 @@ export function PageShell({
       )}
       {/* data-toast-anchor: toast()가 이 영역 위 4px에 토스트를 놓음(디자인 시스템 Toast spec) */}
       {bottom ? (
-        <div data-toast-anchor="wrapper" className="shrink-0">
+        // 키보드를 따라 본문 위로 올라가는 동안 본문이 비치지 않게 화면 배경을 물려받음(KeyboardViewport)
+        <div data-toast-anchor="wrapper" className="shrink-0 bg-inherit">
           {bottom}
         </div>
       ) : null}

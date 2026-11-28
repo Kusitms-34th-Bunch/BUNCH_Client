@@ -47,10 +47,10 @@ const DESTINATIONS = {
 
 export default function LoginPage() {
   return (
-    // iOS 쉘이 배경 영상을 맡으면(로그인 화면이 transparent 표식) 흰 바탕을 비워 WebView 뒤 네이티브 영상이 비치게 함
+    // iOS 쉘이 배경 영상을 맡으면(로그인 화면이 login-video 표식) 흰 바탕을 비워 WebView 뒤 네이티브 영상이 비치게 함
     <div
       data-ssgoi-transition={LOGIN_PATH}
-      className="bg-surface-primary flex h-full min-h-0 flex-1 flex-col has-data-[app-background=transparent]:bg-transparent"
+      className="bg-surface-primary flex h-full min-h-0 flex-1 flex-col has-data-[app-background=login-video]:bg-transparent"
     >
       <LoginEntry destinations={DESTINATIONS} />
     </div>

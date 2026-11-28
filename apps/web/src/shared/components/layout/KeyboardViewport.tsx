@@ -9,19 +9,23 @@ const HEIGHT_VAR = '--keyboard-viewport-height';
 
 // 입력란이 본문 안에서 보이게 둘 때 키보드 위 여백
 const REVEAL_MARGIN = 16;
-// 앱 틀 높이를 키보드와 비슷한 감속 곡선으로 따라가게, 열림·닫힘 같은 곡선(근거 녹화는 mobile-shell-webview.md, #568)
-// 아래 여백도 AppFrame이 같은 시간·곡선으로 바꿈(data-keyboard-moving)
+// 아래 영역이 키보드와 비슷한 감속 곡선으로 따라감, 열림·닫힘 같은 곡선(근거 녹화는 mobile-shell-webview.md, #568)
 const FOLLOW_MS = 300;
-// 쉘이 키보드 시간을 알려 줄 때 AppFrame 아래 여백 전환도 같은 시간으로
-const FOLLOW_MS_VAR = '--keyboard-follow-ms';
+// 키보드와 함께 움직이는 아래 영역: 화면의 하단 슬롯(PageShell)과 앱 틀 아래 여백
+const FOLLOWERS =
+  '[data-app-frame] [data-page-shell] > [data-toast-anchor], [data-app-frame] > [data-safe-area-bottom]';
+const SPACER = '[data-app-frame] > [data-safe-area-bottom]';
 // 쉘 알림과 보이는 높이가 이만큼 안쪽으로 다르면 같은 목표로 보고 처음부터 다시 움직이지 않음
 const SAME_TARGET_PX = 2;
 const followEase = cubicBezierEasing([0.2, 0.8, 0.2, 1]);
 const reducedMotion = () =>
   window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
 
-/** 본문(main)만 스크롤해 초점 입력란을 보이게(scrollIntoView는 문서까지 스크롤해 다시 밀림) */
-const revealFocused = () => {
+/**
+ * 본문(main)만 스크롤해 초점 입력란을 보이게(scrollIntoView는 문서까지 스크롤해 다시 밀림)
+ * `shrink`: 곧 줄어들 본문 아래 경계(앱 틀 높이를 끝에 줄이는 열림에서 시작할 때 미리 맞춤)
+ */
+const revealFocused = (shrink = 0) => {
   // 확대해 읽는 중에는 시점을 입력란으로 되돌리지 않음
   if (window.visualViewport && window.visualViewport.scale > 1.01) return;
   const active = document.activeElement;
@@ -29,8 +33,9 @@ const revealFocused = () => {
   const main = active.closest('main');
   if (!main) return;
   const box = main.getBoundingClientRect();
+  const bottom = box.bottom - shrink;
   const rect = active.getBoundingClientRect();
-  if (rect.bottom > box.bottom) main.scrollTop += rect.bottom - box.bottom + REVEAL_MARGIN;
+  if (rect.bottom > bottom) main.scrollTop += rect.bottom - bottom + REVEAL_MARGIN;
   else if (rect.top < box.top) main.scrollTop -= box.top - rect.top + REVEAL_MARGIN;
 };
 
@@ -45,45 +50,66 @@ export function KeyboardViewport() {
     if (!viewport) return;
     const root = document.documentElement;
     let frame = 0;
-    // 앱 틀 높이를 목표까지 곡선으로 옮김(null이면 원래 높이로 늘린 뒤 변수를 지움)
-    let shown = window.innerHeight;
+    // 앱 틀에 넣은 높이(null이면 100dvh)
+    let committed: number | null = null;
     let heightFrame = 0;
+    // 움직이는 동안 transform을 준 아래 영역
+    let lifted: HTMLElement[] = [];
     // 입력란을 벗어나 키보드를 닫는 중(다시 입력란에 초점이 오면 풂)
     let dismissing = false;
     // 쉘이 마지막으로 알려 준 키보드 상태(알림을 받은 뒤로는 열림·닫힘을 이 값으로 판단, 없으면 undefined)
     let nativeOpen: boolean | undefined;
     // 진행 중인 목표(같은 높이를 여러 번 알려 줘도 처음부터 다시 시작하지 않게)
     let heading: number | null | undefined;
+    const commit = (target: number | null) => {
+      committed = target;
+      if (target === null) root.style.removeProperty(HEIGHT_VAR);
+      else root.style.setProperty(HEIGHT_VAR, `${target}px`);
+    };
+    const lift = (offset: number) => {
+      for (const element of lifted) element.style.transform = `translate3d(0, ${offset}px, 0)`;
+    };
+    const land = () => {
+      for (const element of lifted) {
+        element.style.transform = '';
+        element.style.willChange = '';
+      }
+      lifted = [];
+    };
+    // 높이는 한 번만 바꾸고 아래 영역은 지금 보이는 자리에서 transform으로 따라감(FLIP, 매 프레임 높이를 바꾸면 끊김, #605)
+    // 줄어들 때는 끝에(본문 아래가 키보드보다 먼저 잘리지 않게), 늘어날 때는(닫힘·낮아진 키보드) 먼저 바꿈
     const moveHeight = (target: number | null, duration = FOLLOW_MS) => {
       if (heading === target) return;
       if (heading != null && target != null && Math.abs(heading - target) < SAME_TARGET_PX) return;
       heading = target;
       cancelAnimationFrame(heightFrame);
-      const to = target ?? window.innerHeight;
-      // 다 닫혀 있으면(변수 없음) 그동안 바뀐 창 높이에서 출발, 닫히는 중이면 지금 높이에서
-      const from = root.style.getPropertyValue(HEIGHT_VAR) ? shown : window.innerHeight;
-      const apply = (value: number) => {
-        shown = value;
-        if (target === null && value === to) root.style.removeProperty(HEIGHT_VAR);
-        else root.style.setProperty(HEIGHT_VAR, `${value}px`);
+      const spacer = document.querySelector(SPACER);
+      const before = spacer?.getBoundingClientRect().top ?? 0;
+      land();
+      if (target === null) root.removeAttribute('data-keyboard-open');
+      else root.setAttribute('data-keyboard-open', '');
+      const grow = target === null || (committed !== null && target > committed);
+      if (grow) commit(target);
+      const end = grow ? 0 : target - (committed ?? window.innerHeight);
+      const start = before - (spacer?.getBoundingClientRect().top ?? 0);
+      const finish = () => {
+        if (!grow) commit(target);
+        land();
+        // 줄어든 본문 아래 경계 기준으로 입력란이 키보드 뒤에 남지 않게 한 번 더
+        if (target !== null) revealFocused();
       };
-      if (reducedMotion() || duration <= 0 || Math.abs(to - from) < 1) {
-        root.removeAttribute('data-keyboard-moving');
-        apply(to);
-        return;
-      }
-      root.style.setProperty(FOLLOW_MS_VAR, `${duration}ms`);
-      root.setAttribute('data-keyboard-moving', '');
+      if (reducedMotion() || duration <= 0 || Math.abs(end - start) < 1) return finish();
+      lifted = [...document.querySelectorAll<HTMLElement>(FOLLOWERS)];
+      for (const element of lifted) element.style.willChange = 'transform';
+      lift(start);
+      // 본문 안 입력란이 열림 내내 키보드 뒤에 있다가 끝에 튀지 않게 줄어들 만큼 미리 스크롤
+      if (!grow) revealFocused(-end);
       const startedAt = performance.now();
       const step = (now: number) => {
         const progress = Math.min(1, (now - startedAt) / duration);
-        apply(progress === 1 ? to : from + (to - from) * followEase(progress));
-        if (progress < 1) heightFrame = requestAnimationFrame(step);
-        else {
-          root.removeAttribute('data-keyboard-moving');
-          // 줄어드는 동안 본문 아래 경계가 올라가 입력란이 키보드 뒤에 남지 않게 다 줄어든 뒤 한 번 더
-          if (target !== null) revealFocused();
-        }
+        if (progress === 1) return finish();
+        lift(start + (end - start) * followEase(progress));
+        heightFrame = requestAnimationFrame(step);
       };
       heightFrame = requestAnimationFrame(step);
     };
@@ -191,8 +217,7 @@ export function KeyboardViewport() {
       window.removeEventListener('pageshow', resync);
       root.style.removeProperty(HEIGHT_VAR);
       root.removeAttribute('data-keyboard-open');
-      root.removeAttribute('data-keyboard-moving');
-      root.style.removeProperty(FOLLOW_MS_VAR);
+      land();
     };
   }, []);
   return null;

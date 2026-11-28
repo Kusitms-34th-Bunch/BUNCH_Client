@@ -844,20 +844,9 @@ describe('BundleDetail', () => {
     });
   });
 
-  it('키보드가 올라와 보이는 높이가 줄면 입력란에 표식을 달고, 내려가면 뗀다', () => {
-    const viewport = Object.assign(new EventTarget(), {
-      height: window.innerHeight - 300,
-      scale: 1,
-    });
-    Object.defineProperty(window, 'visualViewport', { value: viewport, configurable: true });
+  it('입력 막대에 키보드 표식 자리를 둬 키보드가 뜨면 아래 여백이 문서 표식과 함께 바뀌게 한다', () => {
     renderDetail();
-    const composer = screen.getByRole('textbox').closest('[data-keyboard-open]');
-    expect(composer).not.toBeNull();
-
-    viewport.height = window.innerHeight;
-    act(() => void viewport.dispatchEvent(new Event('resize')));
-    expect(document.querySelector('[data-keyboard-open]')).toBeNull();
-    Object.defineProperty(window, 'visualViewport', { value: undefined, configurable: true });
+    expect(screen.getByRole('textbox').closest('[data-keyboard-dock]')).not.toBeNull();
   });
 
   it.each([

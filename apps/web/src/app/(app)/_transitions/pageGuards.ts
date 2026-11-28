@@ -201,10 +201,10 @@ export const guardSheet =
     };
   };
 
-// 화면 배경 표식 → 상태 바 띠 색(AppFrame이 칠하는 색과 같음, 투명은 띠 없음)
+// 화면 배경 표식 → 상태 바 띠 색(AppFrame이 칠하는 색과 같음, 쉘 로그인 영상은 띠 없음)
 type BandBackground = Exclude<
   NonNullable<ComponentProps<typeof PageShell>['data-app-background']>,
-  'transparent'
+  'login-video'
 >;
 // 키를 PageShell 목록으로 묶어 배경 값이 늘면 typecheck에서 걸림
 const BAND_COLORS: Record<BandBackground, string> = {
@@ -220,7 +220,7 @@ const bandColorOf = (page: HTMLElement) => {
     ? page
     : page.querySelector('[data-app-background]');
   const value = marker?.getAttribute('data-app-background');
-  if (value === 'transparent') return undefined;
+  if (value === 'login-video') return undefined;
   return (value && BAND_COLORS[value as BandBackground]) || 'var(--color-surface-primary)';
 };
 // 요소마다 마지막으로 띠를 붙인 전환(중단 뒤 이전 전환의 정리가 새 띠를 지우지 않게)
