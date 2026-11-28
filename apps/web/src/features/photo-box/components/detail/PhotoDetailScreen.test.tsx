@@ -111,7 +111,12 @@ const member: PhotoBoxViewer = { memberId: 'a', isAdmin: false };
 const savePhotos = vi.fn<PhotoBoxActions['savePhotos']>();
 const deletePhotos = vi.fn<PhotoBoxActions['deletePhotos']>();
 const changePhotoDates = vi.fn<PhotoBoxActions['changePhotoDates']>();
-const actions: PhotoBoxActions = { savePhotos, deletePhotos, changePhotoDates };
+const actions: PhotoBoxActions = {
+  savePhotos,
+  deletePhotos,
+  changePhotoDates,
+  refreshPhotos: () => Promise.resolve(),
+};
 
 const onBack = vi.fn();
 const onLeave = vi.fn();

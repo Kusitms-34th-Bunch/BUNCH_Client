@@ -1,6 +1,6 @@
 import { queryOptions, skipToken, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
+import { useIdempotencyKeys } from '@/shared/hooks/useIdempotencyKeys';
 import { sharedKeys } from '@/shared/query/keys';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import type { BunchRole } from '../lib/types';
@@ -52,8 +52,11 @@ export type MembershipChange =
  */
 export const useChangeMembershipMutation = (bunchId: string | undefined) => {
   const queryClient = useQueryClient();
+  const idempotency = useIdempotencyKeys();
+  type Variables = { change: MembershipChange; base: MembershipChangeBase };
+  const signatureOf = ({ change, base }: Variables) => JSON.stringify([bunchId, change, base]);
   return useMutation({
-    mutationFn: ({ change, base }: { change: MembershipChange; base: MembershipChangeBase }) => {
+    mutationFn: ({ change, base }: Variables) => {
       if (bunchId === undefined) throw new Error('번치를 아직 모릅니다.');
       switch (change.kind) {
         case 'role':
@@ -61,15 +64,23 @@ export const useChangeMembershipMutation = (bunchId: string | undefined) => {
         case 'remove':
           return removeMembership(bunchId, change.membershipId, base);
         case 'transfer':
-          return transferOwner(bunchId, change.membershipId, base, createIdempotencyKey());
+          return transferOwner(
+            bunchId,
+            change.membershipId,
+            base,
+            idempotency.keyFor(signatureOf({ change, base })),
+          );
       }
     },
-    onSuccess: () =>
-      Promise.all([
+    onError: (error, variables) => idempotency.settle(signatureOf(variables), error),
+    onSuccess: (_result, variables) => {
+      idempotency.settle(signatureOf(variables));
+      return Promise.all([
         queryClient.invalidateQueries({ queryKey: sharedKeys.bunchHomeScope(bunchId) }),
         queryClient.invalidateQueries({ queryKey: sharedKeys.bunchMembers(bunchId) }),
         queryClient.invalidateQueries({ queryKey: sharedKeys.myBunches() }),
-      ]),
+      ]);
+    },
   });
 };
 

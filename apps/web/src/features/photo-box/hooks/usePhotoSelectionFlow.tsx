@@ -114,6 +114,7 @@ export function usePhotoSelectionFlow({
   };
 
   // 실행 직전(확인 창의 확정 버튼 포함) 고른 사진이 목록에서 사라졌는지 확인하고, 사라졌으면 선택에서 빼고 중단
+  // 사라진 걸 알았으면 목록을 다시 받은 뒤 알림(다른 변화도 함께 맞춤, 3.3.1). 받기 실패는 20초 갱신에 맡김
   const isSelectionCurrent = () => {
     if (!photos) return false;
     const { selection: next, removedCount } = pruneSelection(
@@ -122,7 +123,10 @@ export function usePhotoSelectionFlow({
     );
     if (removedCount === 0) return true;
     setSelection(next);
-    notify(PHOTO_BOX_MESSAGES.selectionStale(removedCount));
+    void actions
+      .refreshPhotos()
+      .catch(() => undefined)
+      .then(() => notify(PHOTO_BOX_MESSAGES.selectionStale(removedCount)));
     return false;
   };
 

@@ -39,6 +39,7 @@ export function usePhotoBoxFixture(preview?: PhotoBoxPreview): UsePhotoBoxResult
       setPhotos((current) => current.filter((photo) => !ids.includes(photo.id)));
       return Promise.resolve({ removedCount: ids.length });
     },
+    refreshPhotos: () => Promise.resolve(),
   };
 
   return { state, actions, retry: () => undefined };

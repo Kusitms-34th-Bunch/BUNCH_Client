@@ -98,4 +98,6 @@ export type PhotoBoxActions = {
    * 여러 장은 전부 성공 또는 전부 실패라 실패하면 거절함
    */
   changePhotoDates: (_ids: readonly string[], _date: Date | null) => Promise<void>;
+  /** 사진 목록만 서버 기준으로 다시 받음(고른 사진이 사라진 걸 알았을 때 다른 변화도 함께 맞춤). 실패해도 거절하지 않음 */
+  refreshPhotos: () => Promise<void>;
 };

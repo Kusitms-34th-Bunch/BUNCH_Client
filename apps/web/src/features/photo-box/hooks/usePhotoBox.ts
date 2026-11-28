@@ -203,6 +203,9 @@ export function usePhotoBox(
       const { deletedCount } = await removeMutation.mutateAsync(ids);
       return { removedCount: deletedCount };
     },
+    refreshPhotos: async () => {
+      await Promise.all([datedQuery.refetch(), undatedQuery.refetch()]);
+    },
   };
 
   return { state, actions, retry, loadMore, refresh, moreErrorAt, stale };

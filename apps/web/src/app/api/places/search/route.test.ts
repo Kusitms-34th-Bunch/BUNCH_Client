@@ -5,6 +5,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { clearPlaceSearchCache } from './kakaoPlaces';
 import { GET } from './route';
 
+// 백엔드 로그인 확인은 placeSearchAuth.test.ts에서. 여기서는 결과만 바꿔 끼움
+const signedIn = vi.hoisted(() => vi.fn((_token: string) => Promise.resolve(true)));
+vi.mock('./placeSearchAuth', () => ({
+  isSignedIn: signedIn,
+  PlaceSearchAuthUnavailableError: class PlaceSearchAuthUnavailableError extends Error {},
+}));
+
 const context = { params: Promise.resolve({}) };
 
 const get = (query: string, cookie: string | null = 'accessToken=a-1') =>
@@ -158,6 +165,30 @@ describe('GET /api/places/search', () => {
     const response = await GET(get('?q=여의도', null), context);
 
     expect(response.status).toBe(401);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('쿠키는 있어도 백엔드가 인정하지 않는 토큰이면 카카오를 부르지 않고 401', async () => {
+    signedIn.mockResolvedValueOnce(false);
+    const fetchMock = kakaoResponse({ documents: [] }, { documents: [] });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const response = await GET(get('?q=한강', 'accessToken=forged'), context);
+
+    expect(response.status).toBe(401);
+    expect(signedIn).toHaveBeenCalledWith('forged');
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('로그인 확인이 일시 장애면 카카오를 부르지 않고 503', async () => {
+    const { PlaceSearchAuthUnavailableError } = await import('./placeSearchAuth');
+    signedIn.mockRejectedValueOnce(new PlaceSearchAuthUnavailableError());
+    const fetchMock = kakaoResponse({ documents: [] }, { documents: [] });
+    vi.stubGlobal('fetch', fetchMock);
+
+    const response = await GET(get('?q=한강'), context);
+
+    expect(response.status).toBe(503);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

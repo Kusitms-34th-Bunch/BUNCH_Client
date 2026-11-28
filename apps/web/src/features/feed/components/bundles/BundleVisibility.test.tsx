@@ -31,11 +31,13 @@ const managed = (canEdit: boolean) => ({
   permissions: { canEdit },
 });
 
+let lastClient: ReturnType<typeof createTestQueryClient>;
 const renderScreen = (bundleId = '1', bunchPrivate = false) => {
   const client = createTestQueryClient();
+  lastClient = client;
   client.setQueryData(sharedKeys.me(), { memberId: 'me', bunch: { id: '1', name: '여행가조' } });
   client.setQueryData(feedKeys.managed('1', bundleId, '1'), managed(bundleId === '1'));
-  render(<BundleVisibility bunchId="1" bundleId={bundleId} bunchPrivate={bunchPrivate} />, {
+  return render(<BundleVisibility bunchId="1" bundleId={bundleId} bunchPrivate={bunchPrivate} />, {
     wrapper: createQueryWrapper(client),
   });
 };
@@ -74,6 +76,41 @@ describe('BundleVisibility', () => {
     );
     expect(body).toEqual({ value: 'PUBLIC', expectedVersion: 3, mode: 'PUBLISHED' });
     expect(back.mock.calls.length + replace.mock.calls.length).toBe(1);
+  });
+
+  it('그사이 번들이 지워졌으면 지워진 상세로 돌아가지 않고 피드로 바꿔 가며, 떠날 때 그 번들 캐시를 비운다', async () => {
+    server.use(
+      http.put('/api/bunches/:bunchId/bundles/:id/visibility', () => fail(404, 'RESOURCE_001')),
+    );
+    const user = userEvent.setup();
+    const { unmount } = renderScreen();
+    lastClient.setQueryData(feedKeys.list('1'), {
+      pages: [
+        {
+          items: [
+            { type: 'BUNDLE', bundle: { id: 1 } },
+            { type: 'BUNDLE', bundle: { id: 2 } },
+          ],
+        },
+      ],
+      pageParams: [undefined],
+    });
+
+    await user.click(screen.getByRole('radio', { name: /전체 공개/ }));
+    await user.click(screen.getByRole('button', { name: '수정하기' }));
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/feed'));
+    expect(back).not.toHaveBeenCalled();
+    expect(toastAfterNavigation).toHaveBeenCalledWith('더 이상 볼 수 없는 번들이에요.');
+    // 떠 있는 동안은 남겨 두고(빈 상세를 다시 받아 깜빡이지 않게) 떠날 때 비움
+    expect(lastClient.getQueryData(feedKeys.managed('1', '1', '1'))).toBeDefined();
+    unmount();
+    expect(lastClient.getQueryData(feedKeys.managed('1', '1', '1'))).toBeUndefined();
+    // 피드 카드에서도 빠짐
+    const feed = lastClient.getQueryData<{ pages: { items: { bundle: { id: number } }[] }[] }>(
+      feedKeys.list('1'),
+    );
+    expect(feed?.pages[0]?.items.map((item) => item.bundle.id)).toEqual([2]);
   });
 
   it('그사이 권한을 잃었으면 알리고 화면에 남는다', async () => {

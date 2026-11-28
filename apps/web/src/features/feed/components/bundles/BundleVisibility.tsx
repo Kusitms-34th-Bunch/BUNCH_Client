@@ -2,6 +2,7 @@
 
 import { toast } from '@app/design-system';
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { apiErrorCode, isUnavailableTarget } from '@/shared/api/client/errorStatus';
 import { useBackOr } from '@/shared/hooks/useBackOr';
@@ -11,6 +12,7 @@ import { FEED_PATHS } from '../../constants/paths';
 import { useFeedViewer } from '../../hooks/useFeedViewer';
 import {
   managedBundleQueryOptions,
+  useForgetBundle,
   useSavePublishedVisibilityMutation,
 } from '../../queries/manageBundle';
 import { BundleVisibilityScreen, type BundleVisibilityState } from './BundleVisibilityScreen';
@@ -28,6 +30,16 @@ type BundleVisibilityProps = {
  */
 export function BundleVisibility({ bunchId, bundleId, bunchPrivate }: BundleVisibilityProps) {
   const backOr = useBackOr();
+  const router = useRouter();
+  // 그사이 지워진 번들의 캐시·피드 카드는 이 화면이 떠날 때 비움(떠 있는 동안 비우면 빈 상세를 다시 받아 안내가 깜빡임)
+  const forgetBundle = useForgetBundle(bundleId);
+  const gone = useRef(false);
+  useEffect(
+    () => () => {
+      if (gone.current) forgetBundle();
+    },
+    [forgetBundle],
+  );
   const { viewer, viewerFailed, viewerFetching, retryViewer } = useFeedViewer();
   const viewerId = viewer === undefined ? undefined : (viewer?.bunchId ?? null);
   const detail = useQuery(managedBundleQueryOptions(bunchId, bundleId, viewerId));
@@ -50,11 +62,12 @@ export function BundleVisibility({ bunchId, bundleId, bunchPrivate }: BundleVisi
   });
 
   // 저장 실패(6.2.15 로직): 권한을 잃었으면 알리고 다시 받아 볼 수 없다는 안내로, 그사이 지워졌으면 피드로
-  // 다른 곳에서 먼저 바꿔 버전이 어긋나면(BUNDLE_003) 최신 값을 다시 받고 고른 값은 둠
+  // 지워졌을 때 뒤로 가면 바로 앞의 지워진 상세라 피드로 바꿔 감(#604). 다른 곳에서 먼저 바꿔 버전이 어긋나면(BUNDLE_003) 최신 값을 다시 받고 고른 값은 둠
   const failSave = (error: unknown) => {
     const code = apiErrorCode(error);
     if (code === 'RESOURCE_001') {
-      backOr(FEED_PATHS.home);
+      gone.current = true;
+      router.replace(FEED_PATHS.home);
       toastAfterNavigation(text.bundleGone);
       return;
     }

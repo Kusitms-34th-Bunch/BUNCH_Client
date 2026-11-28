@@ -4,7 +4,7 @@ export const BUNCH_HOME_PATHS = {
   /** 번치 탭(페이지 전환 등록 이름) */
   home: APP_PATHS.bunch,
   /** 번치 탭을 「작성 중인 번들」 탭으로 엶(알림 4번 등, 5.12.2) */
-  homeDrafts: '/bunch?tab=drafts',
+  homeDrafts: APP_PATHS.bunchDrafts,
   /** 번들 만들기 멤버 선택 화면(번들 작성 흐름의 시작, 「+」·「첫 번들 만들기」에서 들어감) */
   createBundle: APP_PATHS.createBundle,
   /** 작성 중인 번들 공동 편집(작성) 화면(번치 홈 「작성 중인 번들」 카드에서 들어감) */
