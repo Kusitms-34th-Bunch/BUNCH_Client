@@ -40,9 +40,13 @@ const sideMenu = tv({
       'gap-s3 px-s3 py-s4 rounded-r2 flex h-12 w-full cursor-pointer items-center justify-between',
       // 윤곽은 바깥쪽: 선택 배경(#535A61) 안쪽에 그리면 brand 윤곽과 대비가 약 1.1:1로 보이지 않음
       'focus-visible:outline-border-brand focus-visible:outline-2 focus-visible:outline-offset-2',
+      // 선택·Hover 배경은 제자리에서 짧게 바뀜(150ms, 색 전환 곡선 ease, 2026-11-27 사용자 결정). 상태 전달용 색 전환이라 동작 줄이기에도 남김
+      // 초점 윤곽 색은 전환하지 않게 글자·배경 색만
+      'transition-[color,background-color] duration-150 ease-[ease]',
     ],
-    icon: 'inline-flex shrink-0',
-    label: 'typography-body-2-medium min-w-0 truncate',
+    // 글자·아이콘 색도 배경과 같은 시간에 바뀜
+    icon: 'inline-flex shrink-0 transition-colors duration-150 ease-[ease]',
+    label: 'typography-body-2-medium min-w-0 truncate transition-colors duration-150 ease-[ease]',
   },
   variants: {
     selected: {

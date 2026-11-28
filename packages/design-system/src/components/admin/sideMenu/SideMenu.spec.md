@@ -65,6 +65,11 @@
 - 허용되는 dependency: `tailwind-variants`, `core`의 `ColorBadge`.
 - Storybook state matrix: `Default`, `Selected`, `WithoutCount`, `LongLabel`, `Menu`(여러 항목, 누르면 이동하지 않고 선택만 바뀜). story는 링크 기본 동작을 막아 Storybook 화면이 이동하지 않음.
 
+## 모션
+
+- 선택·Hover 배경과 글자·아이콘 색은 제자리에서 150ms로 바뀐다(색 전환 곡선 `ease`, 2026-11-27 사용자 결정). 선택 배경이 항목 사이를 미끄러지는 방식은 화면 전체가 바뀌는 메뉴라 시선이 배경에 쏠려 쓰지 않았다.
+- 동작 줄이기: 상태를 알리는 색 전환이라 그대로 둔다(motion.md 「접근성」).
+
 ## 확인할 항목
 
 - 배지 컴포넌트 위치 (확정): `ColorBadge`를 `web`에서 `core`로 옮겨 쓴다(2026-11-27 사용자).

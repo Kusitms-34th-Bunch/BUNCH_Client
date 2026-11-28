@@ -31,9 +31,18 @@ export const TabList = ({
     <Tabs.List
       {...labelProps}
       activateOnFocus={activateOnFocus}
-      className={cn('flex items-end', className)}
+      className={cn('relative flex items-end', className)}
     >
       {children}
+      {/* 선택 선(Figma 2px border-brand)은 하나를 선택된 탭 위치로 옮김(web MenuTabs와 같은 250ms ease-out, 2026-11-27 사용자 결정) */}
+      <Tabs.Indicator
+        className={cn(
+          'bg-border-brand pointer-events-none absolute bottom-0 left-(--active-tab-left) h-0.5 w-(--active-tab-width)',
+          'transition-[left,width] duration-250 ease-out motion-reduce:transition-none',
+          // 강제 색상 모드는 배경색을 덮으므로 시스템 글자색으로 그림
+          'forced-colors:bg-[CanvasText] forced-colors:forced-color-adjust-none',
+        )}
+      />
     </Tabs.List>
   </Tabs.Root>
 );
