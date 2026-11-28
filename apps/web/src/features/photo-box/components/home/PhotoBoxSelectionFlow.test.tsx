@@ -42,10 +42,12 @@ vi.mock('@/shared/bridge/client', () => ({
 
 const savePhotos = vi.fn<PhotoBoxActions['savePhotos']>();
 const deletePhotos = vi.fn<PhotoBoxActions['deletePhotos']>();
+const refreshPhotos = vi.fn<PhotoBoxActions['refreshPhotos']>(() => Promise.resolve());
 const actions: PhotoBoxActions = {
   savePhotos,
   deletePhotos,
   changePhotoDates: () => Promise.resolve(),
+  refreshPhotos,
 };
 
 const ready = (data: PhotoBoxData = photoBoxFixture): PhotoBoxState => ({ kind: 'ready', data });
@@ -488,7 +490,7 @@ describe('삭제', () => {
 });
 
 describe('선택 중 사진이 사라진 경우', () => {
-  it('실행하지 않고 선택에서 뺀 뒤 안내하며 선택 모드는 유지한다', async () => {
+  it('실행하지 않고 선택에서 뺀 뒤 목록을 다시 받고 안내하며 선택 모드는 유지한다', async () => {
     const user = userEvent.setup();
     const { rerender } = renderScreen(ready(dataWith(bulk(3))));
     await startSelecting(user, 3);
@@ -501,10 +503,18 @@ describe('선택 중 사진이 사라진 경우', () => {
         currentYear={2026}
       />,
     );
+    // 다시 받기가 끝나기 전에는 안내하지 않음
+    let finishRefresh = () => {};
+    refreshPhotos.mockImplementationOnce(
+      () => new Promise<void>((resolve) => (finishRefresh = resolve)),
+    );
     await runMenu(user, '저장');
 
     expect(savePhotos).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.selectionStale(1));
+    expect(refreshPhotos).toHaveBeenCalledTimes(1);
+    expect(toast).not.toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.selectionStale(1));
+    finishRefresh();
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.selectionStale(1)));
     expect(screen.getByRole('button', { name: '취소' })).toBeTruthy();
     expect(screen.getByRole('radio', { name: '전체 (2)' })).toBeTruthy();
     expect(photoButtons()[0]!.textContent).toContain('1번째 선택');
@@ -627,7 +637,7 @@ describe('관리자 삭제와 확인 창 시점의 사라진 사진', () => {
     );
 
     expect(deletePhotos).not.toHaveBeenCalled();
-    expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.selectionStale(1));
+    await waitFor(() => expect(toast).toHaveBeenCalledWith(PHOTO_BOX_MESSAGES.selectionStale(1)));
     expect(screen.getByRole('button', { name: '취소' })).toBeTruthy();
   });
 });

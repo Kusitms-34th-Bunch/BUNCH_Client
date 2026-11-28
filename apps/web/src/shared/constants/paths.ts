@@ -4,6 +4,8 @@ export const APP_PATHS = {
   feed: '/feed',
   photos: '/photos',
   bunch: '/bunch',
+  /** 번치 홈의 「작성 중인 번들」 탭 */
+  bunchDrafts: '/bunch?tab=drafts',
   my: '/my',
   login: '/login',
   createBunch: '/onboarding/create',

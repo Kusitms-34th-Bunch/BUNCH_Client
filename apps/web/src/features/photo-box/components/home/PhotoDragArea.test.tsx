@@ -38,6 +38,7 @@ const changePhotoDates = vi.fn<PhotoBoxActions['changePhotoDates']>();
 const actions: PhotoBoxActions = {
   savePhotos: (ids) => Promise.resolve({ savedIds: ids, failedIds: [] }),
   deletePhotos: () => Promise.resolve({ removedCount: 0 }),
+  refreshPhotos: () => Promise.resolve(),
   changePhotoDates,
 };
 const onToggle = vi.fn<(_photoId: string) => void>();

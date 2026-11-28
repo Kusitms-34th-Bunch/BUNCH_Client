@@ -32,7 +32,7 @@ describe('DraftMissingGate', () => {
     expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
   });
 
-  it('삭제된 번들이면 「번들이 삭제됐어요」를 안내하고 「확인」을 눌러야 번치 홈으로 이동한다', async () => {
+  it('삭제된 번들이면 「번들이 삭제됐어요」를 안내하고 「확인」을 눌러야 번치 홈의 작성 중인 번들 탭으로 이동한다', async () => {
     state = { kind: 'missing', reason: 'deleted' };
     render(<DraftMissingGate draftId="9">{null}</DraftMissingGate>);
 
@@ -45,7 +45,7 @@ describe('DraftMissingGate', () => {
     expect(replace).not.toHaveBeenCalled();
 
     await userEvent.click(within(dialog).getByRole('button', { name: '확인' }));
-    expect(replace).toHaveBeenCalledWith('/bunch');
+    expect(replace).toHaveBeenCalledWith('/bunch?tab=drafts');
   });
 
   it('발행자 닉네임이 있으면 「{닉네임}님이 번들을 업로드해…」로 안내한다', async () => {

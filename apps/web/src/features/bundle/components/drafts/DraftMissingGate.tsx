@@ -10,7 +10,7 @@ import { BUNDLE_PATHS } from '../../constants/paths';
 import { useDraftContext } from '../../contexts/draftContext';
 
 /**
- * 삭제·다른 멤버 업로드로 편집할 수 없을 때 안내 창(Figma `5618:81986`·`81997`). 「확인」만 있고 업로드면 그 번들 상세, 삭제면 번치 홈으로 이동
+ * 삭제·다른 멤버 업로드로 편집할 수 없을 때 안내 창(Figma `5618:81986`·`81997`). 「확인」만 있고 업로드면 그 번들 상세, 삭제면 번치 홈의 「작성 중인 번들」 탭으로 이동
  * 창이 떠 있는 동안 아래 화면은 그리지 않음(준비 전 화면의 로딩 덮개가 창을 덮어 「확인」이 눌리지 않던 문제)
  */
 type DraftMissingGateProps = {
@@ -27,8 +27,9 @@ export function DraftMissingGate({ draftId, children }: DraftMissingGateProps) {
   const missing = state.kind === 'missing' ? state : undefined;
   const published = missing?.reason === 'published';
   const bunchId = profile?.bunch?.id;
-  const target =
-    published && bunchId && draftId
+  const target = !published
+    ? BUNDLE_PATHS.bunchHomeDrafts
+    : bunchId && draftId
       ? BUNDLE_PATHS.publishedDetail(bunchId, draftId)
       : BUNDLE_PATHS.bunchHome;
 
