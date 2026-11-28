@@ -42,5 +42,5 @@ apps/web은 Next.js Route Handler(`src/app/api/*/route.ts`)를 BFF로 써서 브
 - 화면용 집계는 기본으로 두지 않는다. 요청이 서로 의존해 느리거나(측정으로 확인), 필요 없는 큰 데이터·민감한 필드를 걸러야 할 때만 더한다. 묶은 응답은 TanStack Query의 데이터 단위 무효화를 어렵게 만든다.
 - 집계가 필요하면 가벼운 순서로 고른다: ① 백엔드에 화면용 API 요청 ② Server Component에서 `serverClient`로 병렬 호출(Route Handler를 거치지 않음) ③ 브라우저에서 다시 불러야 하는 조합만 전용 Route Handler(`createAuthorizedRoute`).
 - 백엔드를 부르지 않는 웹 정책 판정도 전용 Route Handler로 둔다: 앱 업데이트 필요 여부(`GET /api/app-version`, #577)는 인증 없이 받고 envelope 없이 `{ updateRequired }`를 60초 공개 캐시로 돌려준다(응답이 URL에만 달려 있고 개인 정보가 없음).
-- 외부 API를 대신 부르는 전용 Route Handler(위치 검색 `GET /api/places/search`)는 호출 남용을 막으려고 사용자(토큰 해시)·IP별 호출 제한과 같은 검색어의 동시 요청 합치기를 둔다(`src/shared/api/server/rateLimit.ts`, 근거는 결정 기록 027). 서버 인스턴스마다 따로 세는 최선 노력 제한이라 다중 인스턴스에서는 정확한 상한이 아니다.
+- 외부 API를 대신 부르는 전용 Route Handler(위치 검색 `GET /api/places/search`)는 access 쿠키가 있는지만 보지 않고, 카카오를 부르기 전에 그 토큰으로 백엔드 `GET api/v1/members/me`를 확인한다(401이면 401, 403처럼 명세에 뜻이 없는 거절과 백엔드 장애는 503, 다시 보내지 않음). 성공만 토큰 해시 기준으로 1분 기억해 입력할 때마다 백엔드를 부르지 않는다(`app/api/places/search/placeSearchAuth.ts`, #604). 쿠키 존재만 보면 아무 값으로도 서버 키의 카카오 API를 쓸 수 있었다. 또 호출 남용을 막으려고 사용자(토큰 해시)·IP별 호출 제한과 같은 검색어의 동시 요청 합치기를 둔다(`src/shared/api/server/rateLimit.ts`, 근거는 결정 기록 027). 서버 인스턴스마다 따로 세는 최선 노력 제한이라 다중 인스턴스에서는 정확한 상한이 아니다.
 - 이 BFF는 화면 데이터 집계보다 토큰을 브라우저에서 떼어 내는 인증 경계가 주 역할이다(백엔드가 쿠키를 쓰지 않고 CORS가 꺼져 있음). 비즈니스 로직은 두지 않는다.

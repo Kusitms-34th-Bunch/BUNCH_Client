@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAuthorizedRoute } from '@/shared/api/server/createAuthorizedRoute';
 import { PlaceSearchUnavailableError, searchKakaoPlaces } from './kakaoPlaces';
+import { isSignedIn, PlaceSearchAuthUnavailableError } from './placeSearchAuth';
 import { checkPlaceSearchRate } from './placeSearchLimit';
 
 // 검색어는 두 글자부터(기능 합의), 지나치게 긴 입력은 카카오로 보내지 않음
@@ -20,6 +21,22 @@ export const GET = createAuthorizedRoute(async ({ request, accessToken }) => {
     return NextResponse.json(
       { message: '잠시 후 다시 검색해 주세요.', code: 'BFF_RATE_LIMITED' },
       { status: 429, headers: { 'Cache-Control': 'no-store', 'Retry-After': String(retryAfter) } },
+    );
+  }
+
+  // 쿠키가 있는지만 보지 않고 백엔드가 인정하는 토큰인지 확인(호출 수 제한 뒤라 가짜 토큰 반복도 제한에 걸림)
+  try {
+    if (!(await isSignedIn(accessToken))) {
+      return NextResponse.json(
+        { message: '인증이 필요합니다', code: 'BFF_UNAUTHENTICATED' },
+        { status: 401, headers: { 'Cache-Control': 'no-store' } },
+      );
+    }
+  } catch (error) {
+    if (!(error instanceof PlaceSearchAuthUnavailableError)) throw error;
+    return NextResponse.json(
+      { message: '장소 검색을 사용할 수 없습니다.', code: 'BFF_PLACE_SEARCH_UNAVAILABLE' },
+      { status: 503, headers: { 'Cache-Control': 'no-store' } },
     );
   }
 

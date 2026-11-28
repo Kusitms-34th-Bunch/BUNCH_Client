@@ -40,6 +40,7 @@ import { PhotoUploadStatus } from './PhotoUploadStatus';
 const noopActions: PhotoBoxActions = {
   savePhotos: (ids) => Promise.resolve({ savedIds: ids, failedIds: [] }),
   deletePhotos: () => Promise.resolve({ removedCount: 0 }),
+  refreshPhotos: () => Promise.resolve(),
   changePhotoDates: () => Promise.resolve(),
 };
 

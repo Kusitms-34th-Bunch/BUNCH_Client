@@ -13,6 +13,8 @@ export const BUNDLE_PATHS = {
   publishedDetail: (bunchId: string, bundleId: string) => `/bunches/${bunchId}/bundles/${bundleId}`,
   /** 번치 홈(나가기·이탈 뒤 돌아갈 곳) */
   bunchHome: APP_PATHS.bunch,
+  /** 번치 홈의 「작성 중인 번들」 탭(삭제된 초안을 알린 뒤 다른 초안을 이어 쓰게) */
+  bunchHomeDrafts: APP_PATHS.bunchDrafts,
   /** 공동 편집(작성) 화면 */
   draft: (draftId: string) => `/bunch/drafts/${draftId}`,
   /** 대표 사진 투표(「마음에 드는 사진을 픽해보세요」) 화면 */

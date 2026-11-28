@@ -8,9 +8,9 @@ import {
 } from '@tanstack/react-query';
 import { useEffect, useRef } from 'react';
 import type { MyBunches } from '@/shared/api/myBunches';
-import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { toDomainId } from '@/shared/api/client/ids';
 import { getMyProfile, toMyBunch } from '@/shared/api/myProfile';
+import { useIdempotencyKeys } from '@/shared/hooks/useIdempotencyKeys';
 import { sharedKeys } from '@/shared/query/keys';
 import { myProfileQueryOptions } from '@/shared/query/myProfile';
 import { writeLocalOnly } from '@/shared/query/nativeTabSync';
@@ -259,17 +259,22 @@ export const useDeleteBunchNoticeMutation = () => {
  */
 export const useUpdateBunchProfileMutation = (bunchId: string | undefined) => {
   const queryClient = useQueryClient();
+  const idempotency = useIdempotencyKeys();
+  const signatureOf = (input: UpdateBunchProfileInput) => JSON.stringify([bunchId, input]);
   return useMutation({
     mutationFn: (input: UpdateBunchProfileInput) => {
       if (bunchId === undefined) throw new Error('편집할 번치를 아직 모릅니다.');
-      return updateBunchProfile(bunchId, input, createIdempotencyKey());
+      return updateBunchProfile(bunchId, input, idempotency.keyFor(signatureOf(input)));
     },
-    onSuccess: () =>
-      Promise.all([
+    onError: (error, input) => idempotency.settle(signatureOf(input), error),
+    onSuccess: (_result, input) => {
+      idempotency.settle(signatureOf(input));
+      return Promise.all([
         queryClient.invalidateQueries({ queryKey: sharedKeys.bunchHomeScope(bunchId) }),
         queryClient.invalidateQueries({ queryKey: sharedKeys.me() }),
         queryClient.invalidateQueries({ queryKey: sharedKeys.myBunches() }),
-      ]),
+      ]);
+    },
   });
 };
 

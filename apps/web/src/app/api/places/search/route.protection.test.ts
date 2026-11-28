@@ -10,6 +10,13 @@ import {
 } from './placeSearchLimit';
 import { GET } from './route';
 
+// 백엔드 로그인 확인은 placeSearchAuth.test.ts에서. 여기서는 결과만 바꿔 끼움
+const signedIn = vi.hoisted(() => vi.fn((_token: string) => Promise.resolve(true)));
+vi.mock('./placeSearchAuth', () => ({
+  isSignedIn: signedIn,
+  PlaceSearchAuthUnavailableError: class PlaceSearchAuthUnavailableError extends Error {},
+}));
+
 // 위치 검색 BFF의 남용 방지: 사용자·IP별 호출 제한과 같은 검색어의 동시 요청 합치기
 
 const context = { params: Promise.resolve({}) };

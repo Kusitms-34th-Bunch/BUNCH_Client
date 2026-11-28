@@ -85,13 +85,13 @@ export const useRefreshEditedBundle = (bundleId: string) => {
   }, [queryClient, bundleId]);
 };
 
-/** 그 번들의 상세·댓글·공개 범위 캐시를 비움(지운 번들에 다시 들어오면 서버가 없음을 알리게) */
+/** 그 번들의 상세·댓글·공개 범위 캐시를 비우고 피드 카드도 뺌(지운·볼 수 없는 번들에 다시 들어오면 서버가 없음을 알리게) */
 export const useForgetBundle = (bundleId: string) => {
   const queryClient = useQueryClient();
-  return useCallback(
-    () => queryClient.removeQueries({ queryKey: feedKeys.bundle(bundleId) }),
-    [queryClient, bundleId],
-  );
+  return useCallback(() => {
+    queryClient.removeQueries({ queryKey: feedKeys.bundle(bundleId) });
+    dropFromFeed(queryClient, bundleId);
+  }, [queryClient, bundleId]);
 };
 
 /**
