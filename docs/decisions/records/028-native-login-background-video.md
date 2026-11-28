@@ -16,7 +16,7 @@
 ## 결정
 
 - iOS 쉘 첫 화면(`app/index.tsx`)에서는 로그인 배경 영상을 쉘이 `expo-video`로 WebView 뒤에 그린다. 영상 파일은 앱에 넣어 네트워크 없이 재생한다.
-- 웹은 로그인 화면에 들어오면 bridge `setNativeLoginBackground(true)`로 요청한다. 쉘이 `true`를 돌려주면 웹은 자기 영상·첫 프레임·바탕을 빼고 버튼만 그린다. 이 표식(`data-app-background="login-video"`)이 있으면 바깥 틀(`AppFrame`)·화면 전환 틀(`AppTransitions`)·로그인 route 틀의 흰 바탕도 비우고, 겹침(검정 그라데이션)은 `AppFrame`이 Safe Area까지 그린다(#605, 화면 안에 두면 디졸브 중 WebKit이 위아래 Safe Area를 잘라 그림). 표식은 로그인 화면이 쉘의 `true`를 받았을 때만 붙어 다른 화면·브라우저는 그대로 흰 바탕이다.
+- 웹은 로그인 화면에 들어오면 bridge `setNativeLoginBackground(true)`로 요청한다. 쉘이 `true`를 돌려주면 웹은 자기 영상·첫 프레임·바탕을 빼고 버튼만 그린다. 이 표식(`data-app-background="login-video"`)이 있으면 바깥 틀(`AppFrame`)·화면 전환 틀(`AppTransitions`)·로그인 route 틀의 흰 바탕도 비우고, 겹침(검정 그라데이션)은 `AppFrame`이 Safe Area까지 그린다(#605, 화면 안에 두면 디졸브 중 WebKit이 위아래 Safe Area를 잘라 그림). 표식은 로그인 화면이 쉘의 `true`를 받았을 때만 붙고, 표식이 없는 화면·브라우저는 각자의 기존 배경(인트로의 `brand` 등)을 그대로 쓴다. 로그인 화면이 떠날 때는 겹침과 바탕이 함께 바로 바뀐다(겹침만 먼저 빠져 영상이 밝게 비치지 않게).
 - 쉘이 답하기 전에는 웹이 첫 프레임만 보인다. `false`·오류·1초 무응답(이 메서드가 없는 이전 쉘)이면 웹 영상을 쓴다. 탭 화면 WebView·안드로이드·브라우저도 웹 영상을 쓴다.
 - 동작 줄이기 설정이면 웹은 영상을 요청하지 않고 첫 프레임만 둔다.
 - 화면을 떠나면 웹이 `false`로 영상을 걷는다. 웹이 정리 신호를 보내지 못하는 경우(새 문서 로드, 탭 화면으로 전환)를 위해 쉘도 첫 화면 WebView가 새 문서를 불러오기 시작할 때와 첫 화면이 사라질 때 영상을 걷는다.

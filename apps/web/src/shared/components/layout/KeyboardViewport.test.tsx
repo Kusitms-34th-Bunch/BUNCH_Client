@@ -297,6 +297,75 @@ describe('KeyboardViewport', () => {
     expect(main.scrollTop).toBe(480 - 250 + 16);
   });
 
+  it('열리는 동안 본문이 아직 줄지 않아도 미리 스크롤할 수 있게 아래 여백을 줄어들 만큼 늘렸다가, 높이를 줄인 뒤 되돌림', async () => {
+    vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
+    try {
+      const viewport = stubViewport(window.innerHeight);
+      const { container } = render(
+        <main style={{ paddingBottom: '8px' }}>
+          <textarea aria-label="소개" />
+          <KeyboardViewport />
+        </main>,
+      );
+      const main = container.querySelector('main')!;
+      container.querySelector('textarea')!.focus();
+
+      viewport.height = window.innerHeight - 300;
+      act(() => void viewport.dispatchEvent(new Event('resize')));
+      expect(main.style.paddingBottom).toBe('308px');
+
+      await act(() => vi.advanceTimersByTimeAsync(320));
+      expect(main.style.paddingBottom).toBe('8px');
+
+      // 열리는 도중 입력란을 벗어나 닫혀도 늘린 여백을 되돌림
+      viewport.height = window.innerHeight;
+      act(() => void viewport.dispatchEvent(new Event('resize')));
+      await act(() => vi.advanceTimersByTimeAsync(320));
+      container.querySelector('textarea')!.focus();
+      viewport.height = window.innerHeight - 300;
+      act(() => void viewport.dispatchEvent(new Event('resize')));
+      expect(main.style.paddingBottom).toBe('308px');
+      act(() => container.querySelector('textarea')!.blur());
+      expect(main.style.paddingBottom).toBe('8px');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('키보드가 열린 채 다른 입력란으로 옮기면 그 입력란만큼만 스크롤함(rAF 시각을 축소량으로 받지 않음)', async () => {
+    vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
+    try {
+      const viewport = stubViewport(window.innerHeight);
+      const { container } = render(
+        <main>
+          <input aria-label="이름" />
+          <textarea aria-label="소개" />
+          <KeyboardViewport />
+        </main>,
+      );
+      const main = container.querySelector('main')!;
+      const [first, second] = [...container.querySelectorAll<HTMLElement>('input, textarea')];
+      first!.focus();
+      viewport.height = window.innerHeight - 300;
+      act(() => void viewport.dispatchEvent(new Event('resize')));
+      await act(() => vi.advanceTimersByTimeAsync(320));
+
+      // 다 열린 본문(아래 경계 400) 안에 이미 보이는 입력란
+      vi.spyOn(main, 'getBoundingClientRect').mockReturnValue({ top: 0, bottom: 400 } as DOMRect);
+      vi.spyOn(second!, 'getBoundingClientRect').mockReturnValue({
+        top: 300,
+        bottom: 360,
+      } as DOMRect);
+      main.scrollTop = 0;
+      act(() => second!.focus());
+      await act(() => vi.advanceTimersByTimeAsync(20));
+
+      expect(main.scrollTop).toBe(0);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('열림이 끝나 본문이 줄어도 시작할 때 이미 보이게 했으면 다시 스크롤하지 않음', async () => {
     vi.useFakeTimers({ toFake: ['requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });
     try {

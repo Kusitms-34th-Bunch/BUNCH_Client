@@ -69,12 +69,25 @@ export function KeyboardViewport() {
     const lift = (offset: number) => {
       for (const element of lifted) element.style.transform = `translate3d(0, ${offset}px, 0)`;
     };
+    // 열리는 동안 본문을 미리 스크롤할 수 있게 줄어들 만큼 임시로 늘린 아래 여백(높이를 줄인 뒤 걷음)
+    let roomed: { main: HTMLElement; previous: string } | null = null;
+    const makeRoom = (shrink: number) => {
+      const active = document.activeElement;
+      if (!(active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement)) return;
+      const main = active.closest('main');
+      if (!main) return;
+      roomed = { main, previous: main.style.paddingBottom };
+      const current = Number.parseFloat(getComputedStyle(main).paddingBottom) || 0;
+      main.style.paddingBottom = `${current + shrink}px`;
+    };
     const land = () => {
       for (const element of lifted) {
         element.style.transform = '';
         element.style.willChange = '';
       }
       lifted = [];
+      if (roomed) roomed.main.style.paddingBottom = roomed.previous;
+      roomed = null;
     };
     // 높이는 한 번만 바꾸고 아래 영역은 지금 보이는 자리에서 transform으로 따라감(FLIP, 매 프레임 높이를 바꾸면 끊김, #605)
     // 줄어들 때는 끝에(본문 아래가 키보드보다 먼저 잘리지 않게), 늘어날 때는(닫힘·낮아진 키보드) 먼저 바꿈
@@ -103,7 +116,11 @@ export function KeyboardViewport() {
       for (const element of lifted) element.style.willChange = 'transform';
       lift(start);
       // 본문 안 입력란이 열림 내내 키보드 뒤에 있다가 끝에 튀지 않게 줄어들 만큼 미리 스크롤
-      if (!grow) revealFocused(-end);
+      // 본문이 아직 줄지 않아 스크롤할 범위가 없을 수 있어 그만큼 아래 여백을 먼저 늘림
+      if (!grow) {
+        makeRoom(-end);
+        revealFocused(-end);
+      }
       const startedAt = performance.now();
       const step = (now: number) => {
         const progress = Math.min(1, (now - startedAt) / duration);
@@ -171,7 +188,8 @@ export function KeyboardViewport() {
       }
       if (!root.hasAttribute('data-keyboard-open')) return;
       cancelAnimationFrame(frame);
-      frame = requestAnimationFrame(revealFocused);
+      // rAF가 넘기는 시각을 축소량으로 받지 않게 감쌈
+      frame = requestAnimationFrame(() => revealFocused());
     };
     // iOS 쉘은 키보드가 움직이기 직전 덮는 높이·시간을 알려 줌(늦게 오는 보이는 높이 대신 이 값으로 같은 시간에 시작)
     // 쓸어 닫기처럼 초점이 그대로인 닫힘도 잡음. 이전 쉘·브라우저는 알림이 없어 보이는 높이·초점으로 맞춤
