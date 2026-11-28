@@ -3,7 +3,7 @@
 
 import { toast } from '@app/design-system';
 import { FloatingButton, PhotoUploadSheet } from '@app/design-system/web';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { FloatingButtonToastAnchor } from '@/shared/components/layout/FloatingButtonToastAnchor';
 import { HideMainTabBar } from '@/shared/components/layout/HideMainTabBar';
 import { PageShell } from '@/shared/components/layout/PageShell';
@@ -134,15 +134,12 @@ export function PhotoBoxScreen({
   const { selecting, selection } = flow;
   const busy = flow.busy || dragMoving;
 
-  const { sections, undated } = useMemo(
-    () => splitPhotos(photos ? filterByMember(photos, memberId) : [], currentYear),
-    [photos, memberId, currentYear],
+  const { sections, undated } = splitPhotos(
+    photos ? filterByMember(photos, memberId) : [],
+    currentYear,
   );
 
-  const selectedCounts = useMemo(
-    () => (selecting && photos ? countSelectedByMember(selection, photos) : undefined),
-    [selecting, selection, photos],
-  );
+  const selectedCounts = selecting && photos ? countSelectedByMember(selection, photos) : undefined;
 
   const handleToggle = (photoId: string) => {
     flow.toggle(photoId);

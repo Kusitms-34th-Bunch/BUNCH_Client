@@ -1,17 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Button } from '../../core/button';
 import { ChipButton } from '../chipButton';
-import { ProfileListItem } from './ProfileListItem';
+import { ProfileListItem, type ProfileListItemProps } from './ProfileListItem';
 
 const meta = {
   title: 'Web/ListItem/ProfileListItem',
   component: ProfileListItem,
   args: { name: '은우링링링' },
   decorators: [(Story) => <div className="w-85.75">{Story()}</div>],
-} satisfies Meta<typeof ProfileListItem>;
+} satisfies Meta<ProfileListItemProps>;
 
 export default meta;
-type Story = StoryObj<typeof meta>;
+// 오른쪽은 더보기(onMore)와 action 중 하나만이라 props 유니언으로 story를 씀
+type Story = StoryObj<ProfileListItemProps>;
 
 export const Default: Story = { args: { onMore: () => {} } };
 

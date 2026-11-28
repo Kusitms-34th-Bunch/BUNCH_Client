@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { reportApiError } from '@/shared/lib/reportApiError';
 import type { BundleDetail } from '../model/bundle';
 import {
@@ -86,20 +86,20 @@ export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
     };
   }, [state, bundleId, attempt]);
 
-  const retry = useCallback(() => {
+  const retry = () => {
     setFailed(false);
     setAttempt((count) => count + 1);
-  }, []);
+  };
 
-  const reset = useCallback(() => {
+  const reset = () => {
     // 병합하지 않고 서버 문서로만 다시 불러오게 함(저장하지 못한 로컬 입력과 보류한 변경을 모두 버림)
     bundleRef.current = undefined;
     heldRef.current = false;
     forceRef.current = true;
     setAttempt((count) => count + 1);
-  }, []);
+  };
 
-  const edit = useCallback((next: string) => {
+  const edit = (next: string) => {
     const doc = docRef.current;
     if (!doc) return false;
     // 화면에 보이던 문서에 입력을 반영하고 병합 문서에 합침(보류한 원격 변경은 그대로 남음)
@@ -108,20 +108,17 @@ export function useTitleCrdt(detail: BundleDetail | undefined): TitleCrdt {
     docRef.current = heldRef.current ? mergeTitleDocs(doc, view) : view;
     setText(next);
     return true;
-  }, []);
+  };
 
-  const serialize = useCallback(
-    () => (docRef.current ? saveTitleDoc(docRef.current) : undefined),
-    [],
-  );
+  const serialize = () => (docRef.current ? saveTitleDoc(docRef.current) : undefined);
 
-  const setComposing = useCallback((composing: boolean) => {
+  const setComposing = (composing: boolean) => {
     composingRef.current = composing;
     if (composing || !heldRef.current || !docRef.current) return;
     heldRef.current = false;
     viewRef.current = docRef.current;
     setText(titleText(docRef.current));
-  }, []);
+  };
 
   return {
     text,

@@ -29,7 +29,7 @@
 ## 상태와 동작
 
 - Default: 배경 `surface-secondary`, 원형 배경 흰색.
-- Pressed(`:active`): 카드와 원형 배경에 각각 `overlay-hover`(10%)를 배경 층으로 깐다. 아이콘·글자는 어두워지지 않는다. 75ms Ease Out 전환(동작 줄이기에서는 끔).
+- Pressed(`:active`): 카드와 원형 배경에 각각 `overlay-hover`(10%)를 배경 층으로 깐다. 아이콘·글자는 어두워지지 않는다. 공통 `press-overlay`로 150ms `cubic-bezier(0, 0, 0.15, 1)` 전환(동작 줄이기에서는 끔).
 - 크기: 높이 최소 82px(Figma 고정 82px), 폭은 부모를 채운다(Figma 343px). 좌우 안쪽 여백 14px, 아이콘 원과 글자 사이 10px, 제목과 설명 사이 2px, radius 8px. 원은 안쪽 여백 10px에 24px 아이콘이라 44px다.
 - 긴 글자: 단어 단위로 줄바꿈(`break-keep`, 한 단어가 넘치면 그 안에서 끊김)해서 카드 높이가 늘어난다(제안, Figma는 한 줄만 정의하고 `word-break: break-word`로 그려져 있다). 저장소의 한글 카피 컴포넌트(`PageHeader`, `Dialog`)와 같은 방식이다.
 

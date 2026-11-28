@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import { BundleEditPhotoViewer } from '@/features/bundle/components';
 import { usePhotoBox } from '@/features/photo-box/hooks/usePhotoBox';
 
@@ -13,22 +12,18 @@ type BundleEditPhotoViewerRouteProps = {
 export function BundleEditPhotoViewerRoute({ photoId }: BundleEditPhotoViewerRouteProps) {
   const { state } = usePhotoBox();
   const data = state.kind === 'ready' ? state.data : undefined;
-  const sources = useMemo(
-    () =>
-      data
-        ? new Map(
-            data.photos.map((photo) => [
-              photo.id,
-              {
-                takenAt: photo.takenAt,
-                uploaderIds: photo.uploaderIds,
-                aspectRatio: photo.aspectRatio,
-              },
-            ]),
-          )
-        : undefined,
-    [data],
-  );
+  const sources = data
+    ? new Map(
+        data.photos.map((photo) => [
+          photo.id,
+          {
+            takenAt: photo.takenAt,
+            uploaderIds: photo.uploaderIds,
+            aspectRatio: photo.aspectRatio,
+          },
+        ]),
+      )
+    : undefined;
   // 사진함 데이터는 보조 정보라 기다리지 않고 화면을 먼저 보임
   return (
     <BundleEditPhotoViewer

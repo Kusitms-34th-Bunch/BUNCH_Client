@@ -10,8 +10,8 @@ Line 37종·Fill 12종, 아이콘 49종을 크기별 SVG(small·medium·large, �
 
 ## Public API
 
-- 고정 크기: `LineSearchSmallIcon`·`LineSearchMediumIcon`·`LineSearchLargeIcon`처럼 크기별 named export 144개. `Omit<IconProps, 'size'>`를 받으며 다른 크기 도형을 import하지 않는다.
-- 동적 크기: `LineSearchIcon`, `FillCircleCheckIcon` 등 기존 named export 48개. 고정 크기가 아닌 경우에 사용한다.
+- 고정 크기: `LineSearchSmallIcon`·`LineSearchMediumIcon`·`LineSearchLargeIcon`처럼 크기별 named export 147개. `Omit<IconProps, 'size'>`를 받으며 다른 크기 도형을 import하지 않는다.
+- 동적 크기: `LineSearchIcon`, `FillCircleCheckIcon` 등 기존 named export 49개. 고정 크기가 아닌 경우에 사용한다.
 - `size?: 'sm' | 'md' | 'lg'`(기본 `md`). `sm` 16×16, `md` 20×20, `lg` 24×24이고 크기마다 Figma가 그린 도형·viewBox·선 굵기를 쓴다. `size`는 `Button`의 `sm`·`md`·`lg`와 같은 이름이다. 공개 타입 `IconSize`, `IconProps`.
 - React SVG props, `className`, `ref` 전달. 색은 부모의 `color` 상속.
 - 별도 상태·이벤트 prop을 두지 않는다. 클릭·키보드·터치 영역은 호출자의 button/link 책임.
@@ -25,7 +25,6 @@ Line 37종·Fill 12종, 아이콘 49종을 크기별 SVG(small·medium·large, �
 시작 화면 `EntryCard`의 그래픽 2종(Figma `Entry Card/Graphic` Create `6176:13824`·Join `6176:13836`)도 `svg-graphic/`에 있다(`GraphicEntryCreateIcon`·`GraphicEntryJoinIcon`, 48). Figma 원본이 흰 정사각형 레이어(Module)뿐이라 좌표를 그대로 옮겨 SVG `rect`로 조립했다. 그래픽 규약이 정사각형 캔버스를 요구해서 Figma 프레임(47.99×47.31)을 48×48로 맞추고 도형을 아래 기준으로 0.69px 내려, 글자와의 간격이 Figma와 같다. 흰색이라 어두운 사진 배경을 전제로 한다.
 
 - `size` prop과 크기를 고르는 래퍼가 없고 `Omit<IconProps, 'size'>`를 받는다. 역할 배지는 `Small`·`Medium` 이름의 export 둘뿐이다. 접근성 계약은 고정 크기 아이콘과 같다.
-- 온보딩 5종은 레이어 SVG를 Figma 프레임 안의 위치(예: Lock은 프레임 34×34 안의 (4, 2))로 한 캔버스에 조립했다. 위치는 Figma 코드의 중심 offset에서 계산했고 Figma 렌더와 육안으로 대조했다.
 
 ### 역할 배지
 
@@ -102,7 +101,7 @@ Fill pencil(Small `3042:64480`, Medium `3042:64458`, Large `3042:64475`)은 번�
 
 ## 검증
 
-- 아이콘 48종(Line 36·Fill 12) × 3크기 완전성, 생성기 테스트(크기 누락·파일명 형식 오류 실패, 크기별 선 굵기·viewBox 유지, 접근성 속성 한 번만 부여), SVG 안전성·이름 충돌·색상 보존·drift 테스트.
+- 아이콘 49종(Line 37·Fill 12) × 3크기 완전성, 생성기 테스트(크기 누락·파일명 형식 오류 실패, 크기별 선 굵기·viewBox 유지, 접근성 속성 한 번만 부여), SVG 안전성·이름 충돌·색상 보존·drift 테스트.
 - 장식/이름 있는 아이콘, ref·className, Button 슬롯 조합 테스트.
 - Gallery story 하나로 전체 아이콘 × 3크기 비교.
 - `check:generated`, 대상 test·lint·typecheck, Storybook build, 시각 확인 및 UI 접근성 리뷰.

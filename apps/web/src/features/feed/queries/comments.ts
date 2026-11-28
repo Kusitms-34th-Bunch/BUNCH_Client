@@ -7,7 +7,6 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
-import { useCallback } from 'react';
 import { isWireId, toDomainId } from '@/shared/api/client/ids';
 import type { BundleDetailResponse } from '../model/bundleDetail';
 import type { CommentItemResponse, CommentPage } from '../model/comment';
@@ -197,8 +196,5 @@ export const useDeleteCommentMutation = () => {
 /** 목록을 처음부터 다시 받기(받은 쪽을 버림). 커서를 이어 쓸 수 없거나 그사이 바뀐 것을 맞출 때 */
 export const useRestartComments = ({ bundleId, viewerId }: Target) => {
   const queryClient = useQueryClient();
-  return useCallback(
-    () => queryClient.resetQueries({ queryKey: feedKeys.comments(bundleId, viewerId) }),
-    [queryClient, bundleId, viewerId],
-  );
+  return () => queryClient.resetQueries({ queryKey: feedKeys.comments(bundleId, viewerId) });
 };

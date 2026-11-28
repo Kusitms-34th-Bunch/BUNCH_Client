@@ -53,6 +53,7 @@ route는 raw API 요청, domain mutation, 복잡한 form state, 재사용 UI 구
 - response를 바꾸는 search parameter는 query key에 포함한다.
 - loader·server data와 component query가 같은 request를 중복 소유하지 않게 한다. prefetch는 navigation 체감 개선 근거가 있을 때 사용한다.
 - lazy loading은 측정된 초기 bundle 또는 interaction 비용을 줄일 때만 사용한다. fallback·error state 없이 route만 lazy하게 만들지 않는다.
+- 겹쳐 띄우는 화면(web, 결정 기록 032): `app/(app)/@overlay` 병렬 slot에 가로채기 route를 두면 앱 안 이동에서 지금 화면을 유지한 채 위에 띄운다(지금은 사진함 → 사진 상세 `(.)photos/[photoId]`). 주소로 바로 열거나 새로고침하면 원래 page가 뜬다. 병렬 slot은 맞는 경로가 없으면 이전 화면을 남겨 두므로 겹친 화면은 주소를 보고 스스로 닫는다. Next 16의 엄격한 route 검사 때문에 slot에 catch-all을 두면 `(app)` 밖 경로(`/invite/[token]`)까지 잡혀 빌드가 실패한다. 떠 있는 동안 뒤 화면(`data-overlay-under`)은 `inert`다. slot에는 `default.tsx`가 있어야 한다(없으면 새로 열기·새로고침에서 404). 가로채기는 `(app)` 아래 어느 화면에서든 앱 안 이동이면 걸린다(지금 `/photos/<id>` 링크는 사진함 칸뿐, 번들 사진 고르기는 선택 버튼이라 이동하지 않음).
 
 ## 검증
 

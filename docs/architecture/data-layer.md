@@ -48,7 +48,7 @@ apps/web/src/app/api/auth/*                인증 Route Handler(쿠키 발급·�
 - **mutation 실패 알림은 공통 처리로 선언한다.** mutation에 `meta: { errorMessage }`(사용자 문구)를 주면 QueryClient의 `MutationCache.onError`가 그 문구를 toast로 띄운다. meta 타입은 TanStack Query `Register`로 고정한다. 서버 `error.message`는 문구 키라 그대로 보여 주지 않는다. code마다 다른 문구가 필요하거나 입력 칸 아래에 오류를 보여 주는 화면은 meta 없이 `mutate(…, { onError })`로 직접 처리한다. 성공 toast와 화면 이동은 계속 화면이 맡는다. 구현은 `src/shared/query/queryClient.ts`의 `MutationCache`와 `Register.mutationMeta`다.
 - **`hooks/`**: 화면·흐름 hook을 둔다. `queries/`의 options를 `useQuery`로 읽거나 mutation hook을 불러 조합할 수 있다. query 정의(`queryOptions`)·mutation 정의·캐시 조작(`useQueryClient`)은 `queries/`에만 둔다(ESLint 강제).
 - 여러 feature가 같은 요청·query를 실제로 함께 쓰고 계약이 안정되면 `src/shared`(`shared/query/`)로 옮긴다. 인증 세션(로그인·재발급·로그아웃)은 모든 BFF가 쓰는 공용 인프라라 처음부터 `src/shared/api/`에 둔다.
-- API 연결 전 샘플 데이터는 `fixtures/`에 두고, MSW handler(`src/mocks/`)가 같은 계약으로 응답하게 한다(결정 기록 007). 화면은 요청을 보내는 구조(endpoint 함수 → query)로 만들고, 서버가 준비되면 MSW만 끈다. 서버 ID는 숫자(long)이므로 endpoint 경계에서 `src/shared/api/client/ids.ts`로 화면 문자열 id로 바꾼다. 화면·hook·query는 문자열 id만 넘기고, 서버 숫자로 바꾸는 `toWireId`·`requireWireId`는 `api/`에서만 쓴다(ESLint 강제, `features/bundle`은 남은 위반 때문에 임시 제외, `apps/web/eslint.config.mjs`). 잘못된 id로 요청을 건너뛸지는 `isWireId`로 판단한다. 요청을 다시 보내도 한 번만 처리돼야 하는 요청(번들 초안 생성·발행)은 `createIdempotencyKey()`로 만든 키를 `Idempotency-Key` 헤더로 보낸다.
+- API 연결 전 샘플 데이터는 `fixtures/`에 두고, MSW handler(`src/mocks/`)가 같은 계약으로 응답하게 한다(결정 기록 007). 화면은 요청을 보내는 구조(endpoint 함수 → query)로 만들고, 서버가 준비되면 MSW만 끈다. 서버 ID는 숫자(long)이므로 endpoint 경계에서 `src/shared/api/client/ids.ts`로 화면 문자열 id로 바꾼다. 화면·hook·query는 문자열 id만 넘기고, 서버 숫자로 바꾸는 `toWireId`·`requireWireId`는 `api/`에서만 쓴다(ESLint 강제, `apps/web/eslint.config.mjs`). 잘못된 id로 요청을 건너뛸지는 `isWireId`로 판단한다. 요청을 다시 보내도 한 번만 처리돼야 하는 요청(번들 초안 생성·발행)은 `createIdempotencyKey()`로 만든 키를 `Idempotency-Key` 헤더로 보낸다.
 
 ### 예시
 
@@ -101,7 +101,7 @@ export const bunchMembersQueryOptions = (bunchId: string | undefined) =>
     ...persistedQuery,
   });
 
-// features/bunch-home/queries/blocks.ts — mutation hook(캐시 동기화와 실패 문구만)
+// features/bunch-home/queries/blocks.ts — mutation hook(캐시 동기화와 실패 문구만, 팔로우 끊기 등 일부 생략)
 export const useBlockBunchMutation = (viewerId: string | null | undefined) => {
   const queryClient = useQueryClient();
   return useMutation({
@@ -182,7 +182,7 @@ block.mutate({ targetId }, { onSuccess: () => toast(BUNCH_HOME_MESSAGES.blockedD
   - 사진 원본 상세처럼 크거나, 오래 두면 의미가 바뀌는 데이터.
   - 한 번 보고 마는 화면의 데이터.
 - 복원한 값은 받은 시각을 그대로 가져서, `staleTime`(5분)이 지났으면 화면에 보인 뒤 바로 다시 받는다. 화면은 복원 값과 새 값의 차이를 따로 다루지 않는다.
-- 저장본은 24시간이 지나거나 빌드가 바뀌면(`NEXT_PUBLIC_APP_BUILD`) 버린다. 가짜 서버 여부(`NEXT_PUBLIC_API_MOCKING`)가 다를 때도 버린다. 저장하는 query의 응답 모양을 바꾸면 배포가 바뀌므로 따로 할 일은 없다. 개발 서버는 켤 때마다 버린다.
+- 저장본은 24시간이 지나거나 빌드가 바뀌면(`NEXT_PUBLIC_APP_BUILD`) 버린다. 가짜 서버 여부(`NEXT_PUBLIC_API_MOCKING`)가 다를 때와, 같은 기기에서 TestFlight 테스터 쉘(User-Agent `BunchShell/staging`, #581)과 운영 쉘이 바뀔 때도 버린다(`persistBusterFor`). 저장하는 query의 응답 모양을 바꾸면 배포가 바뀌므로 따로 할 일은 없다. 개발 서버는 켤 때마다 버린다.
 - 저장 키는 처음 연 화면의 첫 경로 조각(`bunch`·`feed`·`photos`·`my`, 앱 쉘 첫 화면 `/`는 빈 값)별로 나눈다. 앱 쉘의 탭 WebView 4개가 같은 origin이라, 한 키를 쓰면 각자 가진 query만으로 서로 덮어쓴다.
 - 저장본에는 저장한 순간의 회원 ID를 함께 적는다. 회원이 확인되기 전에는 저장하지 않는다. `AuthGate`는 서버가 확인한 회원과 복원한 저장본의 회원이 다르거나(주인 표시가 없는 저장본 포함), 같은 화면에서 회원이 바뀌면 저장 대상 query와 모든 저장본을 지운 뒤에 화면을 그린다. 같은 origin의 다른 탭·WebView가 이전 사용자 데이터를 다시 써도 다음 사용자에게 복원되지 않게 하려는 것이다.
 - 로그아웃·탈퇴에 성공하면 모든 저장본을 지운다. 비로그인이 확인될 때(`AuthGate`)도 저장 대상 query와 모든 저장본을 지운다. 세션 만료와, 로그아웃 직후 앱이 종료된 경우가 여기를 지난다.

@@ -7,8 +7,8 @@ import {
   LinePhotoSmallIcon,
 } from '../../../icons';
 import { cn } from '../../../utils';
+import { ColorBadge } from '../../core/colorBadge';
 import { IconButton } from '../../core/iconButton';
-import { ColorBadge } from '../colorBadge';
 import { fitChipCount } from './fitMemberChips.internal';
 
 export type SuggestedBundleCardProps = Omit<ComponentProps<'div'>, 'children' | 'title'> & {

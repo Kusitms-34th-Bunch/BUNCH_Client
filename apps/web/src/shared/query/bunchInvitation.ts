@@ -1,5 +1,4 @@
 import { queryOptions, skipToken, useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
 import { issueBunchInvitation } from '../api/bunchInvitation';
 import { sharedKeys } from './keys';
 
@@ -22,8 +21,5 @@ export const bunchInvitationQueryOptions = (bunchId: string | undefined) =>
  */
 export const usePrefetchBunchInvitation = () => {
   const queryClient = useQueryClient();
-  return useCallback(
-    (bunchId: string) => void queryClient.prefetchQuery(bunchInvitationQueryOptions(bunchId)),
-    [queryClient],
-  );
+  return (bunchId: string) => void queryClient.prefetchQuery(bunchInvitationQueryOptions(bunchId));
 };

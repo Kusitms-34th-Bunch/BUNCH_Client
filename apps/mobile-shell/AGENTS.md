@@ -21,7 +21,7 @@ Root `AGENTS.md`와 `docs/architecture/mobile-shell.md`를 먼저 따른다. 이
 ## Expo 관련 주의
 
 - Expo는 SDK 버전마다 API가 바뀐다. 작업 전에 `package.json`의 `expo` 메이저 버전을 확인하고, 필요하면 해당 버전의 공식 문서(`https://docs.expo.dev/versions/v<major>.0.0/`)를 확인한다. 기억에 의존해 구현하지 않는다.
-- 네이티브 모듈을 추가할 때는 `pnpm`으로 직접 추가하지 않고 `npx expo install <package>`를 쓴다 — 설치된 SDK와 호환되는 버전을 Expo가 직접 골라준다.
+- 네이티브 모듈을 추가할 때는 `pnpm add`로 직접 추가하지 않고 `pnpm exec expo install <package> --pnpm`을 쓴다(`docs/architecture/mobile-shell.md`) — 설치된 SDK와 호환되는 버전을 Expo가 직접 골라준다.
 - `ios/`, `android/` 디렉터리가 없으면 Continuous Native Generation 대상이다. 직접 만들거나 수정하지 않고 `app.json`과 config plugin으로 네이티브 동작을 구성한다.
 
 ## 검증

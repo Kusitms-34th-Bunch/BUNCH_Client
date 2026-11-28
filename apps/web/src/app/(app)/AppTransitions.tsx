@@ -7,7 +7,7 @@ import {
   type MultiAnimation,
 } from '@ssgoi/react';
 import { axis, drill, fade, hero, sheet, slide, zoom } from '@ssgoi/react/view-transitions';
-import { type ReactNode, useMemo } from 'react';
+import { type ReactNode } from 'react';
 import {
   INTRO_PATH,
   LOGIN_PATH,
@@ -35,6 +35,7 @@ import {
   guardSheet,
   guardZoom,
 } from './_transitions/pageGuards';
+import { PHOTO_HERO_EASING, PHOTO_HERO_MS } from './_transitions/photoHeroMotion';
 import { tabCrossfade } from './_transitions/tabCrossfade';
 
 const SIGNUP_DISSOLVE_DURATION_MS = 300;
@@ -118,11 +119,10 @@ const feedBundleHero = hero(
   { type: 'fade' },
   { override: { forward: tuneFeedBundleHero, backward: tuneFeedBundleHero } },
 );
-// 사진함 썸네일 → 사진 상세 hero(Figma에 정의 없음). 들어갈 때는 피드와 같은 곡선을 조금 짧게(550ms는 느리다는 사용자 의견, #568)
-// 돌아갈 때는 부드러운 spring(smooth) 그대로(사용자 확인)
-const PHOTO_HERO_MS = 450;
+// 사진함 썸네일 → 사진 상세 hero(Figma에 정의 없음, 시간·곡선은 photoHeroMotion). 돌아갈 때는 부드러운 spring(smooth) 그대로(사용자 확인)
+// 사진함에서 앱 안 이동으로 열면 겹쳐 띄운 상세(@overlay)가 직접 움직이고, 이 규칙은 주소로 바로 연 상세에서 돌아갈 때 씀(결정 기록 032)
 const tunePhotoHero = ({ animation }: { animation: MultiAnimation<'shared' | 'out' | 'in'> }) => {
-  animation.set({ integrator: cubicBezierIntegrator(PHOTO_HERO_MS, [0.3, 0, 0.15, 1]) });
+  animation.set({ integrator: cubicBezierIntegrator(PHOTO_HERO_MS, PHOTO_HERO_EASING) });
   guardHero({ animation });
 };
 const photoHero = hero(
@@ -576,10 +576,7 @@ export function AppTransitions({ children }: { children: ReactNode }) {
   const reducedMotion = useReducedMotion();
   // iOS 쉘 스와이프 뒤로 가기: 전환은 SSGOI 패치가 건너뛰고, 돌아간 화면을 그린 뒤 쉘이 덮개를 걷게 알림(#587)
   useSwipeBackSettled();
-  const config = useMemo<SsgoiConfig>(
-    () => ({ transitions: reducedMotion ? [] : rules }),
-    [reducedMotion],
-  );
+  const config: SsgoiConfig = { transitions: reducedMotion ? [] : rules };
   return (
     <Ssgoi config={config}>
       {/* 전환 중 화면 뒤를 흰색으로 받침. 인트로 브랜드 장면은 바깥 AppFrame이 Safe Area까지 한 번에 칠하므로 보이는 동안·사라지는 동안 비움

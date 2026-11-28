@@ -12,7 +12,7 @@
 
 - 목록 줄 안의 보조 동작을 나타내는 밑줄 글자 버튼(약관 및 개인정보의 「전문보기」).
 - 기본은 일반 버튼이고, `renderLink`를 주면 링크다(`MenuLabel`과 같은 방식).
-- 누르는 동안 `overlay-hover`(10%)를 75ms ease-out으로 덮는다(Figma `While Pressing / Dissolve / Ease out / 75ms`).
+- 누르는 동안 `overlay-hover`(10%)를 공통 `press-overlay`로 150ms `cubic-bezier(0, 0, 0.15, 1)`로 덮는다(2026-11-27. 이전 Figma `While Pressing / Dissolve / Ease out / 75ms`).
 
 ### 제공하지 않는 동작
 

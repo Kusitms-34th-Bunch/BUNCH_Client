@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { DraftActions, DraftState } from '../hooks/useDraft';
 import type { Draft, PlaceResult, SaveStatus } from '../lib/types';
 import { MAX_LOCATIONS } from '../constants/messages';
@@ -40,12 +40,12 @@ export function useDraftFixture(draftId: string | undefined): {
 
   useEffect(() => () => clearTimeout(saveTimer.current), []);
 
-  const update = useCallback((change: (_current: Draft) => Draft) => {
+  const update = (change: (_current: Draft) => Draft) => {
     setDraft(change);
     setSaveStatus('saving');
     clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => setSaveStatus('saved'), SAVE_DELAY_MS);
-  }, []);
+  };
 
   const actions: DraftActions = {
     setTitle: (title) => update((current) => ({ ...current, title })),

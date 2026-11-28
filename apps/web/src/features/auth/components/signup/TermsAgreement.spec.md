@@ -21,7 +21,6 @@
 
 - 권한 요청은 네이티브 쉘에서만 하고 일반 브라우저에서는 팝업 없이 지나간다.
 - 이 화면을 거치지 않는 기기(재설치 뒤 기존 계정 로그인 등)의 알림 권한은 앱을 열 때 `usePushDeviceSync`가 묻는다(#485). 사진·카메라는 쓰는 순간 쉘이 묻는다.
-- 앱 실행 시 진입 분기(`/` 진입은 보류, `LoginEntry.spec.md` 참고).
 - 마케팅 수신 동의(받지 않기로 확정), 위치 권한 안내(요청하지 않음).
 - iPhone 상태 바·홈 인디케이터. 기기 요소라 웹이 그리지 않는다(Safe Area는 `AppFrame`이 처리한다).
 
@@ -29,19 +28,19 @@
 
 - Path·params·search: `/signup/terms`. params와 search는 없다.
 - 접근 권한·guard: `(app)` layout의 `AuthGate`가 서버의 가입 상태로 막는다(`features/auth/lib/accessPolicy.ts`, 결정 기록 019). 가입 중인 사용자만 들어오고, 비로그인은 로그인(처음이면 인트로)으로, 가입 완료 사용자는 도착 화면으로 보낸다. 이미 동의한 사용자는 건너뛰지 않고 약관과 프로필을 모두 열 수 있다.
-- Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다(`SignupFrame`). redirect는 없다. 원문 보기는 `router.push`, 뒤로 가기는 `router.back()`이다. 화면 전환 규칙(`AppTransitions`)에는 등록하지 않았다.
+- Layout·redirect·navigation: `(app)` group의 `AppFrame` 안에서 `PageShell`을 한 번 쓴다(`SignupFrame`). redirect는 없다. 원문 보기는 `router.push`, 뒤로 가기는 `router.back()`이다. 화면 전환 규칙(`AppTransitions`)은 약관 → 로그인 디졸브, 약관 → 프로필 slide(뒤로 가기는 반대 방향), 원문 → 약관 디졸브다.
 
 ## 상태와 흐름
 
 - 초기 진입: 모두 체크 해제 상태이고 시작하기 버튼은 비활성이다. 약관 목록은 앱 상수(`constants/terms.ts`)이고 서버 버전은 시작하기 때 읽는다.
-- Loading·Empty: 시작하기를 누르면 바로 비활성(`disabled`·`aria-busy`)으로 바뀌고 다시 눌러도 한 번만 실행한다. 동의를 저장하는 동안과 권한을 요청하는 동안 모두 화면을 덮지 않는다(2026-11-20 기준: 짧은 저장·확인 뒤 화면 이동은 덮지 않음, `docs/architecture/motion.md` 「로딩 상태」). 상태 안내는 숨김 `role="status"`(「약관 동의를 저장하는 중이에요」「앱 접근 권한을 요청하는 중이에요」)가 한다. 저장이 성공하면 가입 상태를 다시 읽지 않고 캐시를 「약관 동의」로 바꿔 바로 넘어가고(요청 1번), 들어올 때 프로필 화면을 미리 받아 둔다. 저장에 실패하면 시작하기를 다시 활성으로 돌리고 초점을 돌려준다.
+- Loading·Empty: 시작하기를 누르면 바로 비활성(`disabled`·`aria-busy`)으로 바뀌고 다시 눌러도 한 번만 실행한다. 동의 저장이 1초(`LATE_OVERLAY_MS`)를 넘기면 `PageLoading`으로 화면을 덮는다(`docs/architecture/motion.md` 「로딩 상태」). 권한을 요청하는 동안은 덮지 않는다. 상태 안내는 숨김 `role="status"`(「약관 동의를 저장하는 중이에요」「앱 접근 권한을 요청하는 중이에요」)가 한다. 저장이 성공하면 가입 상태를 다시 읽지 않고 캐시를 「약관 동의」로 바꿔 바로 넘어가고(요청 1번), 들어올 때 프로필 화면을 미리 받아 둔다. 저장에 실패하면 시작하기를 다시 활성으로 돌리고 초점을 돌려준다.
 - Error·retry: 저장에 실패하면 토스트 「일시적인 오류가 발생했어요. 다시 시도해 주세요」(공통 처리)를 보이고 체크 상태를 유지한 채 이동·권한 요청 없이 머문다. 다시 눌러 재시도한다. 로그아웃(뒤로 가기)이 실패해도 같은 토스트와 함께 머문다.
 - Disabled·invalid: 필수 약관 하나라도 체크하지 않으면 시작하기 버튼이 비활성(`disabled`)이다. 선택 약관만 체크해도 비활성이다. 안내 문구는 없다.
 - Success·완료 후 이동: 시작하기를 누르면 ① `GET /auth/terms`로 현재 버전을 읽고 ② `POST /auth/terms/agreements`로 필수 3종(`SERVICE`·`PRIVACY`·`AGE_OVER_14`)과 동의한 선택 약관(`DEMOGRAPHICS`)을 한 번에 저장하고 ③ 가입 상태(`sharedKeys.session()`) 캐시를 「약관 동의」로 바꾸고(다시 읽지 않음, 진행 중이던 가입 상태 요청은 취소) ④ 권한 요청(`usePermissionRequests`, 사진 → 카메라 → 알림 순서로 bridge `requestPermission`을 한 권한씩 호출, 허용·거부·실패 모두 다음으로 진행)이 끝나기를 기다린다. 「전체 동의하기」 체크로는 요청하지 않는다. 권한 요청은 화면에 머무는 동안 한 번만 한다 ⑤ 프로필(`SIGNUP_PATHS.profile`)로 `push`한다. 선택 약관은 동의했을 때만 보낸다. 1110판 1.3.4는 [선택] 동의 여부를 저장한다고 하고, 백엔드는 미동의를 항목 생략으로 받는다(아래 API 계약 확인 항목). 권한 요청 중 화면을 벗어나면 이동을 생략한다. 뒤로 가기는 `POST /api/auth/logout`으로 로그인 상태를 풀고 로그인 화면을 새로 연다(기획 1.3.5, 가입 중 계정과 진행 상태는 서버에 남는다).
 
 ## 데이터 의존성
 
-- Query와 enabled 조건: 약관 목록·원문은 앱 상수다. 서버의 현재 버전(`GET /api/auth/terms`, `features/auth/api/terms.ts`)은 시작하기 때 한 번 읽는다(query 캐시 없음).
+- Query와 enabled 조건: 약관 목록·원문은 앱 상수다. 서버의 현재 버전(`GET /api/auth/terms`, `shared/api/termVersions.ts`)은 시작하기 때 한 번 읽는다(query 캐시 없음).
 - Mutation·cache 영향: 동의 저장은 `useAgreeToTermsMutation`(`queries/signup.ts`)이고 성공하면 진행 중인 `sharedKeys.session()` 요청을 취소하고 캐시의 `termsAccepted`를 true로 바꾼다(응답 data가 null이라 서버 값 대신 저장 성공을 근거로 함, `AuthGate`가 옛 상태로 프로필 이동을 되돌리지 않도록). 캐시가 없으면 무효화만 한다. 선택 약관 동의는 서버에 미리 저장되지 않고 이 저장 요청에 실린다. 뒤로 가기는 `useLeaveSignupMutation`(로그아웃 뒤 `reloadTo`).
 - API 계약 확인 항목: 선택 약관(`DEMOGRAPHICS`)에 동의하지 않으면 `agreed: false`로 보내지 않고 항목을 뺀다(백엔드 확인 2026-11-10). 남은 확인 항목은 `GET /auth/terms` 응답 모양(Swagger에 타입이 없어 명세서 기준). BFF는 백엔드 `auth/` 아래라도 약관 두 경로만 범용 프록시로 허용한다(`backendProxy.ts`).
 
@@ -64,7 +63,7 @@
 ## 검증
 
 - [ ] direct URL·새로고침·뒤로 가기: `next build`에서 `/signup/terms`가 정적 페이지로 생성되고 `next start`로 직접 URL 200 응답을 확인함. 새로고침·뒤로 가기는 확인하지 못함(미검증)
-- [ ] 권한·redirect: guard가 없어 확인할 수 없음(미검증, 확인할 항목)
+- [ ] 권한·redirect: `AuthGate`(`lib/accessPolicy.ts`) 기준 화면 확인(미검증, 규칙은 `accessPolicy.test.ts`가 확인)
 - [x] 상태별 UI: 전체·개별 체크 동기화, 전체 해제, 시작하기 활성·비활성, 원문 보기 이동, 원문을 다녀온 뒤 체크 유지를 테스트로 확인
 - [x] 관련 test: `TermsAgreement.test.tsx`
 - [x] 실행 command와 결과: `yarn workspace @app/web test`·lint·typecheck·build 통과

@@ -22,7 +22,7 @@
 
 ## 상태와 동작
 
-- 누르는 동안 `overlay-hover`(10%)를 75ms ease-out으로 덮는다(Figma Pressed, 2026-11-01 갱신 전에는 `overlay-pressed` 20%였다). 동작 줄이기에서는 전환을 끈다.
+- 누르는 동안 `overlay-hover`(10%)를 공통 `press-overlay`로 150ms `cubic-bezier(0, 0, 0.15, 1)`로 덮는다(Figma Pressed, 2026-11-01 갱신 전에는 `overlay-pressed` 20%였다). 동작 줄이기에서는 전환을 끈다.
 - 비활성(`disabled`, Figma Disabled): 전체 `opacity-disabled`(40%), 글자 `text-disabled`, 아이콘 `icon-disabled`. 눌림 효과와 클릭이 없다. `renderLink`(링크)에는 비활성이 없다.
 - 긴 글자는 단어 단위로 줄바꿈하고 화살표는 줄어들지 않는다.
 

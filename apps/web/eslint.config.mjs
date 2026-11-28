@@ -103,12 +103,19 @@ export default [
   })),
   {
     // 화면은 options를 받아 읽기만 하고, 정의·캐시 조작은 queries/에서만
+    // 디자인 시스템 admin 구역은 apps/admin 전용(queries/·api/는 UI를 import하지 않아 이 블록에만 둠)
     files: ['src/**/*.{ts,tsx}'],
     ignores: QUERY_DEFINITION_FILES,
     rules: {
       'no-restricted-imports': [
         'error',
         {
+          patterns: [
+            {
+              group: ['@app/design-system/admin'],
+              message: 'web은 디자인 시스템의 admin 구역을 import하지 않습니다.',
+            },
+          ],
           paths: [
             {
               name: '@tanstack/react-query',

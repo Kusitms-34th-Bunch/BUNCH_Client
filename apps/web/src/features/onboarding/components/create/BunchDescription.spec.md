@@ -2,7 +2,7 @@
 
 ## 메타데이터
 
-- Route: `/onboarding/create/description`(`apps/web/src/app/(app)/onboarding/create/description/page.tsx`)
+- Route: `/onboarding/create/description`(`apps/web/src/app/(app)/onboarding/create/(steps)/description/page.tsx`)
 - Status: UI와 입력 규칙 구현됨(`next build` 렌더를 Figma 값과 측정으로 대조함). 「다음」은 3단계(`BunchMood.spec.md`)로 이동하고 헤더 뒤로 가기는 중단 확인 모달을 연다. 실기기 검증 전
 - 디자인 출처: Figma `Bunch/Create/Description`(node `791:2994` 빈 입력, `791:3022` 입력됨). 화면설계서(node `791:8480`)를 함께 참고했다.
 
@@ -59,7 +59,7 @@
 ## 검증
 
 - [ ] direct URL·새로고침·뒤로 가기: `next build`에서 정적 페이지로 생성되고 `next start`로 1단계 → 2단계 → 「이전」 → 1단계 입력 유지 → 다시 2단계 소개 유지를 확인함. 새로고침은 확인하지 못함(미검증)
-- [ ] 권한·redirect: guard가 없어 확인할 수 없음(미검증, 확인할 항목)
+- [ ] 권한·redirect: `AuthGate`(`features/auth/lib/accessPolicy.ts`) 기준 화면 확인(미검증, 규칙은 `accessPolicy.test.ts`가 확인)
 - [x] 상태별 UI: 빈 입력, 입력됨(줄바꿈), 다음 활성·비활성
 - [x] 관련 test: `BunchDescription.test.tsx`(제목·진행 표시, 글자 수, 길이 제한, 다음 활성 조건, 서버 검사 통과 뒤 이동, 금칙어 안내·초점·고치면 해제, 검사 실패 토스트, Enter 차단, 이전·뒤로 가기, TIP, 단계 사이 입력 유지)
 - [x] 실행 command와 결과: `yarn workspace @app/web test`·lint·typecheck·build 통과

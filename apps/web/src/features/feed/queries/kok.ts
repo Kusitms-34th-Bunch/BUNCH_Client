@@ -7,7 +7,6 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
-import { useCallback } from 'react';
 import { isWireId, toDomainId } from '@/shared/api/client/ids';
 import type { BundleKoks } from '../model/kok';
 import { getBundleKoks, pinPlace, unpinPlace } from '../api/kok';
@@ -30,18 +29,15 @@ export const bundleKoksQueryOptions = (bundleId: string, viewerId: string | null
  */
 export const useLoadBundleKoks = () => {
   const queryClient = useQueryClient();
-  return useCallback(
-    async (bundleId: string, viewerId: string | null) => {
-      if (viewerId === null) return;
-      const options = bundleKoksQueryOptions(bundleId, viewerId);
-      try {
-        await queryClient.fetchQuery(options);
-      } catch (error) {
-        if (queryClient.getQueryData(options.queryKey) === undefined) throw error;
-      }
-    },
-    [queryClient],
-  );
+  return async (bundleId: string, viewerId: string | null) => {
+    if (viewerId === null) return;
+    const options = bundleKoksQueryOptions(bundleId, viewerId);
+    try {
+      await queryClient.fetchQuery(options);
+    } catch (error) {
+      if (queryClient.getQueryData(options.queryKey) === undefined) throw error;
+    }
+  };
 };
 
 export type KokVariables = {

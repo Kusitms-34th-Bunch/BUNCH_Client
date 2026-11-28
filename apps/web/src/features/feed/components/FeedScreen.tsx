@@ -1,7 +1,7 @@
 'use client';
 
 import { Button } from '@app/design-system';
-import { type MouseEvent, useCallback, useState } from 'react';
+import { type MouseEvent, useState } from 'react';
 import { useIntersectionObserver } from 'react-simplikit';
 import { PageShell } from '@/shared/components/layout/PageShell';
 import { useHoldScrollOnLeave } from '@/shared/hooks/scroll/useHoldScrollOnLeave';
@@ -106,13 +106,10 @@ export function FeedScreen({
   const eagerBundleIds = [...following, ...rest]
     .flatMap((entry) => (entry.kind === 'bundle' ? [entry.bundle.id] : []))
     .slice(0, EAGER_PHOTO_CARDS);
-  const handleAdGone = useCallback(
-    (adId: string, hadFocus: boolean) => {
-      if (hadFocus) focusNextOfFocused();
-      setHiddenAds((current) => new Set(current).add(adId));
-    },
-    [focusNextOfFocused],
-  );
+  const handleAdGone = (adId: string, hadFocus: boolean) => {
+    if (hadFocus) focusNextOfFocused();
+    setHiddenAds((current) => new Set(current).add(adId));
+  };
 
   // 목록 끝 1.5화면 전에 다음 쪽(실패해 멈춘 동안은 「다시 시도」로만). 감지 요소는 받을 수 있을 때만 그려 붙는 순간 보이면 바로 받음
   // 첫 쪽을 다시 받는 동안(저장본 복원 직후 등)은 기다림: 이어 받기가 그 요청을 취소하고 옛 커서로 받지 않게

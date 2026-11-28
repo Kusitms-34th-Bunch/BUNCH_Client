@@ -33,7 +33,7 @@
 - Selected(`:checked`): 상자와 테두리가 `surface-inversed-lighter`, 가운데 20px 흰 체크(`LineCheckMediumIcon`).
 - Disabled(`:disabled`): `icon-disabled` 상자 + `border-disabled` 테두리를 40%로 흐리게.
 - 키보드 포커스(`:focus-visible`): 2px `border-brand` 윤곽선.
-- 전환 효과 없음(Figma에 정의 없음).
+- 전환: Pressed 덮개는 공통 `press-overlay`로 150ms `cubic-bezier(0, 0, 0.15, 1)` 전환한다(`docs/architecture/motion.md`, 동작 줄이기에서는 끔). 선택 전환은 없다(Figma에 정의 없음).
 
 ## 접근성
 

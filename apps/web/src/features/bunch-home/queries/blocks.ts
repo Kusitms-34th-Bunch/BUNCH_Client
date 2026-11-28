@@ -5,7 +5,6 @@ import {
   useMutation,
   useQueryClient,
 } from '@tanstack/react-query';
-import { useCallback } from 'react';
 import { sharedKeys } from '@/shared/query/keys';
 import type { BlockPage } from '../model/blocks';
 import { blockBunch, getBlockedBunches, reportBunch, unblockBunch } from '../api/blocks';
@@ -28,11 +27,8 @@ export const blockedBunchesQueryOptions = (viewerId: string | null | undefined) 
 /** 차단 목록 첫 쪽을 미리 받는 함수(더보기 메뉴에서). 실패는 알리지 않음(화면에 들어가면 다시 받음) */
 export const usePrefetchBlockedBunches = () => {
   const queryClient = useQueryClient();
-  return useCallback(
-    (viewerId: string) =>
-      void queryClient.prefetchInfiniteQuery(blockedBunchesQueryOptions(viewerId)),
-    [queryClient],
-  );
+  return (viewerId: string) =>
+    void queryClient.prefetchInfiniteQuery(blockedBunchesQueryOptions(viewerId));
 };
 
 /**

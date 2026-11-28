@@ -1,5 +1,5 @@
 import { useSuspenseInfiniteQuery } from '@tanstack/react-query';
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useCallback, useEffect, useRef, useState, useTransition } from 'react';
 import { readHistoryEntry, writeHistoryEntry } from '@/shared/lib/navigation/historyEntry';
 import { ALL_MEMBERS, type KokPlace } from '../lib/types';
 import { pinnedPlacesQueryOptions, useRemovePinnedPlaceMutation } from '../queries/pinnedPlaces';
@@ -35,7 +35,7 @@ export function useBunchPlaces(bunchId: string) {
   } = useSuspenseInfiniteQuery(pinnedPlacesQueryOptions(bunchId, selectedId));
   // 칩·개수는 첫 쪽 기준(쪽마다 같은 값), 카드는 쪽을 이어 붙이고 쪽 사이에 겹친 카드는 한 번만(받는 사이 콕이 빠져 밀린 경우)
   const first = pages.pages[0];
-  const data = useMemo(() => {
+  const data = (() => {
     const seen = new Set<string>();
     const places = pages.pages
       .flatMap((page) => page.places)
@@ -46,7 +46,7 @@ export function useBunchPlaces(bunchId: string) {
       members: first?.members ?? [],
       places,
     };
-  }, [pages, first]);
+  })();
   const { mutateAsync: removeOnServer } = useRemovePinnedPlaceMutation(bunchId);
   // 삭제 요청 전이거나 다시 받기 전인 콕(숨김). 요청이 끝나고 목록을 다시 받으면 지움
   const [hidden, setHidden] = useState<ReadonlyMap<string, string | null>>(new Map());

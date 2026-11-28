@@ -30,6 +30,8 @@ export const bunchHomeKeys = {
     [...bunchHomeKeys.followRequests(viewerId), 'decide'] as const,
   changeFollow: (viewerId: string | null | undefined) =>
     [...bunchHomeKeys.follows(), 'change', viewerId ?? null] as const,
+  // 번치 전환 중인지(저장 전 번치 홈 다시 받기를 멈출 때)
+  switchBunch: () => [...bunchHomeKeys.all, 'switch'] as const,
   // 내 번치(명의)가 차단한 번치 목록. 차단·해제 뒤 무효화
   blocks: (viewerId: string | undefined) => [...bunchHomeKeys.all, 'blocks', viewerId] as const,
   blockPages: (viewerId: string | undefined) =>

@@ -1,9 +1,9 @@
 'use client';
 
 import { Fragment, type ComponentProps, type ReactNode } from 'react';
-import type { BundleTitleMember } from '../bundleTitle';
 import { LineAddSmallIcon } from '../../../icons';
 import { cn } from '../../../utils';
+import { BUNDLE_TITLE_MAX_AVATARS, type BundleTitleMember } from '../bundleTitle';
 import { SelectionField } from '../selectionField';
 
 export type SelectionFieldGroupItem = {
@@ -131,7 +131,7 @@ export const SelectionFieldGroup = ({
           {addMembers && addMembers.length > 0 ? (
             // 버튼 안이라 div(ProfileImage)를 못 써서 같은 모양의 span으로 겹쳐 그림
             <span aria-hidden="true" className="ml-s1 flex items-center">
-              {addMembers.slice(0, 8).map((member, index) => (
+              {addMembers.slice(0, BUNDLE_TITLE_MAX_AVATARS).map((member, index) => (
                 <span
                   key={`${member.name}-${index}`}
                   className={cn(

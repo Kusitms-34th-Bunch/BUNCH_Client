@@ -1,7 +1,7 @@
 'use client';
 
 import { permissionStatusSchema } from '@app/bridge';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { isNativeShell, permissionBridge, photoUploadBridge } from '@/shared/bridge/client';
 import { askNotificationPermission } from '@/shared/lib/native/pushDevice';
 import type { DeviceNotificationPermission } from '../lib/types';
@@ -79,13 +79,13 @@ export function useDeviceNotificationPermission() {
     };
   }, []);
 
-  const openSettings = useCallback(() => {
+  const openSettings = () => {
     void photoUploadBridge.openAppSettings().catch(() => undefined);
-  }, []);
+  };
 
-  const askPermission = useCallback(async () => {
+  const askPermission = async () => {
     if (await askNotificationPermission()) refreshRef.current?.();
-  }, []);
+  };
 
   return {
     permission,

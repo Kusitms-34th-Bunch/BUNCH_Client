@@ -1,6 +1,6 @@
 # Design System Components
 
-`@app/design-system`에는 Figma에 정의된 UI 컴포넌트를 둔다. 사용처가 한 앱뿐이어도 UI 컴포넌트는 여기에 두되 `core`(모든 앱)와 `web`(apps/web 전용) 구역으로 나누고, 그것들을 조합해 제품 문구·route·데이터·행동을 붙이는 일은 앱의 `features`가 맡는다. 결정 배경은 `docs/decisions/records/010-ui-in-design-system-composition-in-features.md`.
+`@app/design-system`에는 Figma에 정의된 UI 컴포넌트를 둔다. 사용처가 한 앱뿐이어도 UI 컴포넌트는 여기에 두되 `core`(모든 앱), `web`(apps/web 전용), `admin`(apps/admin 전용) 구역으로 나누고, 그것들을 조합해 제품 문구·route·데이터·행동을 붙이는 일은 앱의 `features`가 맡는다. 결정 배경은 `docs/decisions/records/010-ui-in-design-system-composition-in-features.md`.
 
 ## 분류
 
@@ -22,7 +22,7 @@
 - **accordion**: 가능하면 `<details>`/`<summary>`를 쓴다. 커스텀 구현은 헤더 버튼에 `aria-expanded`, `aria-controls`로 패널 id를 연결하고, 패널에는 `role="region"` + `aria-labelledby`를 준다. `aria-expanded`와 패널의 `hidden` 상태는 항상 동기화한다.
 - **확인 dialog(모달)**: `Dialog`·`ConfirmDialog`를 사용한다. 여러 동작 중 하나를 고르는 창(Figma Profile (Stack))은 `ActionDialog`를 사용한다. Base UI Alert Dialog로 응답을 요구하는 `alertdialog` 의미, 포커스 가두기·복원과 ESC 취소를 처리한다. 바깥 터치는 닫지 않는다. 확인은 콜백만 호출하고 호출자가 `open`을 갱신한다. 모달 안의 오류·필수 안내는 본문에 표시하고 액션 Toast는 모달을 닫은 뒤 띄운다. 폼·풍부한 콘텐츠용 일반 Dialog는 이 확인창의 지원 범위 밖이다. 결정·제약은 [ADR 009](../decisions/records/009-confirm-dialog-base-ui.md), API·토큰은 `packages/design-system/src/components/core/dialog/Dialog.spec.md`를 따른다.
 - **바텀시트(모달)**: `@app/design-system/web`의 `BottomSheet` Compound 부품을 사용한다. Base UI Drawer가 `dialog` 의미, 포커스 가두기·복원, ESC·바깥 터치·아래로 끌어 닫기를 처리한다. Figma에 그려진 시트는 디자인 시스템 `web`의 시트 렌더러(`PhotoUploadSheet` 등)를 쓰고, 앱 `features`는 `overlay.open`으로 렌더러를 여는 hook에서 데이터와 동작을 연결한다. 결정은 [ADR 014](../decisions/records/014-bottom-sheet-base-ui-drawer.md)를 따른다. API·토큰·조합 규칙은 `packages/design-system/src/components/web/bottomSheet/BottomSheet.spec.md`를 따른다.
-- **tabs**: 컨테이너는 `role="tablist"`, 각 탭은 `role="tab"` + `aria-selected`, 콘텐츠는 `role="tabpanel"` + `aria-labelledby`(연결된 탭 id)로 구성한다. 비활성 탭의 패널은 `hidden`으로 감춘다 — `aria-selected`만으로는 스크린 리더가 패널을 구분하지 못한다.
+- **tabs**: 컨테이너는 `role="tablist"`, 각 탭은 `role="tab"` + `aria-selected`, 콘텐츠는 `role="tabpanel"` + `aria-labelledby`(연결된 탭 id)로 구성한다. 비활성 탭의 패널은 `hidden`으로 감춘다 — `aria-selected`만으로는 스크린 리더가 패널을 구분하지 못한다. 예외: 어드민 `TabList`처럼 탭이 아래 목록의 검색 조건만 바꾸고 패널을 따로 두지 않는 경우는 `tabpanel`을 만들지 않는다(2026-11-27 #590).
 
 ## Variant 선언
 
@@ -35,26 +35,30 @@
 ## 배치 기준
 
 - Figma에 컴포넌트로 정의된 UI(버튼, 입력, 헤더, 다이얼로그처럼 모양과 상태·접근성 계약을 가진 부품)는 사용처 수와 관계없이 디자인 시스템에 둔다. 두 곳 이상 쓰일 때까지 기다리지 않는다.
-- 패키지 안은 두 구역으로 나눈다. 폴더 이름은 그 UI를 쓰는 앱 폴더 이름을 따른다.
-  - `src/components/core/`: 모든 앱(web·admin)이 쓰는 기본 부품. 제품 문구·route·데이터를 모른다. 공개 주소는 `@app/design-system`이다. 앱은 `tokens.css`·`utilities.css`를 import하고 Tailwind `@source`로 패키지 소스를 스캔 등록해야 class가 생긴다(web은 `apps/web/src/app/globals.css`, admin은 `apps/admin/src/index.css`에서 core·아이콘만 스캔, 2026-11-25 #564).
+- 패키지 안은 세 구역으로 나눈다. 폴더 이름은 그 UI를 쓰는 앱 폴더 이름을 따른다.
+  - `src/components/core/`: 모든 앱(web·admin)이 쓰는 기본 부품. 제품 문구·route·데이터를 모른다. 공개 주소는 `@app/design-system`이다. 앱은 `tokens.css`·`utilities.css`를 import하고 Tailwind `@source`로 패키지 소스를 스캔 등록해야 class가 생긴다(web은 `apps/web/src/app/globals.css`, admin은 `apps/admin/src/index.css`에서 core·admin·아이콘만 스캔, 2026-11-25 #564·2026-11-27 #590).
   - `src/components/web/`: `apps/web` 전용 UI(예: 하단 내비게이션 `BottomNavigation`). BUNCH 사용자 앱의 문구·모양을 가질 수 있다. 공개 주소는 `@app/design-system/web`이고 루트 barrel에는 포함하지 않는다.
-- 구역 선택 질문은 하나다. "BUNCH 사용자 앱에서만 의미가 있는가?" 예면 `web`, 아니면 `core`. `web`에서 어드민도 필요해지면 제품 문구를 props로 빼고 `core`로 옮긴다.
-- 의존 방향은 한쪽이다. `web`은 `core`를 쓸 수 있고, `core`는 `web`을 import하지 않는다(ESLint `no-restricted-imports`로 검사). `apps/admin`은 `@app/design-system/web`을 import하지 않는다(같은 규칙).
-- 두 구역 모두 route, domain data, API, logging을 직접 알지 않는다. 문구·항목·링크·핸들러는 props, slot, callback으로 받는다(예: 하단 내비게이션은 `items`와 현재 항목을 받고 링크를 어떻게 그릴지는 호출자가 넘긴다).
+  - `src/components/admin/`: `apps/admin` 전용 UI(Figma `어드민 컴포넌트`, 2026-11-27 #590). 1440px 데스크톱 운영 도구의 모양을 가진다. 공개 주소는 `@app/design-system/admin`이고 루트 barrel에는 포함하지 않는다. 결정 배경은 [ADR 031](../decisions/records/031-admin-resumed.md).
+- 구역 선택 질문은 하나다. "한 앱에서만 의미가 있는가?" BUNCH 사용자 앱만이면 `web`, 어드민만이면 `admin`, 둘 다면 `core`. `web`이나 `admin`의 컴포넌트가 다른 앱에서도 필요해지면 제품 문구를 props로 빼고 `core`로 옮긴다.
+- 의존 방향은 한쪽이다. `web`과 `admin`은 `core`를 쓸 수 있고, `core`는 두 구역을 import하지 않는다. `web`과 `admin`은 서로 import하지 않는다. `apps/admin`은 `@app/design-system/web`을, `apps/web`은 `@app/design-system/admin`을 import하지 않는다. 모두 ESLint `no-restricted-imports`로 검사한다. `apps/web`의 `queries/`·`api/` 파일은 같은 규칙 이름을 다른 블록이 덮어써 이 검사에서 빠진다(이 파일들은 UI를 import하지 않음, 2026-11-27 확인). `apps/web`의 Tailwind 스캔은 `admin` 구역을 제외한다(`globals.css`).
+- 모든 구역이 route, domain data, API, logging을 직접 알지 않는다. 문구·항목·링크·핸들러는 props, slot, callback으로 받는다(예: 하단 내비게이션은 `items`와 현재 항목을 받고 링크를 어떻게 그릴지는 호출자가 넘긴다).
 - DS 컴포넌트를 묶어 domain 문구, route, 데이터, 사용자 행동을 붙이는 조합은 앱의 `src/features/<feature>/`에 둔다(예: 탭 4개의 라벨·경로·현재 탭 판정).
 - 화면 틀(`AppFrame`, `PageShell`)과 route shell처럼 앱 전용 layout은 디자인 시스템에 두지 않는다.
 - 한 화면에서만 쓰는 일회성 배치(Figma 컴포넌트가 아닌 화면 조립)는 DS가 아니라 page·feature 가까이에 둔다.
 - `web` 컴포넌트의 Storybook title은 `Web/<종류>/<이름>`이다. 종류는 Button, Selection, Input, ListItem, Card, Profile, Photo, Navigation, Overlay, Feedback, Feed 중 하나다(렌더러는 틀 아래, 예: `Web/Overlay/BottomSheet/ConfirmSheet`). 폴더는 종류로 나누지 않고 구역 바로 아래에 둔다. 생성기는 `Components/<이름>`을 만들므로 `web`이면 title을 고친다. 새로 만들기 전에 같은 종류 아래에 비슷한 컴포넌트가 있는지 먼저 본다.
-- 어드민 전용 UI가 DS 수준의 검증(Storybook·Chromatic)이 필요해지면 그때 `src/components/admin/`을 추가한다. 비어 있는 구역은 미리 만들지 않는다.
+- `admin` 컴포넌트의 Storybook title은 `Admin/<종류>/<이름>`이다. 종류는 `web`과 같은 목록에서 고른다. 맞는 종류가 없으면 새 종류를 만들고 이 줄에 적는다. 생성기는 `Components/<이름>`을 만들므로 `admin`이면 title을 고친다.
+- `admin` 컴포넌트 이름이 `core` 컴포넌트와 겹치면 규격과 디자인을 먼저 비교한다(2026-11-27 합의). 같으면 `core`를 쓰거나 변형을 추가한다. 다르면 `Admin` 접두사를 붙여 `admin` 구역에 둔다(예: `AdminHeader`). 겹치지 않는 이름에는 접두사를 붙이지 않는다.
+- 화면 기준(`admin`): 어드민은 데스크톱 웹 브라우저 전용이다(2026-11-27 합의). 모바일 쉘·WebView 제약, 아이콘 버튼 터치 영역 확장, 좁은 화면(390px) 확인은 적용하지 않는다.
+- hover(`admin`): 어드민은 마우스로 쓰는 데스크톱 화면이다. 누를 수 있는 요소에는 `cursor-pointer`를 준다. hover 모양은 Figma 컴포넌트에 Hover 변형이 있을 때만 구현한다(2026-11-27 합의). `web`은 터치 화면이라 이 기준을 적용하지 않는다.
 
 ## 생성 구조
 
-새 컴포넌트는 반드시 `yarn gen:ds-component <PascalCase 이름>`으로 생성하고 구역(`core`/`web`)을 고른다. 직접 만든 폴더는 `yarn check:generated`의 구조 검사(`turbo/workflows/check-ds-components.mjs`)가 CI에서 실패시킨다. 폴더마다 컴포넌트·test·story·`index.ts`가 모두 있어야 한다. 점(`.`)으로 시작하는 숨김 폴더(도구가 만드는 상태 폴더 등)는 검사하지 않는다. 컴포넌트 안에서만 쓰는 hook·헬퍼 파일은 `<이름>.internal.ts`로 만들면 `yarn workspace @app/design-system gen:index`가 barrel에서 빼서 공개 API가 되지 않는다. 이름이 `use`로 시작하는 hook 파일에 `.internal`이 없으면 구조 검사가 실패한다(헬퍼 파일은 검사하지 않으니 직접 지킨다).
+새 컴포넌트는 반드시 `yarn gen:ds-component <PascalCase 이름>`으로 생성하고 구역(`core`/`web`/`admin`)을 고른다. 직접 만든 폴더는 `yarn check:generated`의 구조 검사(`turbo/workflows/check-ds-components.mjs`)가 CI에서 실패시킨다. 폴더마다 컴포넌트·test·story·`index.ts`가 모두 있어야 한다. 점(`.`)으로 시작하는 숨김 폴더(도구가 만드는 상태 폴더 등)는 검사하지 않는다. 컴포넌트 안에서만 쓰는 hook·헬퍼 파일은 `<이름>.internal.ts`로 만들면 `yarn workspace @app/design-system gen:index`가 barrel에서 빼서 공개 API가 되지 않는다. 이름이 `use`로 시작하는 hook 파일에 `.internal`이 없으면 구조 검사가 실패한다(헬퍼 파일은 검사하지 않으니 직접 지킨다).
 
 틀 컴포넌트에 딸린 렌더러(예: `BottomSheet`를 조합한 `PhotoUploadSheet`)는 틀 폴더의 `renderers/`에 둔다(`web/bottomSheet/renderers/`). 렌더러 하나는 `<이름>.tsx`·`.test.tsx`·`.stories.tsx`·`.spec.md` 파일로 이루어지고 폴더는 따로 만들지 않는다. generator는 구역 바로 아래에만 폴더를 만들므로 렌더러는 기존 렌더러 파일을 복사해서 시작한다. `yarn workspace @app/design-system gen:index`가 `renderers/index.ts`를 만들어 틀 barrel로 공개하므로 import 경로는 다른 컴포넌트와 같다. 구조 검사는 렌더러마다 test·story가 있는지 확인한다. 렌더러가 하나뿐이고 짧으면 `Dialog`의 `ConfirmDialog`처럼 틀 파일 안에 둔다. `src/icons/generated/`의 아이콘은 SVG asset 파이프라인으로 생성하며 `docs/architecture/design-system-icons.md`를 따른다.
 
 ```text
-packages/design-system/src/components/{core|web}/{component-name}/
+packages/design-system/src/components/{core|web|admin}/{component-name}/
   ComponentName.tsx
   ComponentName.test.tsx
   ComponentName.stories.tsx

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { getBundlePresence } from '../api/bundles';
 import {
   activePresence,
@@ -33,22 +33,19 @@ export function usePresence(
   const [now, setNow] = useState(0);
   const received = useRef(0);
 
-  const replace = useCallback((next: PresenceData) => {
+  const replace = (next: PresenceData) => {
     setData(next);
     setNow(Date.now());
-  }, []);
+  };
 
-  const apply = useCallback(
-    (next: PresenceData) => {
-      received.current += 1;
-      replace(next);
-    },
-    [replace],
-  );
+  const apply = (next: PresenceData) => {
+    received.current += 1;
+    replace(next);
+  };
 
   // 조회마다 순번을 올려, 먼저 보낸 조회가 나중에 끝나도 더 늦게 보낸 조회 결과를 덮지 않게 함
   const latestRequest = useRef(0);
-  const refresh = useCallback(() => {
+  const refresh = () => {
     if (bunchId === undefined || bundleId === undefined) return;
     const request = ++latestRequest.current;
     const seen = received.current;
@@ -59,9 +56,9 @@ export function usePresence(
       // 복구 조회에 실패해도 이후 PRESENCE와 만료로 맞춰짐
       () => undefined,
     );
-  }, [bunchId, bundleId, replace]);
+  };
 
-  const visible = useMemo(() => activePresence(data, now), [data, now]);
+  const visible = activePresence(data, now);
 
   // 가장 먼저 만료되는 항목 시각에 다시 계산(서버의 정리 주기와 상관없이 표시 기한을 지킴)
   useEffect(() => {

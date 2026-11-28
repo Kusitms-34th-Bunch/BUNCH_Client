@@ -27,9 +27,9 @@
 
 ## 상태와 동작
 
-- 눌림: 버튼 전체(배경과 아이콘)에 `overlay-pressed`(검정 20%) 오버레이, 75ms ease-out 전환(2026-10-22 디자이너 공통 지침 변경: Instant → 75ms). Figma 픽셀 실측으로 확인했다: 배경 `#535a61`→`#42484e`, 아이콘 흰색→`#cccccc`.
+- 눌림: 버튼 전체(배경과 아이콘)에 `overlay-pressed`(검정 20%) 오버레이, 공통 `press-overlay`로 150ms `cubic-bezier(0, 0, 0.15, 1)` 전환(2026-11-27, 이전 75ms ease-out). Figma 픽셀 실측으로 확인했다: 배경 `#535a61`→`#42484e`, 아이콘 흰색→`#cccccc`.
 - 비활성: 전체에 `opacity-disabled`(40%)와 `cursor-not-allowed`, 아이콘은 `icon-disabled`(`#bcbec2`, Figma 아이콘 원본 값).
-- 터치 영역: 보이는 크기는 28px이고, `after` 가상 요소로 40×40을 덮는다(`design-system-icons.md`의 Small 아이콘 터치 영역 40px). 비활성일 때는 `after`를 숨겨 아래 요소의 클릭을 막지 않는다.
+- 터치 영역: 보이는 크기는 28px이고, `after` 가상 요소로 40×40을 덮는다(`design-system-icons.md`의 Medium·Large 아이콘 터치 영역 40×40과 같은 값). 비활성일 때는 `after`를 숨겨 아래 요소의 클릭을 막지 않는다.
 
 ## 접근성
 

@@ -1,6 +1,6 @@
 import { isApiError } from '@app/api-core';
 import { useInfiniteQuery, useQueries } from '@tanstack/react-query';
-import { useCallback, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { useIntersectionObserver } from 'react-simplikit';
 import { createIdempotencyKey } from '@/shared/api/client/idempotencyKey';
 import { isWireId } from '@/shared/api/client/ids';
@@ -61,7 +61,7 @@ export function useBundleComments(
   const [moreFailures, setMoreFailures] = useState(0);
   // 목록 끝이 보이면 바로 받아도 되는지. 실패한 뒤에는 목록 끝이 화면 밖으로 나갔다 다시 보일 때만(보이는 채로 되풀이하지 않게)
   const armed = useRef(true);
-  const loadMore = useCallback(async () => {
+  const loadMore = async () => {
     const result = await fetchNextPage();
     armed.current = !result.isFetchNextPageError;
     setMoreFailures((count) => (result.isFetchNextPageError ? count + 1 : 0));
@@ -76,7 +76,7 @@ export function useBundleComments(
       void restart();
       onStaleCursor();
     }
-  }, [fetchNextPage, restart, onStaleCursor]);
+  };
 
   // 감지 요소는 받을 수 있을 때만 그려(`canLoadMore`), 새로 붙는 순간 이미 보이면 바로 받음
   // callback ref라 상세 본문이 늦게 그려져도(목록이 먼저 와도) 붙는 순간부터 관찰

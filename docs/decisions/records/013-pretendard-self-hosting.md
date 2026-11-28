@@ -33,6 +33,7 @@
 - 동적 서브셋을 붙이면 글꼴 설정이 두 벌(앱 화면·처음 오는 웹 화면)이 된다. 지금은 한 벌이라 Pretendard 버전을 올릴 때 원본으로 위 방법을 다시 실행해 `BunchSansVariable.woff2`를 만들고 `Pretendard-LICENSE.txt`를 바꾼다. 화면 문구에 남긴 범위 밖 글자를 새로 쓰면 범위에 넣는다(빠진 글자는 기기 글꼴로 보임).
 - 웹에서 초대장 화면에서 앱 화면으로 바로 넘어가면 큰 파일을 따로 받는다. 초대장은 앱이나 App Store로 보내는 흐름이라 드물다고 본다.
 - admin과 Storybook에는 아직 글꼴을 연결하지 않았다. 디자인 검수에서 필요해지면 같은 파일을 연결한다.
+  - 2026-11-27 변경(#590): admin은 같은 파일을 복사해 `apps/admin/src/index.css`의 `@font-face`로 불러온다. 앱끼리 import할 수 없어 파일이 두 벌이므로, 글꼴을 다시 만들면 두 위치(`apps/web/src/app/fonts/`, `apps/admin/src/assets/fonts/`)를 함께 바꾼다.
 
 ## 다시 검토할 조건
 

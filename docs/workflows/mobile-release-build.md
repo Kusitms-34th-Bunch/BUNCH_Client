@@ -96,4 +96,4 @@ TestFlight 테스터는 개발 백엔드를, 심사자와 App Store 사용자는
 등록 후 `--profile production`으로 빌드한다. 빌드 전에 `EXPO_PUBLIC_WEB_URL`이 등록됐는지 반드시 확인한다. 등록하지 않으면 빌드는 성공하고 설치한 앱이 시작하자마자 종료된다(`preview`도 같다). 빌드 후에는 설치한 앱이 열리는지 첫 실행을 확인하고, 운영 웹 접속과 앱 식별자·버전도 확인한다.
 쉘이나 쉘을 부르는 웹 코드를 바꿨으면 빌드 전에 쉘 E2E([mobile-e2e.md](./mobile-e2e.md))를 로컬에서 돌리거나 `mobile-e2e.yml`을 수동 실행해 통과를 확인한다.
 개발용 `.env.local`을 운영 값으로 덮어쓰지 않는다. Xcode에서 직접 Archive할 때는 해당 빌드에도 운영 변수를 별도로 적용해야 한다.
-스토어 제출에는 유료 Apple Developer 계정이 필요하며, 현재 제출용 빌드는 검증하지 않았다.
+스토어 제출에는 유료 Apple Developer 계정이 필요하며, Xcode Archive로 만든 제출용 빌드 업로드는 확인했고, EAS 제출은 검증하지 않았다.

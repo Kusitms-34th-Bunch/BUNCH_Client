@@ -41,15 +41,15 @@
 ## 상태와 흐름
 
 - 초기 진입: 프로필과 메뉴를 바로 그린다.
-- Loading·Empty·Error·retry: 데이터를 불러오지 않아 없다. API를 연결할 때 정한다.
+- Loading·Empty·Error·retry: `MyRoute`가 맡는다. 첫 응답을 기다리는 동안 프로필 영역만 스켈레톤이고, 실패하면 오류 토스트를 띄우고 빈 프로필로 메뉴를 쓴다(위 내 프로필 항목).
 - 메뉴 눌림: `MenuLabel` 기본 동작(누르는 동안 `overlay-hover`, 75ms). 프로필 행도 같은 눌림을 쓴다.
 - 문의하기: 확인 창(`ConfirmDialog`) 「'카카오톡'에서 열기」 / 「오픈채팅 상담 채널로 이동해요.」 / 취소·열기. 「열기」는 `contactUrl`을 연다(`https:` 주소만 열고 그 밖은 무시). iOS 쉘에서는 같은 WebView 이동을 쉘이 가로채 카카오톡 앱(없으면 브라우저)으로 열고, 브라우저는 새 탭으로 연다. 주소가 없으면 「열기」를 막는다. page는 카카오톡 채널 주소(`MY_CONTACT_URL`)를 넘긴다.
 - 로그아웃: 확인 창 「로그아웃할까요?」 / 취소·로그아웃. 「로그아웃」은 `POST /api/auth/logout`(BFF가 백엔드 세션 폐기를 시도하고 결과와 관계없이 쿠키 삭제)을 보내고, 요청 중에는 다시 누를 수 없다. 성공하면 `/login`을 `location.replace`로 새로 연다(메모리의 사용자 데이터를 비우고, 뒤로 가기로 돌아오지 않음). 실패(네트워크 등)하면 확인 창을 닫고 「일시적인 오류가 발생했어요. 다시 시도해 주세요」 토스트(기능명세서 7.5.2, 공통 mutation 실패 처리)를 띄운다.
 
 ## 데이터 의존성
 
-- Query와 enabled 조건: 없음. 화면은 `profile`(`nickname`, `imageSrc?`)과 `contactUrl?`을 prop으로 받는다.
-- Mutation: `useLogoutMutation`(`queries/session.ts`) → `logout`(`api/session.ts`). 캐시 무효화 없이 문서를 새로 연다. 이동은 mutation 정의의 `onSuccess`가 맡아, 요청 중 화면이 사라져도 성공하면 로그인 화면으로 간다.
+- Query와 enabled 조건: `MyRoute`가 `useMyProfile`(`sharedKeys.me()`, 들어올 때마다 다시 받음)로 내 프로필을 받고, 메뉴를 그리면 알림 설정을 미리 받는다(`usePrefetchNotificationSettings`). 화면은 `profile`(`nickname`, `imageSrc?`)과 `contactUrl?`을 prop으로 받는다.
+- Mutation: `useLogoutMutation`(`queries/session.ts`) → `logout`(`@/shared/api/logout`). 캐시 무효화 없이 문서를 새로 연다. 이동은 mutation 정의의 `onSuccess`가 맡아, 요청 중 화면이 사라져도 성공하면 로그인 화면으로 간다.
 - API 계약 확인 항목: `MemberResponse`의 `nickname`은 계약상 선택이다. 가입을 마친 회원에게 늘 있는지 연결할 때 확인한다.
 
 ## UI와 접근성
@@ -90,5 +90,5 @@
 - 닉네임 색 (제안): Figma는 변수 없이 `#000000`이다. 가장 가까운 `text-primary`를 썼다.
 - 프로필 행 눌림 (제안): Figma에는 프로필 행의 눌림 모양이 없다. 메뉴와 같은 `overlay-hover`를 넣었다.
 - 메뉴 이름 (기획 확인): 1110판 7.1.1은 「개인정보처리방침」(붙여 씀)이고 화면은 「개인정보 처리방침」이다.
-- 문의 링크를 열지 못할 때 (1110판 7.5.1 예외): 명세는 오류 토스트다. 지금은 주소가 없으면 「열기」를 막는다. 서버 설정값으로 링크를 받을 때 토스트를 붙인다.
+- 문의 링크를 열지 못할 때 (1110판 7.5.1 예외, 반영): 링크를 열지 못하면 「일시적인 오류가 발생했어요. 다시 시도해 주세요」 토스트를 띄운다. 주소(`MY_CONTACT_URL`)가 없으면 「열기」를 막는다.
 - 프로필 행 누르는 영역 (제안): 화면 설계서는 화살표를 누르면 이동한다고 적었다. 누르기 쉽도록 행 전체를 링크로 만들었다.

@@ -28,9 +28,9 @@ interface BarrelFile {
   content: string;
 }
 
-// web 구역은 components barrel에서 빼고 `@app/design-system/web`(src/components/web/index.ts)으로만 공개
+// web·admin 구역은 components barrel에서 빼고 `@app/design-system/web`·`@app/design-system/admin`(각 구역 index.ts)으로만 공개
 const COMPONENTS_DIR = join(SRC, 'components');
-const PRIVATE_ZONES = new Set(['web']);
+const PRIVATE_ZONES = new Set(['web', 'admin']);
 
 const generateBarrelsForDir = async (dirPath: string): Promise<BarrelFile[]> => {
   const entries = (await readdir(dirPath)).sort();

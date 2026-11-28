@@ -40,3 +40,30 @@ test('브라우저에서는 사진을 올릴 수 없고 앱에서 하라고 안�
 
   await expect(page.getByText('사진 올리기는 앱에서 할 수 있어요.')).toBeVisible();
 });
+
+test('사진을 누르면 사진함 위에 상세가 뜨고, 뒤로 가면 사진함이 그대로 남아 있다(#598)', async ({
+  page,
+}) => {
+  await page.goto('/photos');
+  const day = page.getByRole('region', { name: '10월 18일 일요일' });
+  const firstPhoto = day.getByRole('link').first();
+  const name = await firstPhoto.getAttribute('aria-label');
+  await firstPhoto.click();
+
+  await expect(page).toHaveURL(/\/photos\/\d+$/);
+  await expect(page.getByRole('heading', { name: '사진 상세' })).toBeVisible();
+  // 뒤 사진함은 남아 있지만 상세가 떠 있는 동안 보조기술·누름에서 빠짐(inert)
+  await expect(page.locator('[data-overlay-under]')).toHaveAttribute('inert', '');
+
+  await page.getByRole('button', { name: '뒤로 가기' }).click();
+  await expect(page).toHaveURL(/\/photos$/);
+  await expect(page.getByRole('heading', { name: '사진 상세' })).toBeHidden();
+  await expect(page.locator('[data-overlay-under]')).not.toHaveAttribute('inert');
+  await expect(day.getByRole('link', { name: name ?? '' }).first()).toBeVisible();
+});
+
+test('사진 상세 주소로 바로 열면 겹치지 않은 상세 화면이 뜬다', async ({ page }) => {
+  await page.goto('/photos/1');
+  await expect(page.getByRole('heading', { name: '사진 상세' })).toBeVisible();
+  await expect(page.locator('[data-screen-overlay]')).toHaveCount(0);
+});

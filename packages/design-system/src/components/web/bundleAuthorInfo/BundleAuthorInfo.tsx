@@ -1,7 +1,7 @@
 import type { ComponentProps, ReactNode } from 'react';
 import { cn } from '../../../utils';
+import { ColorBadge } from '../../core/colorBadge';
 import { BundleParticipants, type BundleParticipant } from '../bundleParticipants';
-import { ColorBadge } from '../colorBadge';
 import { ProfileImage } from '../profileImage';
 
 type BaseProps = Omit<ComponentProps<'div'>, 'children'> & {

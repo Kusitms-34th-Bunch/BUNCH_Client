@@ -63,7 +63,12 @@ export function PhotoDetail({ photoId }: PhotoDetailProps) {
     currentDetail.error instanceof ApiError && currentDetail.error.code === 'RESOURCE_001';
   const invalidatePhotos = useInvalidatePhotos(data?.bunch.id);
   const photosWithOriginal = useMemo(
-    () => photos.map((photo) => ({ ...photo, src: originals.get(photo.id) ?? photo.src })),
+    () =>
+      photos.map((photo) => ({
+        ...photo,
+        src: originals.get(photo.id) ?? photo.src,
+        thumbnailSrc: photo.src,
+      })),
     [photos, originals],
   );
   // 화면에 들어온 뒤 삭제로 사진이 사라진 것은 없는 사진 안내 대상이 아니라 화면의 이탈 흐름이 처리

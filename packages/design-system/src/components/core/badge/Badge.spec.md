@@ -17,7 +17,7 @@
 
 - 클릭 등 상호작용, 아이콘, 숫자 카운트 전용 모양은 디자인에 없어서 만들지 않았다.
 - `green`·`pink`·`yellow` 칩 색은 이 디자인에 없어서 포함하지 않았다.
-- 그 외 색(pink·green·orange)과 Figma의 L·M 크기는 `web/colorBadge`의 `ColorBadge`가 따로 제공한다. 값이 서로 달라 이 컴포넌트는 바꾸지 않았다.
+- 그 외 색(pink·green·orange)과 Figma의 L·M 크기는 `core/colorBadge`의 `ColorBadge`가 따로 제공한다. 값이 서로 달라 이 컴포넌트는 바꾸지 않았다.
 
 ## Public API
 
@@ -49,7 +49,7 @@
 
 ## 확인할 항목
 
-- `md`·`sm` 패딩 7px/3px (제안): 대응하는 spacing·padding 토큰이 없어(가까운 값 p3=6, p4=8) 임의 값 `px-[7px] py-[3px]`을 썼다. 토큰 추가 또는 6/8 반올림 여부를 디자이너와 정한다.
+- `md`·`sm` 패딩 7px/3px (제안): 대응하는 spacing·padding 토큰이 없어(가까운 값 p3=6, p4=8) Tailwind 기본 spacing `px-1.75 py-0.75`(7px·3px)를 썼다. 토큰 추가 또는 6/8 반올림 여부를 디자이너와 정한다.
 - `sm` 글자 폭 (제안): Figma 인스턴스가 `w-[19px]`로 고정이나 "TIP" 한정 값으로 보여 적용하지 않고 내용 폭을 따른다.
 - brand 대비 (미정): weak·strong brand가 AA에 못 미친다. 디자이너에게 수용 여부를 확인한다.
 

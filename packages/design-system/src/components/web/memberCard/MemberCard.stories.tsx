@@ -10,7 +10,7 @@ const SAMPLE_IMAGE = `data:image/svg+xml;utf8,${encodeURIComponent(
 const meta = {
   title: 'Web/Card/MemberCard',
   component: MemberCard,
-  args: { name: '지예', src: SAMPLE_IMAGE },
+  args: { name: '지예', imageSrc: SAMPLE_IMAGE },
 } satisfies Meta<typeof MemberCard>;
 
 export default meta;

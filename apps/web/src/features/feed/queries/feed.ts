@@ -1,5 +1,4 @@
 import { infiniteQueryOptions, skipToken, useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
 import { persistedFirstPage } from '@/shared/query/persistence';
 import { getFeedPage } from '../api/feed';
 import { feedKeys } from './keys';
@@ -29,8 +28,5 @@ export const feedQueryOptions = (viewerId: string | null | undefined) =>
 /** 처음부터 다시 받기(받은 쪽을 버림). 번치·팔로우가 바뀌어 커서를 이어 쓸 수 없을 때 */
 export const useRestartFeed = (viewerId: string | null | undefined) => {
   const queryClient = useQueryClient();
-  return useCallback(
-    () => queryClient.resetQueries({ queryKey: feedKeys.list(viewerId ?? null) }),
-    [queryClient, viewerId],
-  );
+  return () => queryClient.resetQueries({ queryKey: feedKeys.list(viewerId ?? null) });
 };

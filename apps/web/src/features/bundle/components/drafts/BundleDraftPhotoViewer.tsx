@@ -1,6 +1,5 @@
 'use client';
 
-import { useMemo } from 'react';
 import { usePhotoBox } from '@/features/photo-box/hooks/usePhotoBox';
 import {
   LATE_OVERLAY_MS,
@@ -37,22 +36,18 @@ export function BundleDraftPhotoViewer({ photoId }: BundleDraftPhotoViewerProps)
   // 배지와 헤더 날짜는 사진함 원본(올린 멤버·촬영 날짜)에서 가져옴. 사진함 목록을 이미 받았으면 캐시를 그대로 씀
   const { state: photoBox } = usePhotoBox();
   const photoBoxData = photoBox.kind === 'ready' ? photoBox.data : undefined;
-  const sources = useMemo(
-    () =>
-      photoBoxData
-        ? new Map(
-            photoBoxData.photos.map((photo) => [
-              photo.id,
-              {
-                takenAt: photo.takenAt,
-                uploaderIds: photo.uploaderIds,
-                aspectRatio: photo.aspectRatio,
-              },
-            ]),
-          )
-        : undefined,
-    [photoBoxData],
-  );
+  const sources = photoBoxData
+    ? new Map(
+        photoBoxData.photos.map((photo) => [
+          photo.id,
+          {
+            takenAt: photo.takenAt,
+            uploaderIds: photo.uploaderIds,
+            aspectRatio: photo.aspectRatio,
+          },
+        ]),
+      )
+    : undefined;
   // 사진함 데이터는 보조 정보라 기다리지 않고 화면을 먼저 보임(받는 동안 배지·날짜는 비워 둠)
   const sourcesPending = photoBox.kind === 'loading';
   const present = useRedirectMissingPhoto(ready ? state.draft : undefined, initialPhotoId);

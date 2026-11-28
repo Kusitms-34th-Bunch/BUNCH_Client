@@ -21,7 +21,7 @@
 
 ## Public API
 
-- Props: `size`(`s` 300px·`m` 330px, 기본 `m`), `label`(기본 "사진 추가"), 그리고 native `<button>`의 속성(`type`은 기본 `button`, `onClick`·`className`·`aria-label` 등. `disabled`는 받지 않음).
+- Props: `size`(`xs` 130px·`s` 300px·`m` 330px, 기본 `m`), `label`(기본 "사진 추가"), 그리고 native `<button>`의 속성(`type`은 기본 `button`, `onClick`·`className`·`aria-label` 등. `disabled`는 받지 않음).
 - 폭은 `size`가 정하고 높이는 정사각이다. 다른 폭은 `className`(예: `w-full`)으로 덮어쓴다.
 - 호출자 소유 책임: 글자의 i18n, 동작, 배치. 사진 개수가 상한에 닿았을 때는 타일을 숨긴다(이 컴포넌트는 `disabled`를 받지 않고 `aria-disabled`를 넘겨도 클릭을 막지 않는다). 긴 글자의 줄바꿈 처리(`break-keep` 등)는 없다.
 

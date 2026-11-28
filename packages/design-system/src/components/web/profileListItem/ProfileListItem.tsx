@@ -16,15 +16,25 @@ export type ProfileListItemProps = Omit<ComponentProps<'div'>, 'children'> & {
   memberRole?: RoleBadgeRole | undefined;
   /** 역할 배지를 읽을 이름(예: `번치장`). 없으면 장식 */
   roleLabel?: string | undefined;
-  /** 더보기 버튼 클릭. 있으면 오른쪽에 점 아이콘 버튼 표시 */
-  onMore?: (() => void) | undefined;
-  /** 더보기 버튼 접근성 이름. 기본값 `<이름> 더보기` */
-  moreLabel?: string | undefined;
-  /** 오른쪽 동작(차단해제 버튼·추가하기 칩 등). 있으면 더보기 대신 표시 */
-  action?: ReactNode;
   /** 행 흐림, 더보기 비활성, `action` 슬롯 inert 처리 */
   disabled?: boolean | undefined;
-};
+} & ProfileListItemTrailing;
+
+/** 오른쪽은 더보기 버튼과 직접 넣는 동작 중 하나만 */
+type ProfileListItemTrailing =
+  | {
+      /** 더보기 버튼 클릭. 있으면 오른쪽에 점 아이콘 버튼 표시 */
+      onMore?: (() => void) | undefined;
+      /** 더보기 버튼 접근성 이름. 기본값 `<이름> 더보기` */
+      moreLabel?: string | undefined;
+      action?: never;
+    }
+  | {
+      /** 오른쪽 동작(차단해제 버튼·추가하기 칩 등) */
+      action: ReactNode;
+      onMore?: never;
+      moreLabel?: never;
+    };
 
 /**
  * 사람 한 명의 목록 행(Figma `Profile List- 01`·`Profile List - Button`): 프로필 이미지·이름·오른쪽 동작

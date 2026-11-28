@@ -7,7 +7,8 @@ import { appBridge, hasNativeMethod } from '@/shared/bridge/client';
 // iOS 쉘이 WebView 스와이프 뒤로 가기 시작(detail true)·이동 없이 끝남(false)을 알리는 이벤트(SSGOI 패치도 받음)
 export const SWIPE_BACK_EVENT = 'ssgoi:swipe-back';
 // 보이는 사진의 디코딩을 기다리는 상한(넘으면 그대로 알림, 쉘도 1초 뒤 스스로 걷음)
-const DECODE_LIMIT_MS = 400;
+// 덮개가 걷히기 전까지 화면이 멈춰 보여 짧게(400ms면 실기기에서 대부분 상한까지 기다려 멈춤이 보였음, #598)
+const DECODE_LIMIT_MS = 150;
 
 // 화면 안에 보이는 사진이 다 그려질 때까지(틀만 그리고 사진 칸이 빈 채 덮개가 걷히지 않게)
 const visibleImagesDecoded = () => {

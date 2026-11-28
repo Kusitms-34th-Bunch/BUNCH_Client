@@ -6,9 +6,9 @@
 
 - unit·component test는 Vitest와 Testing Library를 사용한다. React test 환경은 `happy-dom`이다.
 - 테스트는 대상 파일 가까이에 `Foo.test.tsx`, `useFoo.test.ts` 형태로 둔다. 공용 setup은 각 앱 루트의 `vitest.setup.ts`에 둔다.
-- E2E는 Playwright의 루트 `e2e/`에서 관리한다. 대상은 admin Chromium 흐름(`e2e/admin`)과 web 핵심 흐름(`e2e/web`, Pixel 7 크기 Chromium과 iPhone 15 크기 WebKit 두 project)이다. web은 `NEXT_PUBLIC_API_MOCKING=enabled`로 빌드해 띄운 운영 서버(포트 3200)의 MSW 가짜 서버로 확인하므로 실제 로그인·백엔드 동작은 대상이 아니다. web만 돌리려면 `yarn e2e --project=web-chromium --project=web-webkit`, 엔진 하나만이면 그 project만 준다. 프로젝트를 골라도 `webServer`의 admin(5173)·web(3200) 서버가 모두 뜨므로 두 포트가 비어 있어야 한다.
-- web smoke 화면(번치 홈·사진함·마이페이지·개인 프로필 수정·알림 설정)은 `e2e/web/a11y.spec.ts`가 `@axe-core/playwright`로 검사한다. 태그는 WCAG 2.2 A·AA와 best-practice(랜드마크·제목 구조 포함)이고, 화면마다 데이터가 그려진 요소를 기다린 뒤 움직임 줄이기와 글꼴 로드 완료 상태에서 기본 상태 하나만 본다. axe가 자동 판정하는 부분만 확인하므로 키보드 동선·포커스 이동·스크린 리더 읽기, 입력 오류·오버레이 같은 다른 상태는 사람이 확인한다. axe가 판정하지 못한 항목은 테스트 annotation(`axe incomplete`)으로 남긴다.
-- 알려진 위반은 흰 배경(#FFFFFF) 위 Figma 보조 글자색 `text-quaternary`(#969AA0)·`text-quinary`(#BCBEC2)의 대비 부족뿐이다(#226에서 디자이너에게 확인 요청). 화면별로 해당 요소 문구(마이페이지 묶음 제목 3개, 개인 프로필 수정 비공개 안내 1개)를 고정해 다른 요소가 같은 색을 쓰거나 색이 고쳐지면 실패하므로, 그때 예외 목록을 갱신하거나 지운다. 새 화면을 smoke에 넣으면 이 목록에도 추가한다. 로그인·가입·온보딩·사진 상세는 아직 대상이 아니다.
+- E2E는 Playwright의 루트 `e2e/`에서 관리한다. 대상은 admin Chromium 흐름(`e2e/admin`)과 web 핵심 흐름(`e2e/web`, Pixel 7 크기 Chromium과 iPhone 15 크기 WebKit 두 project)이다. web은 `NEXT_PUBLIC_API_MOCKING=enabled`로 빌드해 띄운 운영 서버(포트 3200)의 MSW 가짜 서버로 확인하므로 실제 로그인·백엔드 동작은 대상이 아니다. web만 돌리려면 `yarn e2e --project=web-chromium --project=web-webkit`, 엔진 하나만이면 그 project만 준다. 기본은 `webServer`의 admin(5173)·web(3200) 서버가 모두 뜨므로 두 포트가 비어 있어야 한다. `E2E_APPS=web`을 주면 web 서버만 뜬다.
+- web 화면 접근성은 `e2e/web/a11y.spec.ts`가(대상 화면은 `docs/workflows/e2e-testing.md`의 Coverage 기록) `@axe-core/playwright`로 검사한다. 태그는 WCAG 2.2 A·AA와 best-practice(랜드마크·제목 구조 포함)이고, 화면마다 데이터가 그려진 요소를 기다린 뒤 움직임 줄이기와 글꼴 로드 완료 상태에서 기본 상태 하나만 본다. axe가 자동 판정하는 부분만 확인하므로 키보드 동선·포커스 이동·스크린 리더 읽기, 입력 오류·오버레이 같은 다른 상태는 사람이 확인한다. axe가 판정하지 못한 항목은 테스트 annotation(`axe incomplete`)으로 남긴다.
+- 알려진 위반은 Figma 색의 대비 부족이다(보조 글자 `text-quaternary`·`text-quinary`, 접근 불가 번치, 칩 등, #226에서 디자이너에게 확인 요청). 색 목록은 `a11y.spec.ts` 머리 주석이 정본이다. 화면별로 해당 요소 문구를 고정해 다른 요소가 같은 색을 쓰거나 색이 고쳐지면 실패하므로, 그때 예외 목록을 갱신하거나 지운다. 새 화면을 넣으면 이 목록에도 추가한다.
 
 `src/test`는 provider render helper, 공통 fixture처럼 반복되는 기반이 실제로 생겼을 때 만든다. 특정 화면의 mock·handler·fixture는 test 가까이에 두고 실제 반복 계약이 확인된 뒤에만 공통화한다.
 
@@ -27,7 +27,7 @@
 
 - API 요청 코드(endpoint 함수, query)는 MSW 가짜 서버(`src/mocks/`)로 요청 입력과 응답 매핑을 함께 확인한다. 가짜 서버는 BFF 경로(`/api/…`, 백엔드 경로에서 `/api/v1`을 뺀 경로)를 가로챈다. 화면 test는 기존처럼 endpoint 모듈을 mock해도 된다. 가짜 서버 응답에 기대는 test는 `server.use`를 쓰지 않아도 `@/mocks/server`를 import한다. setup이 켜 둔 서버만 쓰거나 가짜 DB(`@/mocks/db`)만 import하면 PR CI의 `--changed`가 handler 변경 때 그 test를 고르지 못한다([ci.md](./ci.md)). 가짜 DB를 import하면서 서버를 import하지 않는 test는 `yarn lint`의 `check:mock-imports`(`apps/web/scripts/check-mock-server-imports.mjs`)가 막는다. lint 단계라 PR에서도 늘 돈다.
 - Vitest: `vitest.setup.ts`가 `server.listen({ onUnhandledFrame: 'error' })`로 켜고, handler가 없는 요청은 test를 실패시킨다. test마다 handler 덮어쓰기(`server.resetHandlers`)·가짜 DB(`mockDb.reset`)·멱등 키가 초기화된다. 한 test에서만 다른 응답이 필요하면 `server.use(http.get(…))`를 쓰고, 오류 응답은 `fail(status, code)`로 만든다.
-- 기준 예시는 `shared/api/bunchMembers.test.ts`(요청 함수)와 `queries/bunchMembers.test.tsx`(query)다.
+- 기준 예시는 `shared/api/bunchMembers.test.ts`(요청 함수)와 `shared/query/bunchMembers.test.tsx`(query)다.
   - 요청 함수: 가짜 서버 응답의 화면 모양 변환, 오류 code, 한 test만의 응답(`server.use`), 계약 위반(`INVALID_RESPONSE`)을 확인한다. 요청 입력은 handler 안에서 `params`·`request`를 받아 확인한다.
   - query: `src/shared/query/testing.tsx`의 `createQueryWrapper(createTestQueryClient())`로 감싼 `renderHook(() => useQuery(options))`로 성공·오류 상태와 캐시 key를 확인한다. 요청 취소는 `delay('infinite')` handler에서 `request.signal`을 모아 두고 key를 바꾼 뒤 `aborted`를 확인한다. 테스트 client는 앱 설정에서 재시도만 끈 것이다.
   - 쓰기(`features/photo-box/api/photos.test.ts`, `queries/photos.test.tsx`): 요청 함수는 가짜 DB(`mockDb.get()`)가 실제로 바뀌었는지와 실패 때 그대로인지, 보낸 본문(handler 밖 변수에 담아 test 본문에서 단언. handler 안의 `expect`는 실패가 500 응답으로 바뀌어 원인이 가려진다), 오류 status별 `ApiError`(`it.each`)를 확인한다. mutation hook은 캐시에 값을 넣어 둔 client로 `await act(() => mutateAsync(…))` 뒤 `getQueryState(key)?.isInvalidated`가 무효화할 key는 참, 다른 번치·다른 리소스 key는 거짓인지와, 실패 때 `meta.errorMessage` 토스트를 확인한다(호출 여부를 spy하지 않고 캐시 상태를 본다).

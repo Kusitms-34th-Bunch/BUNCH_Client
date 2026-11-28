@@ -93,7 +93,7 @@ const ReportBody = ({
             <div className="min-h-0 overflow-hidden">
               <LabeledTextField
                 className="mt-s8"
-                title="상세 사유"
+                label="상세 사유"
                 option="required"
                 maxLength={REPORT_DETAIL_MAX_LENGTH}
                 showCounter={false}

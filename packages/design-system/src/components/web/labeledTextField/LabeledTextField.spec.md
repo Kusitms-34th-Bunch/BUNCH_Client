@@ -4,7 +4,7 @@
 
 - 소유 경계: design-system `web`(`@app/design-system/web`으로 import). BUNCH 사용자 앱(web)에서만 쓴다.
 - Status: 구현됨(Storybook 렌더를 Figma 높이·구조와 대조함. 색·픽셀 대조 전)
-- 디자인 출처: Figma `BUNCH - 작업파일`의 `Labled_Text_Field`(node `796:4808`). Figma 이름의 오탈자(`Labled`)를 바로잡아 코드 이름은 `LabeledTextField`다. Figma `Labled_Text_Field`는 status가 `Default`·`Disabled`뿐이고 안에 든 입력창은 `TextField`의 기본 변형이다. 입력창의 `Focused`·`Filled`·`Editing`은 core `TextField`의 상태이고, 오류·글자 수는 `errorMessage`·`maxLength`로 옮겼다(아래 "상태와 동작").
+- 디자인 출처: Figma `BUNCH - 작업파일`의 `Labled_Text_Field`(node `796:4808`). Figma 이름의 오탈자(`Labled`)를 바로잡아 코드 이름은 `LabeledTextField`다. Figma `Labled_Text_Field`는 status가 `Default`·`Disabled`뿐이고 안에 든 입력창은 `TextField`의 기본 변형이다. 입력창의 `Focused`·`Filled`·`Editing`은 core `TextField`의 상태이고, 오류·글자 수는 `error`·`maxLength`로 옮겼다(아래 "상태와 동작").
 - 화면설계서: 프로필 작성 화면의 "닉네임" 영역(설계서 프레임 `796:9226`, node `796:6955`).
 
 ## 목적과 범위
@@ -15,11 +15,11 @@
 - 입력창은 core `TextField`를 그대로 쓴다. 나머지 props는 입력창(`input`)에 전달된다.
 - 글자 수: `maxLength`를 주면 오른쪽 아래에 "현재/최대"(예: `0/12`)를 보이고, 입력은 그 길이로 제한된다. controlled(`value`) 길이 또는 uncontrolled 입력의 실시간 길이를 센다.
 - 지우기 버튼과 버튼 영역은 없다. Figma의 입력창이 기본 변형이라 지우기(Delete)·버튼 변형은 쓰지 않고 `onClear`·`action`도 받지 않는다.
-- 오류: `errorMessage`가 있으면 입력창 아래 왼쪽에 빨간 글자로 보이고, 입력창에 `aria-invalid`가 걸린다.
+- 오류: `error`가 있으면 입력창 아래 왼쪽에 빨간 글자로 보이고, 입력창에 `aria-invalid`가 걸린다. 문구는 `role="alert"`라 나타날 때 읽힌다. `LabeledTextArea`는 항상 둔 `role="status"`가 읽어 방식이 다르다(통일은 VoiceOver 확인 뒤 결정, #601).
 
 ### 제공하지 않는 동작
 
-- 입력창의 native `title`(툴팁) 속성은 받지 않는다(`title`은 제목 prop). `defaultValue`가 바뀌거나 form reset이 일어날 때의 글자 수 갱신과, 이모지를 한 글자로 세는 처리는 하지 않는다(글자 수는 문자열 길이).
+- 입력창의 native `title`(툴팁) 속성은 쓰지 않는다. `defaultValue`가 바뀌거나 form reset이 일어날 때의 글자 수 갱신과, 이모지를 한 글자로 세는 처리는 하지 않는다(글자 수는 문자열 길이).
 - 설계서의 입력 규칙(최대 12자, 한글·영문·숫자만, 특수문자·Emoji·줄바꿈 금지, 공백 처리, 닉네임 중복 확인과 그 오류 문구)은 화면(feature)이 맡는다. 이 컴포넌트는 값과 오류 문구를 받아 그릴 뿐이다.
 - 오류일 때 입력창 테두리 색 변화는 Figma에 없어서 만들지 않았다. 포커스가 없으면 `border-secondary`, 입력 영역에 포커스가 있으면 `border-strong` 색상을 쓴다.
 - 포커스 시 기존 1px 테두리의 색상이 `border-strong`(#25282d)으로 바뀌고 안내 문구가 사라진다. core `TextField`에 적용했다.
@@ -28,7 +28,7 @@ iOS WebKit에서는 입력 텍스트를 16px로 렌더링하고 0.875배 축소�
 
 ## Public API
 
-- Props: `title`(필수, 제목이자 입력창 접근성 이름), `option`(`required` / `optional`), `maxLength`, `showCounter`(기본 `true`, `false`면 글자 수 없이 입력만 제한), `errorMessage`, `className`(전체 영역), `disabled`, `editing`, `value`·`defaultValue`·`onChange`·`id`·`name` 등 `TextField`의 나머지 props. `action`·`onClear`·`label`은 받지 않는다(`label`은 `title`이 대신한다).
+- Props: `label`(필수, 라벨이자 입력창 접근성 이름, `LabeledTextArea`·`TextField`와 같은 이름, #601 전에는 `title`), `option`(`required` / `optional`), `maxLength`, `showCounter`(기본 `true`, `false`면 글자 수 없이 입력만 제한), `error`(#601 전에는 `errorMessage`), `className`(전체 영역), `disabled`, `editing`, `value`·`defaultValue`·`onChange`·`id`·`name` 등 `TextField`의 나머지 props. `action`·`onClear`는 받지 않는다.
 - 호출자 소유 책임: 제목·오류 문구(i18n), 입력 규칙과 검증, 값 처리.
 
 ## 상태와 동작
@@ -39,10 +39,10 @@ iOS WebKit에서는 입력 텍스트를 16px로 렌더링하고 0.875배 축소�
 | `Focused`  | 값이 없는 채로 포커스. 강한 테두리로 바뀌고 안내 문구가 사라져 캐럿만 보인다                                      |
 | `Filled`   | 값이 있는 입력창                                                                                                  |
 | `Editing`  | `editing` prop. 입력창 내용을 가리고 `editingContent`(앱이 넘기는 편집 중 로티)를 보인다(core `TextField`의 상태) |
-| `Error`    | `errorMessage`가 있음. 왼쪽 아래 빨간 문구 + 오른쪽 아래 글자 수                                                  |
+| `Error`    | `error`가 있음. 왼쪽 아래 빨간 문구 + 오른쪽 아래 글자 수                                                         |
 | `Disabled` | `disabled`. 제목·입력창·글자 수·오류 문구 전체가 `opacity-disabled`(40%)                                          |
 
-- 글자 수 영역이 없으면(`maxLength`와 `errorMessage` 모두 없음) 입력창만 남는다(전체 높이 72px). 글자 수가 있으면 96px이다.
+- 글자 수 영역이 없으면(`maxLength`와 `error` 모두 없음) 입력창만 남는다(전체 높이 72px). 글자 수가 있으면 96px이다.
 - 진행 중 안내(`helperMessage`, Figma 「사용 가능한 이름인지 확인 중이에요.」): 입력창 아래 왼쪽에 `typography-caption-1-medium text-text-quaternary`로 보이고 글자 수는 오른쪽에 그대로 있다. 오류 문구가 있으면 오류가 우선해 이 문구는 보이지 않는다. 확인이 끝나 문제가 없으면 호출하는 쪽이 값을 비워 문구를 없앤다.
 - 오류 문구는 입력창 폭에서 남는 공간을 채우고 글자 수는 오른쪽에 붙어 줄어들지 않는다(Figma `gap-6`, 오류 문구 `flex-1`). 긴 오류 문구는 줄바꿈된다.
 - 긴 값은 입력창에서 한 줄로 잘린다.

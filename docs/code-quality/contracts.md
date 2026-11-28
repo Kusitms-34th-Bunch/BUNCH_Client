@@ -52,6 +52,10 @@ type ValidationResult = { ok: true } | { ok: false; reason: string };
 - list key는 안정적인 id를 사용한다. 순서가 바뀔 수 있는 list의 index key와 매 render마다 바뀌는 random key는 피한다.
 - render 중에 `Date.now()`, `new Date()`, `Math.random()`을 직접 호출하지 않는다. apps/web(App Router)은 서버에서 먼저 렌더링하므로, 이 값들이 서버·클라이언트 렌더 사이에 달라지면 hydration mismatch가 난다. 현재 시각이 필요하면 mount 이후 state로 설정하는 hook(`useEffect`에서 설정)을 쓰고, 장식용 분포·순서는 index 같은 결정적인 값에서 유도한다. 올해(연도 표기 생략 판단)는 `shared/hooks/useCurrentYear`를 쓴다. 서버 렌더·첫 hydration에는 `null`을 주고, 받는 쪽은 `null`이면 연도를 붙여 보여 준다(#522).
 - web·admin 모두 React Compiler가 켜져 있다(`reactCompiler: true`, `reactCompilerPreset()`). 새 코드에 `useMemo`, `useCallback`을 직접 쓰지 않는다 — memoization은 컴파일러가 처리하고, 수동으로 추가한 의존성 배열은 시간이 지나면서 코드와 어긋나기 쉽다. 서드파티 API가 렌더 간 안정된 참조를 강제로 요구하는 경우(구독 등)에만 `useRef`나 effect-scoped closure를 검토한다.
+  - 이미 있는 수동 memo는 같은 참조가 동작에 필요할 때만 남긴다(#601에서 web 135곳 중 약 98곳 정리). 남기는 경우는 세 가지다.
+    - 등록과 해제가 같은 함수여야 하는 리스너, context 값처럼 바뀌면 받는 쪽이 모두 다시 그려지는 값. 남기면 이유를 주석으로 적는다.
+    - effect 의존성으로 쓰이는 값. 지우면 effect가 렌더마다 다시 돌아 연결을 다시 맺거나 보류한 작업을 바로 보낸다(lint `react-hooks/exhaustive-deps`가 알려 줌).
+    - 지우면 단위 테스트가 깨지는 값. vitest는 React Compiler 없이 돌아 참조가 렌더마다 바뀐다(렌더 중 이전 값과 비교해 state를 바꾸는 코드 등). 이때는 컴파일러가 있는 빌드에서는 같아도 지우지 않는다.
 
 component 이름·props와 DOM semantics도 같은 계약이다. navigation은 link, mutation/action은 button을 사용한다. ARIA role은 그 role이 요구하는 keyboard, focus, state 속성을 실제로 제공할 때만 사용한다. 예를 들어 `role="checkbox"`를 쓰면 `aria-checked`, Space key toggle, focus target을 함께 제공해야 한다. 상태 전환 command면 `aria-pressed` toggle button을, 선택 항목 모델이면 listbox·menu·checkbox 중 더 맞는 semantics를 검토한다.
 

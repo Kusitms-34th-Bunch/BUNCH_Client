@@ -41,6 +41,10 @@ jobs:
           - name: Build
             id: build
 
+    # 패키지·작업별 결과를 .turbo/runs에 남겨 Verify가 앱별 결과 표를 만듦
+    env:
+      TURBO_RUN_SUMMARY: 'true'
+
     steps:
       # PR의 바뀐 패키지 판정(--affected)에 base 브랜치 이력 필요
       - uses: actions/checkout@v5
@@ -238,7 +242,10 @@ jobs:
             "prettier":"${{ steps.prettier.outcome }}","lint":"${{ steps.lint.outcome }}",
             "test":"${{ steps.test.outcome }}","typecheck":"${{ steps.typecheck.outcome }}",
             "build":"${{ steps.build.outcome }}"}
-        run: echo "$RESULTS" > "ci-result-${{ matrix.id }}.json"
+        run: |
+          echo "$RESULTS" > "ci-result-${{ matrix.id }}.json"
+          # 숨김 폴더(.turbo)는 artifact에서 빠져 보이는 폴더로 옮김. 실행 요약 파일 이름이 실행마다 달라 job끼리 겹치지 않음
+          mkdir -p turbo-runs && cp .turbo/runs/*.json turbo-runs/ 2>/dev/null || true
 
       - name: Upload check results
         if: always()
@@ -249,6 +256,7 @@ jobs:
           path: |
             ci-result-${{ matrix.id }}.json
             bundle-size.md
+            turbo-runs/
           retention-days: 1
 
   # 필수 체크 이름(ruleset의 `Verify`) 유지용 결과 모음 job, PR 결과 댓글도 여기서 작성
@@ -358,6 +366,60 @@ jobs:
               '',
               `[기준 커밋](${commitUrl}) · [실행 로그](${process.env.RUN_URL})`,
             ];
+            // 앱별 결과: 각 job의 turbo 실행 요약(TURBO_RUN_SUMMARY)에서 패키지·작업별 종료 코드. PR에서 바뀌지 않아(--affected) 실행하지 않은 칸은 생략
+            const columns = [
+              ['web', ['@app/web']],
+              ['admin', ['@app/admin']],
+              ['design-system', ['@app/design-system']],
+              ['공통 패키지', ['@app/api-core', '@app/bridge', '@app/lint-config', '@app/ts-config']],
+            ];
+            const tasks = [
+              ['lint', 'ESLint(패키지)'],
+              ['typecheck', 'TypeScript'],
+              ['test', 'Test'],
+              ['build', 'Build'],
+            ];
+            const taskOutcome = {};
+            let runFiles = [];
+            try {
+              runFiles = fs.readdirSync('ci-results/turbo-runs');
+            } catch {
+              // 이전 형식의 결과거나 설치 전에 멈춘 job
+            }
+            for (const file of runFiles) {
+              try {
+                const run = JSON.parse(fs.readFileSync(`ci-results/turbo-runs/${file}`, 'utf8'));
+                for (const task of run.tasks ?? []) {
+                  const code = task.execution?.exitCode;
+                  // 앞 작업 실패로 실행하지 않은 작업은 종료 코드가 없음
+                  if (code === undefined || code === null) continue;
+                  const key = `${task.package}#${task.task}`;
+                  // test shard 4개 중 하나라도 실패하면 실패
+                  if (taskOutcome[key] !== 'failure') taskOutcome[key] = code === 0 ? 'success' : 'failure';
+                }
+              } catch {
+                // 읽지 못한 요약은 건너뜀(판정은 위 단계 표와 Verify 결과 기준)
+              }
+            }
+            const cellOf = (packages, task) => {
+              const outcomes = packages.map((name) => taskOutcome[`${name}#${task}`]);
+              if (outcomes.includes('failure')) return status.failure;
+              return outcomes.includes('success') ? status.success : status.skipped;
+            };
+            if (Object.keys(taskOutcome).length) {
+              lines.splice(
+                -2,
+                0,
+                '',
+                '#### 앱별 결과',
+                '',
+                `| 작업 | ${columns.map(([name]) => name).join(' | ')} |`,
+                `| --- |${columns.map(() => ' --- |').join('')}`,
+                ...tasks.map(
+                  ([task, label]) => `| ${label} | ${columns.map(([, packages]) => cellOf(packages, task)).join(' | ')} |`,
+                ),
+              );
+            }
             // build job이 web을 빌드했으면 번들 크기 요약을 표 아래에 붙임(자세한 표는 실행 로그의 Summary)
             try {
               lines.splice(-2, 0, '', fs.readFileSync('ci-results/bundle-size.md', 'utf8').trim());
